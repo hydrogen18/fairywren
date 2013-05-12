@@ -1,0 +1,28 @@
+libunwind
+---
+no dependencies
+
+
+tcmalloc
+---
+part of gperftools
+
+
+stackless python
+----
+
+configure with:
+./configure -v --without-pymalloc --disable-ipv6 --prefix=/home/ericu/local 'CLFAGS=-O3 -DNDEBUG' 'CPPFLAGS=-I/home/ericu/local/include' 'LDFLAGS=-L/home/ericu/local/lib' 'LIBS=-ltcmalloc_minimal'
+
+deps from packages:
+libssl-dev
+libreadline-dev
+zlib1g-dev
+libbz2-dev
+libsqlite3-dev
+libgdbm-dev
+
+eventlet
+----
+python modules:
+setuptools

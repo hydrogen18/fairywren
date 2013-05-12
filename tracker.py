@@ -159,7 +159,7 @@ class Tracker(object):
 				peersBuffer = ctypes.create_string_buffer(maxSize)
 				
 				actualSize = 0
-				for peer in peersForResponse:
+				for peer in peersForResponse[:p['numwant']]:
 					peerStruct.pack_into(peersBuffer,actualSize,peer.ip,peer.port)
 					actualSize += peerStruct.size
 					
