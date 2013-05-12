@@ -35,10 +35,12 @@ class Tracker(object):
 	def announce(self,env,start_response):
 		if env['REQUEST_METHOD'] != 'GET':
 			return vanilla.http_error(405,env,start_response)
-			
+		
+		
 		path = env['PATH_INFO'].split('/')
+		print path
 		#Add the omitted equals signs back in
-		secretKey = path[0] + '=='
+		secretKey = path[1] + '=='
 		
 		try:
 			secretKey = base64.urlsafe_b64decode(secretKey)
@@ -128,7 +130,7 @@ class Tracker(object):
 		#Make sure the secret key is valid
 		if not self.auth.authenticateSecretKey(secretKey):
 			response = {}
-			response['failure reason'] = 'failed to authenticated secret key'
+			response['failure reason'] = 'failed to authenticate secret key'
 			return sendBencodedWsgiResponse(env,start_response,response)
 			
 			
@@ -142,7 +144,7 @@ class Tracker(object):
 		peer = peers.Peer(peerIp,p['port'],p['left'],p['downloaded'],p['uploaded'],p['peer_id'])
 		
 		response = {}
-		response['interval'] = 120
+		response['interval'] = 5
 		response['complete'] = 0
 		response['incomplete'] = 0
 		response['peers'] = []

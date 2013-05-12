@@ -1,11 +1,38 @@
-
+import eventlet
+import eventlet.db_pool
+import psycopg2
+import base64
 
 class Auth(object):
-	def __init__(self):
-		pass
+	def __init__(self,**dbKwArgs):
+		dbKwArgs['max_idle'] = 10
+		dbKwArgs['max_age'] = 1200
+		dbKwArgs['connect_timeout']=3
+		dbKwArgs['max_size']=4
+		self.connPool = eventlet.db_pool.ConnectionPool(psycopg2,**dbKwArgs)
 		
 	def authenticateSecretKey(self,key):
-		return True
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+		
+			
+			cur.execute("Select 1 from users where secretKey=%s and password is not null;",
+			(base64.urlsafe_b64encode(key).replace('=','') ,))
+		
+			allowed = cur.fetchone() != None
+			cur.close()
+			
+			return allowed
 		
 	def authorizeInfoHash(self,info_hash):
-		return True
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			cur.execute("Select 1 from torrents where infoHash=%(infoHash)s",
+			{'infoHash' : base64.urlsafe_b64encode(info_hash).replace('=','') })
+			
+			allowed = cur.fetchone() != None
+			cur.close()
+		
+			return allowed
+			
+		

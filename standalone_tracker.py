@@ -8,4 +8,6 @@ from peers import *
 
 if __name__ == '__main__':
 	eventlet.spawn(eventlet.backdoor.backdoor_server, eventlet.listen(('localhost', 3000)))
-	wsgi.server(eventlet.listen(('192.168.12.10', 8080)), Tracker(Auth(),Peers()))
+	authmgr = Auth(dbname='nihitorrent',user='tracker')
+	
+	wsgi.server(eventlet.listen(('192.168.12.182', 8080)), Tracker(authmgr,Peers()))
