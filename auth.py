@@ -1,21 +1,24 @@
 import eventlet
 import eventlet.db_pool
-import psycopg2
 import base64
+import hashlib
 
 class Auth(object):
-	def __init__(self,**dbKwArgs):
+	def __init__(self,salt):
+		self.salt = salt
+	
+	def connect(self,dbModule,**dbKwArgs):
 		dbKwArgs['max_idle'] = 10
 		dbKwArgs['max_age'] = 1200
 		dbKwArgs['connect_timeout']=3
 		dbKwArgs['max_size']=4
-		self.connPool = eventlet.db_pool.ConnectionPool(psycopg2,**dbKwArgs)
+
+		self.connPool = eventlet.db_pool.ConnectionPool(dbModule,**dbKwArgs)
 		
 	def authenticateSecretKey(self,key):
 		with self.connPool.item() as conn:
 			cur = conn.cursor()
 		
-			
 			cur.execute("Select 1 from users where secretKey=%s and password is not null;",
 			(base64.urlsafe_b64encode(key).replace('=','') ,))
 		
@@ -34,5 +37,22 @@ class Auth(object):
 			cur.close()
 		
 			return allowed
+
+	def authenticateUser(self,username,password):
+		passwordHash = hashlib.sha512()
+		passwordHash.update(self.salt)
+		passwordHash.update(password)
+		
+		passwordHash = base64.urlsafe_b64encode(passwordHash.digest()).replace('=','')
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			cur.execute("Select 1 from users where name=%s and password=%s ;",
+			(username,passwordHash))
+			
+			allowed = cur.fetchone() != None
+			cur.close()
+			
+			return allowed
+			
 			
 		

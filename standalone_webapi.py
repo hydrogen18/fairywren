@@ -2,7 +2,7 @@ import eventlet
 eventlet.monkey_patch()
 import eventlet.backdoor
 from eventlet import wsgi
-from tracker import Tracker
+from webapi import Webapi
 from auth import *
 from peers import *
 
@@ -16,6 +16,6 @@ if __name__ == '__main__':
 		authmgr = Auth(conf['salt'])
 		authmgr.connect(psycopg2,**conf['tracker']['postgresql'])
 		
-	eventlet.spawn(eventlet.backdoor.backdoor_server, eventlet.listen(('localhost', 3000)))
-	
-	wsgi.server(eventlet.listen(('192.168.12.182', 8080)), Tracker(authmgr,Peers()))
+	eventlet.spawn(eventlet.backdoor.backdoor_server, eventlet.listen(('localhost', 3001)))
+	webapi = Webapi(authmgr)
+	wsgi.server(eventlet.listen(('192.168.12.182', 8081)), webapi)

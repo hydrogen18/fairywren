@@ -14,7 +14,7 @@ def sendBencodedWsgiResponse(env,start_response,responseDict):
 	
 	start_response('200 OK',headers)
 	
-	return bencode.bencode(responseDict)
+	yield bencode.bencode(responseDict)
 
 def getClientAddress(environ):
     try:
@@ -33,27 +33,50 @@ class Tracker(object):
 		
 	
 	def announce(self,env,start_response):
+		#Only GET requests are valid
 		if env['REQUEST_METHOD'] != 'GET':
 			return vanilla.http_error(405,env,start_response)
 		
 		
+		#Break apart the path
 		path = env['PATH_INFO'].split('/')
-		print path
 		#Add the omitted equals signs back in
+		#The second entry is used because the first one is an empty string
 		secretKey = path[1] + '=='
 		
+		#base64 decode the secret key
 		try:
 			secretKey = base64.urlsafe_b64decode(secretKey)
-		except TyperError:
+		except TypeError:
 			return vanilla.http_error(404,env,start_response)
-			
+		
+		#Extract the IP of the peer
+		peerIp = getClientAddress(env)
+		
+		#Chance the peer IP into an integer
+		try:
+			peerIp = socket.inet_aton(peerIp)
+		except socket.error:
+			return vanilla.http_error(500,env,start_response)
+	
+		#Convert from network byte order to integer
+		try:
+			peerIp, = struct.unpack('!I',peerIp)
+		except struct.error:
+			return vanilla.http_error(500,env,start_response)
+						
+		#Parse the query string. Absence indicates error
 		if 'QUERY_STRING' not in env:
 			return vanilla.http_error(400,env,start_response)
 			
 		query = urlparse.parse_qs(env['QUERY_STRING'])
 		
+		#List of tuples. Each tuple is
+		#
+		#Parameter name
+		#default value (if any)
+		#type conversion, side-effect free callable
 		params = []
-		#Parameter name, default value(if any), type conversion function
 		
 		def validateInfoHash(info_hash):
 			if len(info_hash) != 20:
@@ -98,20 +121,14 @@ class Tracker(object):
 			
 		params.append(('numwant',maxNumWant,limitNumWant))
 		
-		peerIp = getClientAddress(env)
+
 		
-		try:
-			peerIp = socket.inet_aton(peerIp)
-		except socket.error:
-			return vanilla.http_error(500,env,start_response)
-	
-		try:
-			peerIp, = struct.unpack('!I',peerIp)
-		except struct.error:
-			return vanilla.http_error(500,env,start_response)
-		
+		#Dictionary holding parameters to query
 		p = dict()
+		#Use the params to generate the parameters
 		for param,defaultValue,typeConversion in params:
+			#If the parameter is in the query, extract the first
+			#occurence and type convert if requested
 			if param in query:
 				p[param] = query[param][0]
 				
@@ -120,7 +137,9 @@ class Tracker(object):
 						p[param] = typeConversion(p[param])
 					except ValueError as e:
 						return vanilla.http_error(400,env,start_response,msg='bad value for ' + param)
-						
+
+			#If the parameter is not in the query, then 
+			#use a default value is present. Otherwise this is an error
 			else:
 				if defaultValue == None:
 					return vanilla.http_error(400,env,start_response,msg='missing ' + param)
@@ -141,15 +160,18 @@ class Tracker(object):
 			return sendBencodedWsgiResponse(env,start_response,response)
 		
 		
+		#Construct the peers entry
 		peer = peers.Peer(peerIp,p['port'],p['left'],p['downloaded'],p['uploaded'],p['peer_id'])
 		
+		#This is the basic response format
 		response = {}
 		response['interval'] = 5
 		response['complete'] = 0
 		response['incomplete'] = 0
 		response['peers'] = []
 		
-		if p['event'] in ['started','stopped','update']:
+		#For all 3 cases here just return peers
+		if p['event'] in ['started','completed','update']:
 			response['complete'] = self.peers.getNumberOfLeeches(p['info_hash'])
 			response['incomplete'] = self.peers.getNumberOfSeeds(p['info_hash'])
 			
