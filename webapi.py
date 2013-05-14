@@ -6,6 +6,7 @@ import json
 import uuid
 import itertools
 import posixpath
+import Cookie
 
 def sendJsonWsgiResponse(env,start_response,response,additionalHeaders=None):
 	headers = [('Content-Type','text/json')]
@@ -19,6 +20,7 @@ def sendJsonWsgiResponse(env,start_response,response,additionalHeaders=None):
 	yield json.dumps(response)
 
 class SessionManager(object):
+	cookieName = 'session'
 	class Session(object):
 		__slots__ = ['username','sessionIdentifier']
 		
@@ -27,7 +29,7 @@ class SessionManager(object):
 			self.sessionIdentifier = sessionIdentifier
 			
 		def getCookie(self):
-			return ('Set-Cookie','session=%s; HttpOnly; Secure' % str(self.sessionIdentifier))
+			return ('Set-Cookie','%s=%s; HttpOnly; Secure' % (SessionManager.cookieName, str(self.sessionIdentifier), ) )
 			
 	def __init__(self):
 		self.sessions = {}
@@ -44,10 +46,26 @@ class SessionManager(object):
 				self.sessions.pop(sessionIdentifier)
 				break
 		
-		newIdentifier = uuid.uuid4()
+		newIdentifier = str(uuid.uuid4())
 		
 		self.sessions[newIdentifier] = self.Session(username,newIdentifier)
 		return self.sessions[newIdentifier]
+		
+	def getSession(self,env):
+		if 'HTTP_COOKIE' not in env:
+			return None
+			
+		cookie = Cookie.SimpleCookie()
+		cookie.load(env['HTTP_COOKIE'])
+		
+		if SessionManager.cookieName not in cookie:
+			return None
+			
+		if cookie[SessionManager.cookieName].value not in self.sessions:
+			print self.sessions
+			return None
+		
+		return self.sessions[cookie[SessionManager.cookieName].value]
 		
 class Webapi(object):
 	
@@ -89,7 +107,35 @@ class Webapi(object):
 		[session.getCookie()])
 		
 	def listTorrents(self,env,start_response):
-		return vanilla.http_error(501,env,start_response)
+		
+		session = self.sm.getSession(env)
+		
+		if session == None:
+			return sendJsonWsgiResponse(env,start_response,{'error':'not authenticated'})
+		
+		if 'QUERY_STRING' not in env:
+			return vanilla.http_error(400,env,start_response)
+			
+		query = urlparse.parse_qs(env['QUERY_STRING'])
+		
+		resultSize = query.get('resultSize',50)
+		
+		try:
+			resultSize = int(resultSize)
+		except ValueError:
+			return vanilla.http_error(400,env,start_response,'resultSize must be integer')
+			
+		subset = query.get('subset',0)
+		
+		try:
+			subset = int(subset)
+		except ValueError:
+			return vanilla.http_error(400,env,start_response,'subset must be integer')
+		
+
+		return sendJsonWsgiResponse(env,start_response,
+		{'torrents' : self.torrents.getTorrents(resultSize,subset) } )
+		
 	
 	def createTorrent(self,env,start_response):
 		return vanilla.http_error(501,env,start_response)
@@ -100,8 +146,9 @@ class Webapi(object):
 	def torrentInfo(self,env,start_response):
 		return vanilla.http_error(501,env,start_response)
 	
-	def __init__(self,auth):
+	def __init__(self,auth,torrents):
 		self.auth = auth
+		self.torrents = torrents
 		self.sm = SessionManager()
 		self.resources = []
 		self.resources.append((['session'],'PUT',self.login))

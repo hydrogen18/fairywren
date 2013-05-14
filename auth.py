@@ -6,14 +6,9 @@ import hashlib
 class Auth(object):
 	def __init__(self,salt):
 		self.salt = salt
-	
-	def connect(self,dbModule,**dbKwArgs):
-		dbKwArgs['max_idle'] = 10
-		dbKwArgs['max_age'] = 1200
-		dbKwArgs['connect_timeout']=3
-		dbKwArgs['max_size']=4
-
-		self.connPool = eventlet.db_pool.ConnectionPool(dbModule,**dbKwArgs)
+		
+	def setConnectionPool(self,pool):
+		self.connPool = pool
 		
 	def authenticateSecretKey(self,key):
 		with self.connPool.item() as conn:

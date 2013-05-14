@@ -1,4 +1,5 @@
 
+import eventlet
 
 def http_error(num,env,start_response,msg=None):
 	if num < 400 or num > 599:
@@ -18,5 +19,13 @@ def http_error(num,env,start_response,msg=None):
 	response += '</p></body></html>'
 	
 	return [response]
+	
+def buildConnectionPool(dbModule,**dbKwArgs):
+	dbKwArgs['max_idle'] = 10
+	dbKwArgs['max_age'] = 1200
+	dbKwArgs['connect_timeout']=3
+	dbKwArgs['max_size']=4
+
+	return eventlet.db_pool.ConnectionPool(dbModule,**dbKwArgs)
 	
 	
