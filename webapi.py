@@ -7,6 +7,7 @@ import uuid
 import itertools
 import posixpath
 import Cookie
+import datetime
 
 def sendJsonWsgiResponse(env,start_response,response,additionalHeaders=None):
 	headers = [('Content-Type','text/json')]
@@ -17,7 +18,14 @@ def sendJsonWsgiResponse(env,start_response,response,additionalHeaders=None):
 	
 	start_response('200 OK',headers)
 	
-	yield json.dumps(response)
+	class DateTimeJSONEncoder(json.JSONEncoder):
+		def default(self, obj):
+			if isinstance(obj, datetime.datetime):
+				return obj.isoformat()
+			else:
+				return super(DateTimeJSONEncoder, self).default(obj)
+				
+	yield DateTimeJSONEncoder().encode(response)
 
 class SessionManager(object):
 	cookieName = 'session'
@@ -114,9 +122,9 @@ class Webapi(object):
 			return sendJsonWsgiResponse(env,start_response,{'error':'not authenticated'})
 		
 		if 'QUERY_STRING' not in env:
-			return vanilla.http_error(400,env,start_response)
-			
-		query = urlparse.parse_qs(env['QUERY_STRING'])
+			query = {}
+		else:
+			query = urlparse.parse_qs(env['QUERY_STRING'])
 		
 		resultSize = query.get('resultSize',50)
 		
@@ -134,7 +142,7 @@ class Webapi(object):
 		
 
 		return sendJsonWsgiResponse(env,start_response,
-		{'torrents' : self.torrents.getTorrents(resultSize,subset) } )
+		{'torrents' : [i for i in self.torrents.getTorrents(resultSize,subset)] } )
 		
 	
 	def createTorrent(self,env,start_response):
