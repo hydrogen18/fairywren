@@ -4,6 +4,8 @@ import base64
 import urlparse
 import json
 import uuid
+import itertools
+import posixpath
 
 def sendJsonWsgiResponse(env,start_response,response,additionalHeaders=None):
 	headers = [('Content-Type','text/json')]
@@ -25,7 +27,7 @@ class SessionManager(object):
 			self.sessionIdentifier = sessionIdentifier
 			
 		def getCookie(self):
-			return ('Set-Cookie','session=%s HttpOnly; Secure' % str(self.sessionIdentifier))
+			return ('Set-Cookie','session=%s; HttpOnly; Secure' % str(self.sessionIdentifier))
 			
 	def __init__(self):
 		self.sessions = {}
@@ -44,7 +46,7 @@ class SessionManager(object):
 		
 		newIdentifier = uuid.uuid4()
 		
-		self.sessions[newIdentififer] = Session(username,newIdentifier)
+		self.sessions[newIdentifier] = self.Session(username,newIdentifier)
 		return self.sessions[newIdentifier]
 		
 class Webapi(object):
@@ -102,24 +104,44 @@ class Webapi(object):
 		self.auth = auth
 		self.sm = SessionManager()
 		self.resources = []
-		self.resources.append(('/session','PUT',self.login))
-		self.resources.append(('/torrents','GET',self.listTorrents))
-		self.resources.append(('/torrents','PUT',self.createTorrent))
-		self.resources.append(('/torrents/*.json','GET',self.torrentInfo))
-		self.resources.append(('/torrents/*.torrent','GET',self.downloadTorrent))
+		self.resources.append((['session'],'PUT',self.login))
+		self.resources.append((['torrents'],'GET',self.listTorrents))
+		self.resources.append((['torrents'],'PUT',self.createTorrent))
+		self.resources.append((['torrents','*.json'],'GET',self.torrentInfo))
+		self.resources.append((['torrents','*.torrent'],'GET',self.downloadTorrent))
 		
 	def __call__(self,env,start_response):
 		
-		pathInfo = env['PATH_INFO']
+		#Extract and normalize the path
+		#Posix path may not be the best approach here but 
+		#no alternate has been found
+		pathInfo = posixpath.normpath(env['PATH_INFO'])
+		
+		#Split the path into components. Drop the first
+		#since it should always be the empty string
+		pathComponents = pathInfo.split('/')[1:]
+		
 		requestMethod = env['REQUEST_METHOD']
 		
+		#The default is request not found
 		errorCode = 404
 		
-		for pattern,method,function in self.resources:
+		for path,method,function in self.resources:
+			#If the requested path and the number of components in the 
+			#path don't match, this can't be a match
+			if len(path) != len(pathComponents):
+				continue
 			
-			if fnmatch.fnmatch(pathInfo,pattern):
-				errorCode = 405
-				if requestMethod == method:
+			for actual, candidate in itertools.izip(pathComponents,pathComponents):
+				if not fnmatch.fnmatch(actual,candidate):
+					break
+			#Loop ran to exhaustion, this is a match
+			else:
+				#If the method does not agree with the resource, the
+				#code is method not supported
+				if requestMethod != method:
+					errorCode = 405
+				else:
 					return function(env,start_response)
 				
 		return vanilla.http_error(errorCode,env,start_response)
