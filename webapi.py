@@ -8,6 +8,7 @@ import itertools
 import posixpath
 import Cookie
 import datetime
+import cgi
 
 def sendJsonWsgiResponse(env,start_response,response,additionalHeaders=None):
 	headers = [('Content-Type','text/json')]
@@ -76,12 +77,14 @@ class SessionManager(object):
 		return self.sessions[cookie[SessionManager.cookieName].value]
 		
 class Webapi(object):
-	
+	NOT_AUTHENTICATED = {'error':'not authenticated'}
 	def login(self,env,start_response):
-		if 'QUERY_STRING' not in env:
-			return vanilla.http_error(400,env,start_response)
 		
-		query = urlparse.parse_qs(env['QUERY_STRING'])
+		cl = vanilla.getContentLength(env)
+		if cl == None:
+			return vanilla.http_error(411,env,start_response,'missing Content-Length header')
+		
+		query = urlparse.parse_qs(env['wsgi.input'].read(cl))
 		
 		if 'username' not in query:
 			return vanilla.http_error(400,env,start_response,msg='missing username')
@@ -119,7 +122,7 @@ class Webapi(object):
 		session = self.sm.getSession(env)
 		
 		if session == None:
-			return sendJsonWsgiResponse(env,start_response,{'error':'not authenticated'})
+			return sendJsonWsgiResponse(env,start_response,Webapi.NOT_AUTHENTICATED)
 		
 		if 'QUERY_STRING' not in env:
 			query = {}
@@ -146,6 +149,16 @@ class Webapi(object):
 		
 	
 	def createTorrent(self,env,start_response):
+		session = self.sm.getSession(env)
+		
+		if session == None:
+			return sendJsonWsgiResponse(env,start_response,Webapi.NOT_AUTHENTICATED)
+		
+		if not 'CONTENT_LENGTH' in env:
+			return vanilla.http_error(411,env,start_response,'missing Content-Length header')
+		
+		#cgi.parse_multipart(
+		
 		return vanilla.http_error(501,env,start_response)
 		
 	def downloadTorrent(self,env,start_response):
@@ -159,9 +172,9 @@ class Webapi(object):
 		self.torrents = torrents
 		self.sm = SessionManager()
 		self.resources = []
-		self.resources.append((['session'],'PUT',self.login))
+		self.resources.append((['session'],'POST',self.login))
 		self.resources.append((['torrents'],'GET',self.listTorrents))
-		self.resources.append((['torrents'],'PUT',self.createTorrent))
+		self.resources.append((['torrents'],'POST',self.createTorrent))
 		self.resources.append((['torrents','*.json'],'GET',self.torrentInfo))
 		self.resources.append((['torrents','*.torrent'],'GET',self.downloadTorrent))
 		

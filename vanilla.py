@@ -20,6 +20,20 @@ def http_error(num,env,start_response,msg=None):
 	
 	return [response]
 	
+def getContentLength(env):
+	if 'CONTENT_LENGTH' not in env:
+		return None
+		
+	try:
+		cl = int(env['CONTENT_LENGTH'])
+	except ValueError:
+		return None
+		
+	return cl
+	
+	
+			
+
 def buildConnectionPool(dbModule,**dbKwArgs):
 	dbKwArgs['max_idle'] = 10
 	dbKwArgs['max_age'] = 1200
