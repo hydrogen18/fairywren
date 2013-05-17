@@ -149,15 +149,21 @@ class Webapi(object):
 		
 	
 	def createTorrent(self,env,start_response):
+		print 'foo'
 		session = self.sm.getSession(env)
 		
 		if session == None:
 			return sendJsonWsgiResponse(env,start_response,Webapi.NOT_AUTHENTICATED)
 		
-		if not 'CONTENT_LENGTH' in env:
-			return vanilla.http_error(411,env,start_response,'missing Content-Length header')
+		if not 'CONTENT_TYPE' in env:
+			return vanilla.http_error(411,env,start_response,'missing Content-Type header')
+			
+		if 'multipart/form-data' not in env['CONTENT_TYPE']:
+			return vanilla.http_error(415,env,start_response,'must be form upload')
 		
-		#cgi.parse_multipart(
+		cgi.parse_multipart(env['wsgi.input'],env['CONTENT_TYPE'])
+		
+		print cgi
 		
 		return vanilla.http_error(501,env,start_response)
 		
@@ -200,9 +206,11 @@ class Webapi(object):
 			if len(path) != len(pathComponents):
 				continue
 			
-			for actual, candidate in itertools.izip(pathComponents,pathComponents):
+			
+			for actual, candidate in itertools.izip(path,pathComponents):
+				print 1, actual, candidate, function
 				if not fnmatch.fnmatch(actual,candidate):
-					break
+					break				
 			#Loop ran to exhaustion, this is a match
 			else:
 				#If the method does not agree with the resource, the
@@ -210,6 +218,8 @@ class Webapi(object):
 				if requestMethod != method:
 					errorCode = 405
 				else:
+					print 2, pathComponents
+					print 3, path, method, function
 					return function(env,start_response)
 				
 		return vanilla.http_error(errorCode,env,start_response)
