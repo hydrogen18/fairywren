@@ -63,7 +63,7 @@ class SessionManager(object):
 	def getSession(self,env):
 		if 'HTTP_COOKIE' not in env:
 			return None
-			
+
 		cookie = Cookie.SimpleCookie()
 		cookie.load(env['HTTP_COOKIE'])
 		
