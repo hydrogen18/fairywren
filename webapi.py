@@ -8,7 +8,9 @@ import itertools
 import posixpath
 import Cookie
 import datetime
-import cgi
+import multipart
+import sys
+import torrents
 
 def sendJsonWsgiResponse(env,start_response,response,additionalHeaders=None):
 	headers = [('Content-Type','text/json')]
@@ -149,22 +151,59 @@ class Webapi(object):
 		
 	
 	def createTorrent(self,env,start_response):
-		print 'foo'
 		session = self.sm.getSession(env)
 		
-		if session == None:
+		if False and session == None:
 			return sendJsonWsgiResponse(env,start_response,Webapi.NOT_AUTHENTICATED)
 		
 		if not 'CONTENT_TYPE' in env:
 			return vanilla.http_error(411,env,start_response,'missing Content-Type header')
+		
+		contentType = env['CONTENT_TYPE']
 			
-		if 'multipart/form-data' not in env['CONTENT_TYPE']:
+		if 'multipart/form-data' not in contentType:
 			return vanilla.http_error(415,env,start_response,'must be form upload')
 		
-		cgi.parse_multipart(env['wsgi.input'],env['CONTENT_TYPE'])
+		magic = 'boundary='
 		
-		print cgi
+		try:
+			offset = contentType.index(magic)
+		except ValueError:
+			return vanilla.http_error(400,env,start_response,'cant find boundary in Content-Type header')
+			
+		offset+=len(magic)
 		
+		boundary = '--' + contentType[offset:]
+		
+		for headers, data in multipart.Parser(boundary,env['wsgi.input']):
+			details = {}
+			for header in headers:
+				field, value = header
+				
+				if 'Content-Disposition' != field:
+					continue
+				pairs = value.split(';')	
+				
+				for s in pairs:
+					if '=' not in s:
+						continue
+					key,value = s.split('=')
+					value = value.replace('"','').strip()
+					key = key.strip()
+					details[key] = value
+				break	
+			else:
+				#If the content disposition header is not present
+				#ignore it
+				continue
+			
+			if details['name'] == 'torrent':
+				rawBencodedData = ''.join(data)
+				print len(rawBencodedData)
+				print torrents.computeInfoHash(rawBencodedData)
+				
+		
+			
 		return vanilla.http_error(501,env,start_response)
 		
 	def downloadTorrent(self,env,start_response):
@@ -206,9 +245,7 @@ class Webapi(object):
 			if len(path) != len(pathComponents):
 				continue
 			
-			
 			for actual, candidate in itertools.izip(path,pathComponents):
-				print 1, actual, candidate, function
 				if not fnmatch.fnmatch(actual,candidate):
 					break				
 			#Loop ran to exhaustion, this is a match
@@ -218,9 +255,9 @@ class Webapi(object):
 				if requestMethod != method:
 					errorCode = 405
 				else:
-					print 2, pathComponents
-					print 3, path, method, function
+					
 					return function(env,start_response)
+					
 				
 		return vanilla.http_error(errorCode,env,start_response)
 		

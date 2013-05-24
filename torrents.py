@@ -1,4 +1,13 @@
+import hashlib
+import bencode
 
+def computeInfoHash(rawBencodedData):
+	
+	torrent = bencode.bdecode(rawBencodedData)
+	info_hash = hashlib.sha1()
+	info_hash.update(bencode.bencode(torrent['info']))
+
+	print info_hash.hexdigest()
 
 class TorrentStore(object):
 	

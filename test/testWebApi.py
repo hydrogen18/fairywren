@@ -7,6 +7,11 @@ import urllib2
 import base64
 import unittest
 import cookielib 
+import tempfile
+import random
+import subprocess
+import os
+import multipart
 
 def hashPassword(pw):
 	h = hashlib.sha512()
@@ -60,7 +65,26 @@ class SunnyDay(unittest.TestCase):
 			self.assertTrue('name' in t['creator'])
 			
 	def test_addTorrent(self):
-		response = self.open(
-
+		#create a torrent
+		with tempfile.NamedTemporaryFile(delete=True) as fout:
+		
+			for c in random.sample(range(0,256),128):
+				fout.write(chr(c))
+			
+			fout.flush()
+			
+			torrentFileName= '%s.torrent' % fout.name 
+			
+			cmd = ['mktorrent','-a','http://127.0.0.1/announce','-o',torrentFileName, fout.name]
+			self.assertEqual(0,subprocess.Popen(cmd).wait())
+		
+		try:
+			with open(torrentFileName,'r') as fin:
+				response = multipart.post_multipart('127.0.0.1:8081','/torrents', self.cookie, (),[('torrent','test.torrent',fin.read())])
+		except Exception:
+			raise
+		finally:
+			os.remove(torrentFileName)
+			
 if __name__ == '__main__':
     unittest.main()
