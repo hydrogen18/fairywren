@@ -1,5 +1,6 @@
 import hashlib
 import bencode
+import base64
 
 def computeInfoHash(rawBencodedData):
 	
@@ -8,6 +9,59 @@ def computeInfoHash(rawBencodedData):
 	info_hash.update(bencode.bencode(torrent['info']))
 
 	print info_hash.hexdigest()
+	
+class Torrent(object):
+	def __init__(self):
+		self.infoHash = None
+		self.dict = None
+	
+	@staticmethod	
+	def fromBencodedDataStream(dataStream):
+		result = Torrent()
+		
+		b = ''
+		for chunk in dataStream:
+			b += chunk
+			
+		result.dict = bencode.bdecode(b)
+		
+		#TODO sanity check for required fields in bit torrent
+		#file
+		
+		return result
+		
+	def _computeInfoHash(self):
+		self.infoHash = hashlib.sha1()
+		self.infoHash.update(bencode.bencode(self.dict['info']))
+		
+	def getInfoHash(self):
+		if self.infoHash == None:
+			self._computeInfoHash()
+			
+		return self.infoHash
+	
+	def scrub(self):
+		touched = False
+		def removeIfPresent(d,k):
+			if k in d:
+				d.pop(k)
+				return True
+				
+			return False
+		
+		touched |= removeIfPresent(self.dict,'announce-list')
+		removeIfPresent(self.dict,'creation date')
+		removeIfPresent(self.dict,'comment')
+		removeIfPresent(self.dict,'created by')
+		
+		if 'private' in self.dict['info'] and self.dict['info']['private'] != 1:
+			self.dict['info']['private'] = 1
+			touched = True
+			
+		return touched
+		
+	def getAnnounceUrl(self):
+		return self.dict['announce']
 
 class TorrentStore(object):
 	
@@ -17,6 +71,27 @@ class TorrentStore(object):
 	def setConnectionPool(self,pool):
 		self.connPool = pool
 		
+	def addTorrent(self,torrent,title,creator):
+		
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			cur.execute(
+			"Insert into torrents (title,creationdate, \
+			creator, infohash) VALUES \
+			(%s,NOW(),%s,%s) \
+			returning torrents.id;",
+			(title,creator,
+			base64.urlsafe_b64encode(torrent.getInfoHash().digest()).replace('=',''),)
+			)
+			
+			result = cur.fetchone();
+			conn.commit();
+			cur.close()
+			
+		return result
+		
+		
+	
 	def getTorrents(self,limit,subset):
 		with self.connPool.item() as conn:
 			cur = conn.cursor()

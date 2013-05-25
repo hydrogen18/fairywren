@@ -33,14 +33,18 @@ def sendJsonWsgiResponse(env,start_response,response,additionalHeaders=None):
 class SessionManager(object):
 	cookieName = 'session'
 	class Session(object):
-		__slots__ = ['username','sessionIdentifier']
+		__slots__ = ['username','sessionIdentifier','userId']
 		
-		def __init__(self,username,sessionIdentifier):
+		def __init__(self,username,userId,sessionIdentifier):
+			self.userId = userId
 			self.username = username
 			self.sessionIdentifier = sessionIdentifier
 			
 		def getCookie(self):
 			return ('Set-Cookie','%s=%s; HttpOnly; Secure' % (SessionManager.cookieName, str(self.sessionIdentifier), ) )
+			
+		def getId(self):
+			return self.userId
 			
 	def __init__(self):
 		self.sessions = {}
@@ -50,7 +54,7 @@ class SessionManager(object):
 			return self.sessions[sessionIdentifier]
 		return None
 			
-	def startSession(self,username):
+	def startSession(self,username,userId):
 		for i, j in enumerate(self.sessions.iteritems()):
 			sessionIdentifier,session = j
 			if session.username == username:
@@ -59,7 +63,7 @@ class SessionManager(object):
 		
 		newIdentifier = str(uuid.uuid4())
 		
-		self.sessions[newIdentifier] = self.Session(username,newIdentifier)
+		self.sessions[newIdentifier] = self.Session(username,userId,newIdentifier)
 		return self.sessions[newIdentifier]
 		
 	def getSession(self,env):
@@ -111,16 +115,16 @@ class Webapi(object):
 		except TypeError:
 			return vanilla.http_error(400,env,start_response,msg='password poorly formed')
 		
-		if not self.auth.authenticateUser(username,password):
+		userId = self.auth.authenticateUser(username,password)
+		if userId == None:
 			return sendJsonWsgiResponse(env,start_response,{'error':'bad username or password'})
 		
-		session = self.sm.startSession(username)
+		session = self.sm.startSession(username,userId)
 			
 		return sendJsonWsgiResponse(env,start_response,{},additionalHeaders=
 		[session.getCookie()])
 		
 	def listTorrents(self,env,start_response):
-		
 		session = self.sm.getSession(env)
 		
 		if session == None:
@@ -175,6 +179,8 @@ class Webapi(object):
 		
 		boundary = '--' + contentType[offset:]
 		
+		upload = {}
+		
 		for headers, data in multipart.Parser(boundary,env['wsgi.input']):
 			details = {}
 			for header in headers:
@@ -197,11 +203,22 @@ class Webapi(object):
 				#ignore it
 				continue
 			
-			if details['name'] == 'torrent':
-				rawBencodedData = ''.join(data)
-				print len(rawBencodedData)
-				print torrents.computeInfoHash(rawBencodedData)
-				
+			if 'name' not in details:
+				continue
+			
+			upload[details['name']] = data
+			
+		response = {}
+		
+		data = upload['torrent']
+		newTorrent = torrents.Torrent.fromBencodedDataStream(data)
+		
+		print newTorrent.getInfoHash().hexdigest()
+		
+		if newTorrent.scrub():
+			response['redownload'] = True
+		
+		print self.torrents.addTorrent(newTorrent,''.join(upload['title']),session.getId()	)
 		
 			
 		return vanilla.http_error(501,env,start_response)

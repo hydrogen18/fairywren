@@ -16,7 +16,7 @@ if __name__ == '__main__':
 	with open(sys.argv[1],'r') as fin:
 		conf = json.load(fin)
 		
-		connPool = vanilla.buildConnectionPool(psycopg2,**conf['tracker']['postgresql'])
+		connPool = vanilla.buildConnectionPool(psycopg2,**conf['webapi']['postgresql'])
 		
 		authmgr = Auth(conf['salt'])
 		authmgr.setConnectionPool(connPool)

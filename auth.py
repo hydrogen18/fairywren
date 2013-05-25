@@ -41,13 +41,18 @@ class Auth(object):
 		passwordHash = base64.urlsafe_b64encode(passwordHash.digest()).replace('=','')
 		with self.connPool.item() as conn:
 			cur = conn.cursor()
-			cur.execute("Select 1 from users where name=%s and password=%s ;",
+			cur.execute("Select id from users where name=%s and password=%s ;",
 			(username,passwordHash))
 			
-			allowed = cur.fetchone() != None
+			allowed = cur.fetchone() 
 			cur.close()
 			
-			return allowed
+			if allowed == None:
+				return None
+			userId, = allowed
+			return userId;
+			
+			
 			
 			
 		

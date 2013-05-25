@@ -80,7 +80,7 @@ class SunnyDay(unittest.TestCase):
 		
 		try:
 			with open(torrentFileName,'r') as fin:
-				response = multipart.post_multipart('127.0.0.1:8081','/torrents', self.cookie, (),[('torrent','test.torrent',fin.read())])
+				response = multipart.post_multipart('127.0.0.1:8081','/torrents', self.cookie, [('title','Test Torrent')],[('torrent','test.torrent',fin.read())])
 		except Exception:
 			raise
 		finally:
