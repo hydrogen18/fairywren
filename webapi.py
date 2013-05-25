@@ -210,9 +210,12 @@ class Webapi(object):
 			
 		response = {}
 		
+		if 'torrent' and 'title' not in response:
+			return vanilla.http_error(400,env,start_response,'missing torrent or title')
+		
+		
 		data = upload['torrent']
 		newTorrent = torrents.Torrent.fromBencodedDataStream(data)
-		
 		
 		print newTorrent.getInfoHash().hexdigest()
 		
