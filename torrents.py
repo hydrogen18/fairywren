@@ -22,19 +22,26 @@ class Torrent(object):
 	
 	@staticmethod	
 	def fromBencodedDataStream(dataStream):
-		result = Torrent()
 		
 		b = ''
 		for chunk in dataStream:
 			b += chunk
 			
-		result.dict = bencode.bdecode(b)
+		return Torrent.fromDict(bencode.bdecode(b))
 		
+	@staticmethod 
+	def fromDict(torrentDict):
+		result = Torrent()
+		
+		result.dict = torrentDict
 		#TODO sanity check for required fields in bit torrent
 		#file
 		
 		return result
 		
+	def raw(self):
+		return bencode.bencode(self.dict)
+	
 	def _computeInfoHash(self):
 		self.infoHash = hashlib.sha1()
 		self.infoHash.update(bencode.bencode(self.dict['info']))
@@ -68,12 +75,17 @@ class Torrent(object):
 		
 	def getAnnounceUrl(self):
 		return self.dict['announce']
+		
+	def setAnnounce(self,url):
+		self.dict['announce'] = url
 
 class TorrentStore(object):
 	
-	def __init__(self,torrentPath):
+	def __init__(self,torrentPath,trackerUrl,apiUrl):
 		self.torrentPath = torrentPath
-		pass
+		self.trackerUrl = trackerUrl
+		self.apiUrl = apiUrl
+		
 
 	def setConnectionPool(self,pool):
 		self.connPool = pool
@@ -101,9 +113,10 @@ class TorrentStore(object):
 				cur.close()
 			
 		self._storeTorrent(torrent,result)
-		return result
+		return self.getResourceForTorrent(result),self.getInfoResourceForTorrent(result)
 		
-	def _storeTorrent(self,torrent,torrentId):
+	
+	def _buildPathFromId(self,torrentId):
 		if torrentId < 0 or torrentId > (2**32 -1):
 			return ValueError("torrentId out of range")
 			
@@ -113,15 +126,65 @@ class TorrentStore(object):
 		
 		containingFolder = os.path.join(self.torrentPath,*subpath[:3])
 		
+		return containingFolder, path
+	
+	def _storeTorrent(self,torrent,torrentId):
+		containingFolder, path = self._buildPathFromId(torrentId)
+		
 		if not os.path.exists(containingFolder):
 			os.makedirs(containingFolder)
 			
 		with open(path,'w') as fout:
 			pickle.dump(torrent.dict,fout)
 		
+	def _retrieveTorrent(self,torrentId):		
+		_, path = self._buildPathFromId(torrentId)
 		
-	def _retrieveTorrent(self):	
-		pass
+		if not os.path.exists(path):
+			return None
+			
+		with open(path,'r') as fin:
+			torrentDict = pickle.load(fin)
+			
+		return Torrent.fromDict(torrentDict)
+	
+	def getAnnounceUrlForUser(self,user):
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			cur.execute(
+			"Select secretkey from users where id=%s;",
+			(user,))
+			
+			result = cur.fetchone()
+			
+			cur.close()
+			
+		if None == result:
+			return None
+		result, = result
+		return '%s/%s/announce' % (self.trackerUrl,result,)
+			
+	
+	def getTorrentForDownload(self,torrentId,forUser):
+		torrent = self._retrieveTorrent(torrentId)
+		
+		if torrent == None:
+			return None
+		
+		announceUrl = self.getAnnounceUrlForUser(forUser)
+		
+		if None == announceUrl:
+			return None
+		
+		torrent.setAnnounce(announceUrl)
+		
+		return torrent.raw()
+	
+	def getResourceForTorrent(self,torrentId):
+		return '%s/torrents/%.8x.torrent' % (self.apiUrl, torrentId,)
+		
+	def getInfoResourceForTorrent(self,torrentId):
+		return '%s/torrents/%.8x.json'  % (self.apiUrl,torrentId,)
 	
 	def getTorrents(self,limit,subset):
 		with self.connPool.item() as conn:
@@ -140,8 +203,8 @@ class TorrentStore(object):
 					torrentId,torrentTitle,torrentsCreationDate,userId,userName =r
 					
 					yield {
-					'resource' : '%x.torrent' % torrentId,
-					'infoResource' : '%x.json' % torrentId,
+					'resource' : self.getResourceForTorrent(torrentId),
+					'infoResource' : self.getInfoResourceForTorrent(torrentId),
 					'title' : torrentTitle,
 					'creationDate' : torrentsCreationDate,
 					'creator': {

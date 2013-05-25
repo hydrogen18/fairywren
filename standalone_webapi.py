@@ -21,7 +21,7 @@ if __name__ == '__main__':
 		authmgr = Auth(conf['salt'])
 		authmgr.setConnectionPool(connPool)
 		
-		torrents = TorrentStore(conf['webapi']['torrentPath'])
+		torrents = TorrentStore(conf['webapi']['torrentPath'],'http://127.0.0.1/tracker','http://127.0.0.1:8081')
 		torrents.setConnectionPool(connPool)
 		
 	eventlet.spawn(eventlet.backdoor.backdoor_server, eventlet.listen(('localhost', 3001)))

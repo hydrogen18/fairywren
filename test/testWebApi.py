@@ -81,10 +81,17 @@ class SunnyDay(unittest.TestCase):
 		try:
 			with open(torrentFileName,'r') as fin:
 				response = multipart.post_multipart('127.0.0.1:8081','/torrents', self.cookie, [('title','Test Torrent')],[('torrent','test.torrent',fin.read())])
+				response = json.loads(response)
+				torrentUrl = response['resource']
 		except Exception:
 			raise
 		finally:
 			os.remove(torrentFileName)
+		
+		print torrentUrl	
+		response = self.open(torrentUrl)
+		
+		print response.read()
 			
 if __name__ == '__main__':
     unittest.main()

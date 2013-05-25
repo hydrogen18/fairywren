@@ -121,8 +121,6 @@ class Tracker(object):
 			
 		params.append(('numwant',maxNumWant,limitNumWant))
 		
-
-		
 		#Dictionary holding parameters to query
 		p = dict()
 		#Use the params to generate the parameters

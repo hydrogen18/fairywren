@@ -218,14 +218,34 @@ class Webapi(object):
 		
 		if newTorrent.scrub():
 			response['redownload'] = True
-		
-		print self.torrents.addTorrent(newTorrent,''.join(upload['title']),session.getId()	)
-		
 			
-		return vanilla.http_error(501,env,start_response)
+		url,infoUrl = self.torrents.addTorrent(newTorrent,''.join(upload['title']),session.getId()	)
+		response['resource'] = url
+		response['infoResource'] = infoUrl
+			
+		return sendJsonWsgiResponse(env,start_response,response)
 		
 	def downloadTorrent(self,env,start_response):
-		return vanilla.http_error(501,env,start_response)
+		session = self.sm.getSession(env)
+		
+		if session == None:
+			return sendJsonWsgiResponse(env,start_response,Webapi.NOT_AUTHENTICATED)
+			
+		number = env['fairywren.pathComponents'][-1].split('.')[0]
+		
+		number = int(number,16)
+		
+		rawTorrent = self.torrents.getTorrentForDownload(number,session.getId())
+		
+		if rawTorrent == None:
+			return vanilla.http_error(400,env,start_response)
+		
+		headers = [('Content-Type','text/plain')]
+		headers.append(('Cache-Control','no-cache'))
+	
+		start_response('200 OK',headers)
+		
+		return [rawTorrent]
 		
 	def torrentInfo(self,env,start_response):
 		return vanilla.http_error(501,env,start_response)
@@ -252,6 +272,8 @@ class Webapi(object):
 		#since it should always be the empty string
 		pathComponents = pathInfo.split('/')[1:]
 		
+		env['fairywren.pathComponents'] = pathComponents
+		
 		requestMethod = env['REQUEST_METHOD']
 		
 		#The default is request not found
@@ -264,8 +286,11 @@ class Webapi(object):
 				continue
 			
 			for actual, candidate in itertools.izip(path,pathComponents):
-				if not fnmatch.fnmatch(actual,candidate):
+				print actual, candidate
+				if not fnmatch.fnmatch(candidate,actual):
 					break				
+					
+				print 'match'
 			#Loop ran to exhaustion, this is a match
 			else:
 				#If the method does not agree with the resource, the
