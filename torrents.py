@@ -6,14 +6,6 @@ import psycopg2
 import os
 import os.path
 
-
-def computeInfoHash(rawBencodedData):
-	
-	torrent = bencode.bdecode(rawBencodedData)
-	info_hash = hashlib.sha1()
-	info_hash.update(bencode.bencode(torrent['info']))
-
-	print info_hash.hexdigest()
 	
 class Torrent(object):
 	def __init__(self):
