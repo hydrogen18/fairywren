@@ -1,6 +1,11 @@
 import hashlib
 import bencode
 import base64
+import cPickle as pickle
+import psycopg2
+import os
+import os.path
+
 
 def computeInfoHash(rawBencodedData):
 	
@@ -54,8 +59,9 @@ class Torrent(object):
 		removeIfPresent(self.dict,'comment')
 		removeIfPresent(self.dict,'created by')
 		
-		if 'private' in self.dict['info'] and self.dict['info']['private'] != 1:
+		if 'private' not in self.dict['info'] or self.dict['info']['private'] != 1:
 			self.dict['info']['private'] = 1
+			self.infoHash == None
 			touched = True
 			
 		return touched
@@ -65,7 +71,8 @@ class Torrent(object):
 
 class TorrentStore(object):
 	
-	def __init__(self):
+	def __init__(self,torrentPath):
+		self.torrentPath = torrentPath
 		pass
 
 	def setConnectionPool(self,pool):
@@ -75,22 +82,46 @@ class TorrentStore(object):
 		
 		with self.connPool.item() as conn:
 			cur = conn.cursor()
-			cur.execute(
-			"Insert into torrents (title,creationdate, \
-			creator, infohash) VALUES \
-			(%s,NOW(),%s,%s) \
-			returning torrents.id;",
-			(title,creator,
-			base64.urlsafe_b64encode(torrent.getInfoHash().digest()).replace('=',''),)
-			)
+			try:
+				cur.execute(
+				"Insert into torrents (title,creationdate, \
+				creator, infohash) VALUES \
+				(%s,NOW(),%s,%s) \
+				returning torrents.id;",
+				(title,creator,
+				base64.urlsafe_b64encode(torrent.getInfoHash().digest()).replace('=',''),)
+				)
+				
+				result = cur.fetchone();
+				result, = result
+				conn.commit();
+			except psycopg2.DatabaseError:
+				return None
+			finally:
+				cur.close()
 			
-			result = cur.fetchone();
-			conn.commit();
-			cur.close()
-			
+		self._storeTorrent(torrent,result)
 		return result
 		
+	def _storeTorrent(self,torrent,torrentId):
+		if torrentId < 0 or torrentId > (2**32 -1):
+			return ValueError("torrentId out of range")
+			
+		subpath = '%.8x' % torrentId
+		subpath =  [subpath[i:i+2] for i in xrange(0,8,2)]
+		path = os.path.join(self.torrentPath,*subpath)
 		
+		containingFolder = os.path.join(self.torrentPath,*subpath[:3])
+		
+		if not os.path.exists(containingFolder):
+			os.makedirs(containingFolder)
+			
+		with open(path,'w') as fout:
+			pickle.dump(torrent.dict,fout)
+		
+		
+	def _retrieveTorrent(self):	
+		pass
 	
 	def getTorrents(self,limit,subset):
 		with self.connPool.item() as conn:
