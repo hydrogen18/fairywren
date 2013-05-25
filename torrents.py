@@ -12,17 +12,24 @@ class Torrent(object):
 		self.infoHash = None
 		self.dict = None
 	
+	
 	@staticmethod	
 	def fromBencodedDataStream(dataStream):
+		"""Build a Torrent object from an iterable that returns
+		bencoded data"""
 		
-		b = ''
+		b = bytearray()
 		for chunk in dataStream:
-			b += chunk
+			b.extend(chunk)
 			
-		return Torrent.fromDict(bencode.bdecode(b))
+		return Torrent.fromDict(bencode.bdecode(str(b)))
 		
+	
 	@staticmethod 
 	def fromDict(torrentDict):
+		"""Build a torrent from a dictionary. The dictionary
+		should follow the metainfo file structure definition
+		of a bit torrent file"""
 		result = Torrent()
 		
 		result.dict = torrentDict
@@ -31,20 +38,29 @@ class Torrent(object):
 		
 		return result
 		
-	def raw(self):
-		return bencode.bencode(self.dict)
 	
+	def raw(self):
+		"""Return this torrent as a bencoded string"""
+		return bencode.bencode(self.dict)
+		
 	def _computeInfoHash(self):
 		self.infoHash = hashlib.sha1()
 		self.infoHash.update(bencode.bencode(self.dict['info']))
 		
+	
 	def getInfoHash(self):
+		"""Return the info hash of this torrent as a hashlib object"""
 		if self.infoHash == None:
 			self._computeInfoHash()
 			
 		return self.infoHash
-	
+
 	def scrub(self):
+		"""Remove any commonly present identifying information in the 
+		torrent. In addition, set the torrent to private if not already
+		so. This function returns True if the torrent is altered
+		in such a way that changes the info hash or announce url, both
+		of which require the user to redownload it."""
 		touched = False
 		def removeIfPresent(d,k):
 			if k in d:
@@ -66,9 +82,11 @@ class Torrent(object):
 		return touched
 		
 	def getAnnounceUrl(self):
+		"""Get the announce url of the torrent"""
 		return self.dict['announce']
 		
 	def setAnnounce(self,url):
+		"""Set the announce url of the torrent"""
 		self.dict['announce'] = url
 
 class TorrentStore(object):
@@ -78,12 +96,17 @@ class TorrentStore(object):
 		self.trackerUrl = trackerUrl
 		self.apiUrl = apiUrl
 		
-
 	def setConnectionPool(self,pool):
 		self.connPool = pool
 		
 	def addTorrent(self,torrent,title,creator):
+		"""Add a torrent.
 		
+		torrent -- the Torrent object to add
+		title -- the title of the torrent
+		creator -- the id of the user creating the torrent
+		
+		"""
 		with self.connPool.item() as conn:
 			cur = conn.cursor()
 			try:
@@ -141,6 +164,12 @@ class TorrentStore(object):
 		return Torrent.fromDict(torrentDict)
 	
 	def getAnnounceUrlForUser(self,user):
+		"""
+		Return the announce url for the user
+		
+		user -- id of the user
+		
+		"""
 		with self.connPool.item() as conn:
 			cur = conn.cursor()
 			cur.execute(
@@ -158,7 +187,15 @@ class TorrentStore(object):
 			
 	
 	def getTorrentForDownload(self,torrentId,forUser):
+		"""
+		Return a bencoded string of a torrent
+		
+		torrentId -- the id number of the torrent being downloaded
+		forUser -- the id number of the user downloading the torrent
+		"""
+		
 		torrent = self._retrieveTorrent(torrentId)
+		
 		
 		if torrent == None:
 			return None
@@ -167,18 +204,38 @@ class TorrentStore(object):
 		
 		if None == announceUrl:
 			return None
+			
+		
 		
 		torrent.setAnnounce(announceUrl)
 		
 		return torrent.raw()
 	
 	def getResourceForTorrent(self,torrentId):
+		"""
+		Return the download url of a torrent
+		
+		torrentId -- the id of the torrent 
+		"""
 		return '%s/torrents/%.8x.torrent' % (self.apiUrl, torrentId,)
 		
 	def getInfoResourceForTorrent(self,torrentId):
+		"""
+		Return the info url of a torrent
+		
+		torrentId -- the id of the torrent
+		"""
 		return '%s/torrents/%.8x.json'  % (self.apiUrl,torrentId,)
 	
 	def getTorrents(self,limit,subset):
+		"""
+		Return a list of information about torrents
+		
+		limits -- the maximum number of torrents to return
+		offset -- the starting point of torrents to be returned. This
+		is expressed as a factor of limits
+		
+		"""
 		with self.connPool.item() as conn:
 			cur = conn.cursor()
 			cur.execute(
