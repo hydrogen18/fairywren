@@ -20,4 +20,4 @@ if __name__ == '__main__':
 		
 	eventlet.spawn(eventlet.backdoor.backdoor_server, eventlet.listen(('localhost', 3000)))
 	
-	wsgi.server(eventlet.listen(('192.168.12.182', 8080)), Tracker(authmgr,Peers()))
+	wsgi.server(eventlet.listen(('127.0.0.1', 8080)), Tracker(authmgr,Peers(),conf['pathDepth']))

@@ -21,9 +21,9 @@ if __name__ == '__main__':
 		authmgr = Auth(conf['salt'])
 		authmgr.setConnectionPool(connPool)
 		
-		torrents = TorrentStore(conf['webapi']['torrentPath'],'http://127.0.0.1/tracker','http://127.0.0.1:8081')
+		torrents = TorrentStore(conf['webapi']['torrentPath'],conf['trackerUrl'],conf['apiUrl'])
 		torrents.setConnectionPool(connPool)
 		
 	eventlet.spawn(eventlet.backdoor.backdoor_server, eventlet.listen(('localhost', 3001)))
-	webapi = Webapi(authmgr,torrents)
-	wsgi.server(eventlet.listen(('0.0.0.0', 8081)), webapi)
+	webapi = Webapi(authmgr,torrents,conf['pathDepth'])
+	wsgi.server(eventlet.listen(('127.0.0.1', 8081)), webapi)

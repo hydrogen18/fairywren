@@ -11,6 +11,7 @@ import datetime
 import multipart
 import sys
 import torrents
+import logging
 
 def sendJsonWsgiResponse(env,start_response,response,additionalHeaders=None):
 	headers = [('Content-Type','text/json')]
@@ -45,13 +46,19 @@ class SessionManager(object):
 			
 		def getId(self):
 			return self.userId
+		
+		def getUsername(self):
+			return self.username
 			
 	def __init__(self):
+		self.logger = logging.getLogger('fairywren.webapi.SessionManager')
 		self.sessions = {}
 		
 	def authorizeSession(self,sessionIdentifier):
 		if sessionIdentifier in self.sessions:
-			return self.sessions[sessionIdentifier]
+			session = self.sessions[sessionIdentifier]
+			self.logger.info('Session authorized for user:%s',session.getUsername())
+			return session
 		return None
 			
 	def startSession(self,username,userId):
@@ -64,6 +71,9 @@ class SessionManager(object):
 		newIdentifier = str(uuid.uuid4())
 		
 		self.sessions[newIdentifier] = self.Session(username,userId,newIdentifier)
+		
+		self.logger.info('New session started for user:%s',username)
+		
 		return self.sessions[newIdentifier]
 		
 	def getSession(self,env):
@@ -77,7 +87,6 @@ class SessionManager(object):
 			return None
 			
 		if cookie[SessionManager.cookieName].value not in self.sessions:
-			print self.sessions
 			return None
 		
 		return self.sessions[cookie[SessionManager.cookieName].value]
@@ -210,14 +219,12 @@ class Webapi(object):
 			
 		response = {}
 		
-		if 'torrent' and 'title' not in response:
+		if 'torrent' and 'title' not in upload:
 			return vanilla.http_error(400,env,start_response,'missing torrent or title')
 		
 		
 		data = upload['torrent']
 		newTorrent = torrents.Torrent.fromBencodedDataStream(data)
-		
-		print newTorrent.getInfoHash().hexdigest()
 		
 		if newTorrent.scrub():
 			response['redownload'] = True
@@ -253,7 +260,10 @@ class Webapi(object):
 	def torrentInfo(self,env,start_response):
 		return vanilla.http_error(501,env,start_response)
 	
-	def __init__(self,auth,torrents):
+	def __init__(self,auth,torrents,pathDepth):
+		
+		self.logger = logging.getLogger('fairywren.webapi')
+		self.pathDepth = pathDepth
 		self.auth = auth
 		self.torrents = torrents
 		self.sm = SessionManager()
@@ -273,7 +283,7 @@ class Webapi(object):
 		
 		#Split the path into components. Drop the first
 		#since it should always be the empty string
-		pathComponents = pathInfo.split('/')[1:]
+		pathComponents = pathInfo.split('/')[1+self.pathDepth:]
 		
 		env['fairywren.pathComponents'] = pathComponents
 		
@@ -282,6 +292,7 @@ class Webapi(object):
 		#The default is request not found
 		errorCode = 404
 		
+		
 		for path,method,function in self.resources:
 			#If the requested path and the number of components in the 
 			#path don't match, this can't be a match
@@ -289,11 +300,10 @@ class Webapi(object):
 				continue
 			
 			for actual, candidate in itertools.izip(path,pathComponents):
-				print actual, candidate
 				if not fnmatch.fnmatch(candidate,actual):
 					break				
 					
-				print 'match'
+				self.logger.debug('%s matches %s', candidate, actual)
 			#Loop ran to exhaustion, this is a match
 			else:
 				#If the method does not agree with the resource, the
@@ -301,9 +311,9 @@ class Webapi(object):
 				if requestMethod != method:
 					errorCode = 405
 				else:
-					
+					self.logger.info('%s:%s handled by %s',requestMethod,pathInfo,function.__name__)
 					return function(env,start_response)
 					
-				
+		self.logger.info('%s:%s not handled',requestMethod,pathInfo)		
 		return vanilla.http_error(errorCode,env,start_response)
 		

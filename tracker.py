@@ -7,6 +7,7 @@ import struct
 import socket
 import peers
 import ctypes
+import posixpath
 
 def sendBencodedWsgiResponse(env,start_response,responseDict):
 	headers = [('Content-Type','text/plain')]
@@ -23,26 +24,35 @@ def getClientAddress(environ):
         return environ['REMOTE_ADDR']
 
 class Tracker(object):
-	def __init__(self,auth,peers):
+	def __init__(self,auth,peers,pathDepth):
 		self.auth = auth
 		self.peers = peers
-		#A SHA512 encoded in base64 is 88 characters
-		#but the last two are always '==' so 
-		#86 is used here
-		self.announcePathFmt = '/' + '?' * 86 + '/announce' 
+		self.pathDepth = pathDepth
 		
 	
 	def announce(self,env,start_response):
+		#Extract and normalize the path
+		#Posix path may not be the best approach here but 
+		#no alternate has been found
+		pathInfo = posixpath.normpath(env['PATH_INFO'])
+		
+		#Split the path into components. Drop the first
+		#since it should always be the empty string
+		pathComponents = pathInfo.split('/')[1+self.pathDepth:]
+		
+		#A SHA512 encoded in base64 is 88 characters
+		#but the last two are always '==' so 
+		#86 is used here
+		if not len(pathComponents[0]) == 86 and pathComponents[1] == 'announce':
+			return vanilla.http_error(404,env,start_response)
+					
 		#Only GET requests are valid
 		if env['REQUEST_METHOD'] != 'GET':
 			return vanilla.http_error(405,env,start_response)
 		
 		
-		#Break apart the path
-		path = env['PATH_INFO'].split('/')
 		#Add the omitted equals signs back in
-		#The second entry is used because the first one is an empty string
-		secretKey = path[1] + '=='
+		secretKey = pathComponents[0] + '=='
 		
 		#base64 decode the secret key
 		try:
@@ -199,11 +209,9 @@ class Tracker(object):
 
 		
 	def __call__(self,env,start_response):
-		
-		if fnmatch.fnmatch(env['PATH_INFO'],self.announcePathFmt):
-			return self.announce(env,start_response)
+		return self.announce(env,start_response)
 			
-		return vanilla.http_error(404,env,start_response)
+
 			
 		
 		

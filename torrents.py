@@ -93,8 +93,8 @@ class TorrentStore(object):
 	
 	def __init__(self,torrentPath,trackerUrl,apiUrl):
 		self.torrentPath = torrentPath
-		self.trackerUrl = trackerUrl
-		self.apiUrl = apiUrl
+		self.trackerUrl = str(trackerUrl)
+		self.apiUrl = str(apiUrl)
 		
 	def setConnectionPool(self,pool):
 		self.connPool = pool
