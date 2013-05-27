@@ -173,7 +173,7 @@ class Tracker(object):
 		
 		#This is the basic response format
 		response = {}
-		response['interval'] = 5
+		response['interval'] = 5*60
 		response['complete'] = 0
 		response['incomplete'] = 0
 		response['peers'] = []
