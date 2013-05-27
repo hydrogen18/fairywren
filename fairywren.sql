@@ -8,7 +8,7 @@ CREATE TABLE users(
 
 CREATE TABLE torrents(
 	id SERIAL UNIQUE,
-	infoHash UNIQUE char(27) NOT NULL,
+	infoHash char(27) NOT NULL UNIQUE,
 	title varchar(128) NOT NULL,
 	creator INTEGER REFERENCES users(id) NOT NULL,
 	creationDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
