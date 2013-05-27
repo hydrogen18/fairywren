@@ -48,6 +48,13 @@ class SunnyDay(unittest.TestCase):
 		request.add_header('Cookie',self.cookie)
 		return urllib2.urlopen(request)
 	
+	def test_getSession(self):
+		response = self.open("%s/session" % self.conf['url'])
+		
+		body = json.load(response)
+		
+		self.assertTrue('announceResource' in body)
+	
 	def test_getTorrents(self):
 		response = self.open("%s/torrents" % self.conf['url'])
 		

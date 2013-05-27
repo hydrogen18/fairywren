@@ -14,15 +14,10 @@ class Torrent(object):
 	
 	
 	@staticmethod	
-	def fromBencodedDataStream(dataStream):
-		"""Build a Torrent object from an iterable that returns
-		bencoded data"""
+	def fromBencodedData(data):
+		"""Build a Torrent object from bencoded data"""
 		
-		b = bytearray()
-		for chunk in dataStream:
-			b.extend(chunk)
-			
-		return Torrent.fromDict(bencode.bdecode(str(b)))
+		return Torrent.fromDict(bencode.bdecode(data))
 		
 	
 	@staticmethod 

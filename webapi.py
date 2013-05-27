@@ -133,6 +133,18 @@ class Webapi(object):
 		return sendJsonWsgiResponse(env,start_response,{},additionalHeaders=
 		[session.getCookie()])
 		
+	def showSession(self,env,start_response):
+		session = self.sm.getSession(env)
+		
+		if session == None:
+			return sendJsonWsgiResponse(env,start_response,Webapi.NOT_AUTHENTICATED)
+			
+		response = {}
+		
+		response['announceResource'] = self.torrents.getAnnounceUrlForUser(session.getId())
+		
+		return sendJsonWsgiResponse(env,start_response,response,additionalHeaders=[session.getCookie()])
+	
 	def listTorrents(self,env,start_response):
 		session = self.sm.getSession(env)
 		
@@ -188,48 +200,21 @@ class Webapi(object):
 		
 		boundary = '--' + contentType[offset:]
 		
-		upload = {}
+		forms,files = multipart.parse_form_data(env)
 		
-		for headers, data in multipart.Parser(boundary,env['wsgi.input']):
-			details = {}
-			for header in headers:
-				field, value = header
-				
-				if 'Content-Disposition' != field:
-					continue
-				pairs = value.split(';')	
-				
-				for s in pairs:
-					if '=' not in s:
-						continue
-					key,value = s.split('=')
-					value = value.replace('"','').strip()
-					key = key.strip()
-					details[key] = value
-				break	
-			else:
-				#If the content disposition header is not present
-				#ignore it
-				continue
-			
-			if 'name' not in details:
-				continue
-			
-			upload[details['name']] = data
-			
 		response = {}
 		
-		if 'torrent' and 'title' not in upload:
+		if 'torrent' not in files or 'title' not in forms:
 			return vanilla.http_error(400,env,start_response,'missing torrent or title')
 		
 		
-		data = upload['torrent']
-		newTorrent = torrents.Torrent.fromBencodedDataStream(data)
+		data = files['torrent'].raw
+		newTorrent = torrents.Torrent.fromBencodedData(data)
 		
 		if newTorrent.scrub():
 			response['redownload'] = True
 			
-		url,infoUrl = self.torrents.addTorrent(newTorrent,''.join(upload['title']),session.getId()	)
+		url,infoUrl = self.torrents.addTorrent(newTorrent,forms['title'],session.getId()	)
 		response['resource'] = url
 		response['infoResource'] = infoUrl
 			
@@ -260,6 +245,8 @@ class Webapi(object):
 	def torrentInfo(self,env,start_response):
 		return vanilla.http_error(501,env,start_response)
 	
+	
+	
 	def __init__(self,auth,torrents,pathDepth):
 		
 		self.logger = logging.getLogger('fairywren.webapi')
@@ -269,6 +256,7 @@ class Webapi(object):
 		self.sm = SessionManager()
 		self.resources = []
 		self.resources.append((['session'],'POST',self.login))
+		self.resources.append((['session'],'GET',self.showSession))
 		self.resources.append((['torrents'],'GET',self.listTorrents))
 		self.resources.append((['torrents'],'POST',self.createTorrent))
 		self.resources.append((['torrents','*.json'],'GET',self.torrentInfo))
