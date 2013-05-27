@@ -29,7 +29,17 @@ $(document).ready(function(){
 
 function upload()
 {
-	$("#torrentUpload").ajaxSubmit().resetForm();
+	var options ={
+		
+		success : function(responseText,statusText,xhr,$form)
+		{
+			window.location = 'torrents.html';	
+		},
+		clearForm : true,
+		
+	};
+		
+	$("#torrentUpload").ajaxSubmit(options);
 	
 	return false;
 }
