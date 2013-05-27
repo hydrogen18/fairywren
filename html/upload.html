@@ -1,0 +1,44 @@
+
+<html>
+
+<head>
+<title>
+Upload
+</title>
+</head>
+
+<body>
+
+<script src="js/jquery.js"></script>
+<script src="js/upload.js"></script>
+<script src="js/jquery.form.js"></script>
+
+<div id="main" align="center">
+
+<div id="message">
+
+</div>
+
+<div id="navigation">
+
+</div>
+
+<div id="torrent">
+
+<p id="announce"></p>
+
+<form id="torrentUpload" action="api/torrents" method="POST" enctype="multipart/form-data" encoding="multipart/form-data">
+Title: <input type="text" name="title"><br>
+Torrent File: <input type="file" name="torrent"><br>
+<input type="submit" value="Upload"  onClick="upload(); return false;">
+
+</form>
+
+</div>
+
+</div>
+
+</body>
+
+</html>
+
