@@ -205,8 +205,6 @@ class TorrentStore(object):
 		if None == announceUrl:
 			return None
 			
-		
-		
 		torrent.setAnnounce(announceUrl)
 		
 		return torrent.raw()

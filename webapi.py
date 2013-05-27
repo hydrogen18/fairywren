@@ -42,7 +42,7 @@ class SessionManager(object):
 			self.sessionIdentifier = sessionIdentifier
 			
 		def getCookie(self):
-			return ('Set-Cookie','%s=%s; HttpOnly; Secure' % (SessionManager.cookieName, str(self.sessionIdentifier), ) )
+			return ('Set-Cookie','%s=%s; HttpOnly' % (SessionManager.cookieName, str(self.sessionIdentifier), ) )
 			
 		def getId(self):
 			return self.userId
@@ -248,7 +248,7 @@ class Webapi(object):
 		rawTorrent = self.torrents.getTorrentForDownload(number,session.getId())
 		
 		if rawTorrent == None:
-			return vanilla.http_error(400,env,start_response)
+			return vanilla.http_error(404,env,start_response)
 		
 		headers = [('Content-Type','text/plain')]
 		headers.append(('Cache-Control','no-cache'))
