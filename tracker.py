@@ -43,7 +43,7 @@ class Tracker(object):
 		#A SHA512 encoded in base64 is 88 characters
 		#but the last two are always '==' so 
 		#86 is used here
-		if not len(pathComponents[0]) == 86 and pathComponents[1] == 'announce':
+		if len(pathComponents) !=2 or len(pathComponents[0]) != 86 or pathComponents[1] != 'announce':
 			return vanilla.http_error(404,env,start_response)
 					
 		#Only GET requests are valid
