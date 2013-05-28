@@ -18,6 +18,5 @@ if __name__ == '__main__':
 		connPool = vanilla.buildConnectionPool(psycopg2,**conf['tracker']['postgresql'])
 		authmgr.setConnectionPool(connPool)
 		
-	eventlet.spawn(eventlet.backdoor.backdoor_server, eventlet.listen(('localhost', 3000)))
 	
 	wsgi.server(eventlet.listen(('127.0.0.1', 8080)), Tracker(authmgr,Peers(),conf['pathDepth']))
