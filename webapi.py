@@ -53,6 +53,7 @@ class SessionManager(object):
 	def __init__(self):
 		self.logger = logging.getLogger('fairywren.webapi.SessionManager')
 		self.sessions = {}
+		self.usernameToSessionIdentifier = {}
 		
 	def authorizeSession(self,sessionIdentifier):
 		if sessionIdentifier in self.sessions:
@@ -62,33 +63,48 @@ class SessionManager(object):
 		return None
 			
 	def startSession(self,username,userId):
-		for i, j in enumerate(self.sessions.iteritems()):
-			sessionIdentifier,session = j
-			if session.username == username:
-				self.sessions.pop(sessionIdentifier)
-				break
+		#Check to see if the user has a session currently
+		if username in self.usernameToSessionIdentifier:
+			#Remove the existing session from both dictionaries
+			oldIdentifier = self.usernameToSessionIdentifier[username]
+			self.usernameToSessionIdentifier.pop(username)
+			self.sessions.pop(oldIdentifier)
 		
+		#Create a new session identifier
 		newIdentifier = str(uuid.uuid4())
 		
+		#Populate both dictionaries
+		#The session dictionary maps the identifier to a session object
 		self.sessions[newIdentifier] = self.Session(username,userId,newIdentifier)
+		#The second dictionary maps the username to the identifier
+		self.usernameToSessionIdentifier[username] = newIdentifier
 		
 		self.logger.info('New session started for user:%s',username)
 		
+		#Return the session object
 		return self.sessions[newIdentifier]
 		
 	def getSession(self,env):
+		#Check to see if the CGI Environmental variables
+		#even contain a cookie
 		if 'HTTP_COOKIE' not in env:
 			return None
 
+		#Convert the environment variable into a 
+		#cookie object
 		cookie = Cookie.SimpleCookie()
 		cookie.load(env['HTTP_COOKIE'])
 		
+		#Check to see if the session cookie is in the cookies
 		if SessionManager.cookieName not in cookie:
 			return None
-			
+		
+		#Check to see if the identifier of the session cookie is in the
+		#sessions dictionary	
 		if cookie[SessionManager.cookieName].value not in self.sessions:
 			return None
 		
+		#Return the session object
 		return self.sessions[cookie[SessionManager.cookieName].value]
 		
 class Webapi(object):
