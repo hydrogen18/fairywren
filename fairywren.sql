@@ -12,6 +12,7 @@ CREATE TABLE torrents(
 	title varchar(128) NOT NULL,
 	creator INTEGER REFERENCES users(id) NOT NULL,
 	creationDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+	lengthInbytes LONG NOT NULL,
 	PRIMARY KEY(id,infoHash)
 );
 	

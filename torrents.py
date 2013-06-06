@@ -32,7 +32,13 @@ class Torrent(object):
 		#file
 		
 		return result
+	
+	def getTotalSizeInBytes(self):
+		if 'length' in self.dict['info']:
+			return self.dict['info']['length']
 		
+		if 'files' in self.dict['info']:
+			return sum((i['length'] for i in self.dict['info']['files']))
 	
 	def raw(self):
 		"""Return this torrent as a bencoded string"""
@@ -107,17 +113,19 @@ class TorrentStore(object):
 			try:
 				cur.execute(
 				"Insert into torrents (title,creationdate, \
-				creator, infohash) VALUES \
-				(%s,NOW(),%s,%s) \
+				creator, infohash,lengthInBytes) VALUES \
+				(%s,NOW(),%s,%s,%s) \
 				returning torrents.id;",
 				(title,creator,
-				base64.urlsafe_b64encode(torrent.getInfoHash().digest()).replace('=',''),)
+				base64.urlsafe_b64encode(torrent.getInfoHash().digest()).replace('=',''),
+				torrent.getTotalSizeInBytes())
 				)
 				
 				result = cur.fetchone();
 				result, = result
 				conn.commit();
 			except psycopg2.DatabaseError:
+				#TODO Log error
 				return None
 			finally:
 				cur.close()
@@ -233,7 +241,7 @@ class TorrentStore(object):
 			cur = conn.cursor()
 			cur.execute(
 			"Select torrents.id,torrents.title,torrents.creationdate, \
-			users.id,users.name \
+			users.id,users.name,torrents.lengthInBytes \
 			from torrents \
 			left join users on torrents.creator = users.id \
 			order by creationdate desc limit %s offset %s;",
@@ -242,13 +250,14 @@ class TorrentStore(object):
 			while True:
 				r = cur.fetchone()
 				if r!=None:
-					torrentId,torrentTitle,torrentsCreationDate,userId,userName =r
+					torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes =r
 					
 					yield {
 					'resource' : self.getResourceForTorrent(torrentId),
 					'infoResource' : self.getInfoResourceForTorrent(torrentId),
 					'title' : torrentTitle,
 					'creationDate' : torrentsCreationDate,
+					'lengthInBytes' : lengthInBytes,
 					'creator': {
 						'resource' : '%x.json' % userId,
 						'name' : userName
