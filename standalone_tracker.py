@@ -11,12 +11,18 @@ import psycopg2
 import sys
 import json
 
+DEFAULT_LISTEN_IP ='127.0.0.1'
+DEFAULT_LISTEN_PORT = 8080
+DEFAULT_PATH_DEPTH = 1
+
 if __name__ == '__main__':
 	with open(sys.argv[1],'r') as fin:
 		conf = json.load(fin)
-		authmgr = Auth(conf['salt'])
-		connPool = vanilla.buildConnectionPool(psycopg2,**conf['tracker']['postgresql'])
-		authmgr.setConnectionPool(connPool)
-		
+	authmgr = Auth(conf['salt'])
+	connPool = vanilla.buildConnectionPool(psycopg2,**conf['tracker']['postgresql'])
+	authmgr.setConnectionPool(connPool)
 	
-	wsgi.server(eventlet.listen(('127.0.0.1', 8080)), Tracker(authmgr,Peers(),conf['pathDepth']))
+	httpListenIp = conf['tracker'].get('ip',DEFAULT_LISTEN_IP)
+	httpListenPort = conf['tracker'].get('port',DEFAULT_LISTEN_PORT)
+	httpPathDepth = conf.get('pathDepth',DEFAULT_PATH_DEPTH)
+	wsgi.server(eventlet.listen((httpListenIp, httpListenPort)), Tracker(authmgr,Peers(),httpPathDepth))
