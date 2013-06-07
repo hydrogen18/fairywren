@@ -7,7 +7,6 @@ import base64
 if __name__ == "__main__":
 	with open(sys.argv[1],'r') as fin:
 		conf = json.load(fin)
-		
 
 	conn = psycopg2.connect(**conf['webapi']['postgresql'])
 	

@@ -218,7 +218,7 @@ class Webapi(object):
 		if newTorrent.scrub():
 			response['redownload'] = True
 			
-		url,infoUrl = self.torrents.addTorrent(newTorrent,forms['title'],session.getId()	)
+		url,infoUrl = self.torrents.addTorrent(newTorrent,forms['title'],session.getId())
 		response['resource'] = url
 		response['infoResource'] = infoUrl
 			

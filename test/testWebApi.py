@@ -20,7 +20,6 @@ def hashPassword(pw):
 
 class SunnyDay(unittest.TestCase):
 	
-	
 	def setUp(self):
 		with open("test.json",'r') as fin:
 			self.conf = json.load(fin)
