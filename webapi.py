@@ -205,24 +205,12 @@ class Webapi(object):
 		if 'multipart/form-data' not in contentType:
 			return vanilla.http_error(415,env,start_response,'must be form upload')
 		
-		magic = 'boundary='
-		
-		try:
-			offset = contentType.index(magic)
-		except ValueError:
-			return vanilla.http_error(400,env,start_response,'cant find boundary in Content-Type header')
-			
-		offset+=len(magic)
-		
-		boundary = '--' + contentType[offset:]
-		
 		forms,files = multipart.parse_form_data(env)
 		
 		response = {}
 		
 		if 'torrent' not in files or 'title' not in forms:
 			return vanilla.http_error(400,env,start_response,'missing torrent or title')
-		
 		
 		data = files['torrent'].raw
 		newTorrent = torrents.Torrent.fromBencodedData(data)
