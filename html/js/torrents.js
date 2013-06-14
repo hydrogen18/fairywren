@@ -19,9 +19,11 @@ $(document).ready(function(){
 					var uploadTime = data.torrents[i].creationDate;
 					var uploader = data.torrents[i].creator.name;
 					var downloadUrl = data.torrents[i].resource;
+					var lengthInBytes = data.torrents[i].lengthInBytes;
 					
 					var row = '<tr><td>' + title + 
-					'<a href="' + downloadUrl + '">DL</a></td>\
+					'&nbsp;<a href="' + downloadUrl + '">Download</a></td>\
+					<td>' + lengthInBytes +' bytes</td>\
 					<td>' + uploadTime + "</td>\
 					<td>" + uploader + "</td></tr>";
 					$("#torrentTable tr:last").after(row);
