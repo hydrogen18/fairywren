@@ -239,7 +239,7 @@ class Webapi(object):
 		if rawTorrent == None:
 			return vanilla.http_error(404,env,start_response)
 		
-		headers = [('Content-Type','text/plain')]
+		headers = [('Content-Type','application/x-bittorrent')]
 		headers.append(('Cache-Control','no-cache'))
 	
 		start_response('200 OK',headers)
