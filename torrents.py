@@ -89,6 +89,9 @@ class Torrent(object):
 	def setAnnounce(self,url):
 		"""Set the announce url of the torrent"""
 		self.dict['announce'] = url
+		
+	def getTitle(self):
+		return self.dict['info']['name']
 
 class TorrentStore(object):
 	
@@ -199,7 +202,6 @@ class TorrentStore(object):
 		
 		torrent = self._retrieveTorrent(torrentId)
 		
-		
 		if torrent == None:
 			return None
 		
@@ -210,7 +212,7 @@ class TorrentStore(object):
 			
 		torrent.setAnnounce(announceUrl)
 		
-		return torrent.raw()
+		return torrent
 	
 	def getResourceForTorrent(self,torrentId):
 		"""

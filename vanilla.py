@@ -30,9 +30,6 @@ def getContentLength(env):
 		return None
 		
 	return cl
-	
-	
-			
 
 def buildConnectionPool(dbModule,**dbKwArgs):
 	dbKwArgs['max_idle'] = 10
@@ -42,4 +39,13 @@ def buildConnectionPool(dbModule,**dbKwArgs):
 
 	return eventlet.db_pool.ConnectionPool(dbModule,**dbKwArgs)
 	
+def sanitizeForContentDispositionHeaderFilename(originalFileName):
+	result = str(originalFileName).replace(' ','_')
+	
+	prohibited = '<>\"/:|?*!@#$%^&()[]{}.,'
+	
+	for c in prohibited:
+		result = result.replace(c,'')
+	
+	return result
 	
