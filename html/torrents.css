@@ -10,3 +10,8 @@ td, th
 {
 text-align:left;
 }
+
+div#message
+{
+color:red;
+}
