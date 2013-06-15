@@ -42,7 +42,7 @@ def buildConnectionPool(dbModule,**dbKwArgs):
 def sanitizeForContentDispositionHeaderFilename(originalFileName):
 	result = str(originalFileName).replace(' ','_')
 	
-	prohibited = '<>\"/:|?*!@#$%^&()[]{}.,'
+	prohibited = '<>\"/:|?*!@#$%^&()[]{},'
 	
 	for c in prohibited:
 		result = result.replace(c,'')
