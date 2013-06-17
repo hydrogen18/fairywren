@@ -13,10 +13,10 @@ Software Dependencies
 
 To run fairywren you'll need the following 
 
-- .. _Stackless http://stackless.com/wiki/Download .
-- .. _Eventlet http://eventlet.net
-- .. _Psycopg2 https://pypi.python.org/pypi/psycopg2 
-- .. _Multipart https://github.com/defnull/multipart
+- .. _Stackless: http://stackless.com/wiki/Download .
+- .. _Eventlet: http://eventlet.net
+- .. _Psycopg2: https://pypi.python.org/pypi/psycopg2 
+- .. _Multipart: https://github.com/defnull/multipart
 - A web server that supports proxying.
 - A postgresql server.
 
@@ -49,8 +49,8 @@ with global permissions could be substituted.
 Object Store
 ----
 Presently, the uploaded BitTorrent files are stored on disk. At some point
-I would like to transition this to something more robust. But at this
- stage development efforts are focused elsewhere.
+I would like to transition this to something more robust. But at this 
+stage development efforts are focused elsewhere.
 
 Configuration
 =======
