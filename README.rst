@@ -109,6 +109,12 @@ torrentPath
     BitTorrent files. This can be an empty folder. All needed
     folders and files are created as needed.
     
+Adding users
+====
+Presently, users cannot be added via the web interface. The script
+adduser.py takes a single argument which is the same JSON configuration
+file as used by the HTTP servers. It prompts for the username
+and password to add. All users have the same permissions presently.
     
 Tracker in a Box
 ====
