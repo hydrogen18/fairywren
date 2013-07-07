@@ -12,6 +12,9 @@ import random
 import subprocess
 import os
 import multipart
+import MultipartPostHandler
+import types
+import string
 
 def hashPassword(pw):
 	h = hashlib.sha512()
@@ -20,41 +23,81 @@ def hashPassword(pw):
 
 class SunnyDay(unittest.TestCase):
 	
+	def buildFairywrenOpener(self,url,username,password):
+		def hashPassword(pw):
+			h = hashlib.sha512()
+			h.update(pw)
+			return base64.urlsafe_b64encode(h.digest()).replace('=','')
+
+		qp=urllib.urlencode({"username":username,"password":hashPassword(password)})
+		request = urllib2.Request('%s/api/session' % url,data=qp)
+		response = urllib2.urlopen(request)
+
+		body = json.load(response)
+
+		if 'error' in body:
+			raise Error(body['error'])
+
+		cookies = cookielib.CookieJar()
+
+		cookies.extract_cookies(response,request)
+		self.assertTrue ('session' in ( cookie.name for cookie in cookies))
+		
+		for c in cookies:
+			if c.name == "session":
+				self.cookie = "%s=%s" % (c.name,c.value,)
+		
+		self.open = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookies),MultipartPostHandler.MultipartPostHandler).open
+
+		
+		
+	
 	def setUp(self):
 		with open("test.json",'r') as fin:
 			self.conf = json.load(fin)
-		self.cookie = cookielib.CookieJar()
-		qp = urllib.urlencode(
-		{ "username" : self.conf['username'],
-		  "password" : hashPassword(self.conf['password'])})
-		request = urllib2.Request("%s/session"  % self.conf['url'],data=qp)
-		response = urllib2.urlopen(request)
+			
+		self.buildFairywrenOpener(  self.conf['url'], self.conf['username'],self.conf['password'] )
+		
+	def test_addUser(self):
+		
+		with open('/dev/urandom','r') as randomIn:
+			username = randomIn.read(64)
+		username = ''.join([c for c in username if c in string.ascii_letters])
+		password = 'password'
+			
+		pwHash = hashlib.sha512()
+		pwHash.update(password)
+		pwHash = base64.urlsafe_b64encode(pwHash.digest()).replace('=','')
+		qp = {'username': username, 'password' : pwHash }
+		
+		response  = self.open('%s/api/users' % self.conf['url'] , qp)
+		body = json.load(response)
+		
+		self.assertTrue('resource' in body)
+		
+		response = self.open('%s/%s' % ( self.conf['url'], body['resource']))
 		
 		body = json.load(response)
 		
-		self.assertFalse('error' in body)
+		self.assertTrue(body['name'] == username)
+		self.assertTrue(body['numberOfTorrents'] == 0)
 		
-		self.cookie.extract_cookies(response,request)
 		
-		self.assertTrue ('session' in ( cookie.name for cookie in self.cookie))
-
-		for c in self.cookie:
-			if c.name == 'session':
-				self.cookie = "%s=%s" % (c.name,c.value,)
 		
-	def open(self,*url):
+	
+	"""def open(self,*url):
 		request = urllib2.Request(*url)
 		request.add_header('Cookie',self.cookie)
-		return urllib2.urlopen(request)
+		return urllib2.urlopen(request)"""
 	
 	def test_getSession(self):
-		response = self.open("%s/session" % self.conf['url'])
+		response = self.open("%s/api/session" % self.conf['url'])
 		
 		body = json.load(response)
 		
 	
 	def test_getTorrents(self):
-		response = self.open("%s/torrents" % self.conf['url'])
+		response = self.open("%s/api/torrents" % self.conf['url'])
 		
 		body = json.load(response)
 		

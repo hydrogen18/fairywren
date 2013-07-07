@@ -9,6 +9,32 @@ class Auth(object):
 		
 	def setConnectionPool(self,pool):
 		self.connPool = pool
+
+	def addUser(self,username,pwHash):
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+
+			storedHash = hashlib.sha512()
+			storedHash.update(self.salt)
+			storedHash.update(pwHash)
+			
+			secretKey = hashlib.sha512()
+			with open('/dev/urandom') as randomIn:
+				randomValue = randomIn.read(1024)
+				secretKey.update(randomValue)
+			
+			cur.execute("INSERT into users (name,password,secretKey) VALUES(%s,%s,%s) returning users.id;",
+				(username,
+				base64.urlsafe_b64encode(storedHash.digest()).replace('=',''),
+				base64.urlsafe_b64encode(secretKey.digest()).replace('=',''),) ) 
+			conn.commit()
+			
+			newId, = cur.fetchone()
+			cur.close()
+			conn.close()
+			
+			return 'api/users/%x'  % newId
+			
 		
 	def authenticateSecretKey(self,key):
 		with self.connPool.item() as conn:

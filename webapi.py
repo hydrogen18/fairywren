@@ -7,12 +7,12 @@ import multipart
 import sys
 import torrents
 import logging
-
+import urlparse
 
 from restInterface import *
 
 class Webapi(restInterface):
-	def __init__(self,authmgr,torrents,httpPathDepth):
+	def __init__(self,users,authmgr,torrents,httpPathDepth):
 		def authenticateUser(username,password):	
 			#Password comes across as 64 bytes of base64 encoded data
 			#with trailing ='s lopped off. 
@@ -33,7 +33,58 @@ class Webapi(restInterface):
 		super(Webapi,self).__init__(httpPathDepth,authenticateUser)
 		self.authmgr = authmgr
 		self.torrents = torrents
+		self.users = users
 
+	@resource(True,'GET','users','*')
+	def userInfo(self,env,start_response,session):
+		number = env['fairywren.pathComponents'][-1]
+		number = int(number,16)
+		
+		response = self.users.getInfo(number)
+		
+		if response == None:
+			return vanilla.http_error(404,env,start_response)
+				
+		return vanilla.sendJsonWsgiResponse(env,start_response,response)
+		
+	@resource(True,'POST','users')
+	def addUser(self,env,start_response,session):
+		
+		cl = vanilla.getContentLength(env)
+		if cl == None:
+			return vanilla.http_error(411,env,start_response,'missing Content-Length header')
+		
+		query = urlparse.parse_qs(env['wsgi.input'].read(cl))
+		
+		if 'username' not in query:
+			return vanilla.http_error(400,env,start_response,msg='missing username')
+		#Use first occurence from query string
+		username = query['username'][0]
+		
+		if 'password' not in query:
+			return vanilla.http_error(400,env,start_response,msg='missing password')
+		#Use first occurence from query string
+		password = query['password'][0]
+		
+		#Password comes across as 64 bytes of base64 encoded data
+		#with trailing ='s lopped off. 
+		password += '=='
+		
+		if len(password) != 88: #64 bytes in base64 is length 88
+			return None
+			return vanilla.http_error(400,env,start_response,msg='password too short')
+		
+		try:
+			password = base64.urlsafe_b64decode(password)
+		except TypeError:
+			return None
+			return vanilla.http_error(400,env,start_response,msg='password poorly formed')		
+		
+		resourceForNewUser = self.authmgr.addUser(username,password)
+		
+		response = { 'resource' : resourceForNewUser } 
+		return vanilla.sendJsonWsgiResponse(env,start_response,response)
+		
 	@resource(True,'GET','torrents')
 	def listTorrents(self,env,start_response,session):
 		

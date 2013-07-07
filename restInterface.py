@@ -19,10 +19,6 @@ class resource(object):
 		func.requireAuthentication = self.requireAuth
 		return func
 
-
-class Authorization(object):
-	SELF = 1 
-	
 		
 class requireAuthorization(object):
 	def __init__(self, *allowed):
