@@ -2,6 +2,10 @@ import eventlet
 import eventlet.db_pool
 import base64
 import hashlib
+import os
+from psycopg2 import IntegrityError
+
+
 
 class Auth(object):
 	def __init__(self,salt):
@@ -21,24 +25,44 @@ class Auth(object):
 					return True
 					
 			return False
-
-	def addUser(self,username,pwHash):
+	def changePassword(self,userId,pwHash):
+		saltedPw = self._saltPwhash(pwHash)
 		with self.connPool.item() as conn:
 			cur = conn.cursor()
+			try: 
+				cur.execute("UPDATE users SET password=%s where id=%s;",
+				(saltedPw,userId,))
+			except StandardError:
+				return None
+			conn.commit()
+			cur.close()
+				
+		return True
 
-			storedHash = hashlib.sha512()
-			storedHash.update(self.salt)
-			storedHash.update(pwHash)
+	def _saltPwhash(self,pwHash):
+		storedHash = hashlib.sha512()
+		storedHash.update(self.salt)
+		storedHash.update(pwHash)
+		return base64.urlsafe_b64encode(storedHash.digest()).replace('=','')
+
+	def addUser(self,username,pwHash):
+		secretKey = hashlib.sha512()
+		
+		randomValue = os.urandom(1024)
+		secretKey.update(randomValue)
+		
+		saltedPw = self._saltPwhash(pwHash)
+
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
 			
-			secretKey = hashlib.sha512()
-			with open('/dev/urandom') as randomIn:
-				randomValue = randomIn.read(1024)
-				secretKey.update(randomValue)
-			
-			cur.execute("INSERT into users (name,password,secretKey) VALUES(%s,%s,%s) returning users.id;",
-				(username,
-				base64.urlsafe_b64encode(storedHash.digest()).replace('=',''),
-				base64.urlsafe_b64encode(secretKey.digest()).replace('=',''),) ) 
+			try:
+				cur.execute("INSERT into users (name,password,secretKey) VALUES(%s,%s,%s) returning users.id;",
+					(username,
+					saltedPw,
+					base64.urlsafe_b64encode(secretKey.digest()).replace('=',''),) ) 
+			except IntegrityError:
+				return None
 			conn.commit()
 			
 			newId, = cur.fetchone()

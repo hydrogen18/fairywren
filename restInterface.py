@@ -19,6 +19,18 @@ class resource(object):
 		func.requireAuthentication = self.requireAuth
 		return func
 
+class parameter(object):
+	def __init__(self,name,conversionFunc=None):
+		self.name = name
+		self.conversionFunc = conversionFunc
+		
+	def __call__(self,func):
+		if not hasattr(func,'parameters'):
+			func.parameters = []
+			
+		func.parameters.append((self.name,self.conversionFunc))
+		return func
+
 		
 class requireAuthorization(object):
 	def __init__(self, *allowedRoles):
@@ -109,6 +121,35 @@ class SessionManager(object):
 		return self.sessions[cookie[SessionManager.cookieName].value]
 
 
+def extractParams(func,env):
+	if not hasattr(func,'parameters'):
+		return {}
+		
+	requestMethod = env['REQUEST_METHOD']
+	
+	retval = {}
+	
+	if requestMethod == 'POST':
+		cl = vanilla.getContentLength(env)
+		if cl == None:
+			return None
+			return vanilla.http_error(411,env,start_response,'missing Content-Length header')
+	
+		query = urlparse.parse_qs(env['wsgi.input'].read(cl))
+		for parameter,converter in func.parameters:
+			if parameter not in query:
+				return None
+				
+			retval[parameter] = query[parameter][0]
+			if converter:
+				retval[parameter] = converter(retval[parameter])
+				if retval[parameter] == None:
+					return None
+				
+		return retval
+	else:
+		return None
+
 		
 class restInterface(object):
 	NOT_AUTHENTICATED = {'error':'not authenticated'}
@@ -170,6 +211,9 @@ class restInterface(object):
 	
 		return vanilla.sendJsonWsgiResponse(env,start_response,response,additionalHeaders=[session.getCookie()])		
 		
+
+
+			
 		
 	def __call__(self,env,start_response):		
 		#Extract and normalize the path
@@ -219,10 +263,20 @@ class restInterface(object):
 						if not self.authorizeUser(session,resource.allowedRoles):
 							return vanilla.sendJsonWsgiResponse(env,start_response,restInterface.NOT_AUTHORIZED)
 						
-						
-					return resource(env,start_response,session)
+
+					kwargs = extractParams(resource,env)
+					
+					if kwargs == None:
+						return vanilla.http_error(400,env,start_response,'missing one or more parameters')
+					
+					return resource(env,start_response,session,**kwargs)
 				else:
 					self.logger.info('%s:%s handled by %s',requestMethod,pathInfo,resource)
-					return resource(env,start_response)
+					kwargs = extractParams(resource,env)
+
+					if kwargs == None:
+						return vanilla.http_error(400,env,start_response,'missing one or more parameters')
+
+					return resource(env,start_response,**kwargs)
 					
 		return vanilla.http_error(errorCode,env,start_response)

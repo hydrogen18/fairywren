@@ -21,8 +21,7 @@ def hashPassword(pw):
 	h.update(pw)
 	return base64.urlsafe_b64encode(h.digest()).replace('=','')
 
-class SunnyDay(unittest.TestCase):
-	
+class WebapiTest(unittest.TestCase):
 	def buildFairywrenOpener(self,url,username,password):
 		def hashPassword(pw):
 			h = hashlib.sha512()
@@ -57,6 +56,28 @@ class SunnyDay(unittest.TestCase):
 			self.conf = json.load(fin)
 			
 		self.buildFairywrenOpener(  self.conf['url'], self.conf['username'],self.conf['password'] )
+
+class RainyDay(WebapiTest):
+	def test_addExistingUser(self):
+		with open('/dev/urandom','r') as randomIn:
+			username = randomIn.read(64)
+		username = ''.join([c for c in username if c in string.ascii_letters])
+		password = 'password'
+			
+		pwHash = hashlib.sha512()
+		pwHash.update(password)
+		pwHash = base64.urlsafe_b64encode(pwHash.digest()).replace('=','')
+		qp = {'username': username, 'password' : pwHash }
+		
+		response  = self.open('%s/api/users' % self.conf['url'] , qp)
+		body = json.load(response)
+		
+		self.assertTrue('resource' in body)
+		
+		self.assertRaisesRegexp(urllib2.HTTPError,'.*409.*',self.open,'%s/api/users' % self.conf['url'] , qp)
+		
+
+class SunnyDay(WebapiTest):
 		
 	def test_addUser(self):
 		
@@ -75,12 +96,21 @@ class SunnyDay(unittest.TestCase):
 		
 		self.assertTrue('resource' in body)
 		
+		pwHash = hashlib.sha512()
+		pwHash.update('password1')
+		pwHash = base64.urlsafe_b64encode(pwHash.digest()).replace('=','')
+		query = { 'password' : pwHash }
+		response = self.open('%s/%s/password' % (self.conf['url'], body['resource']),query)		
+		
 		response = self.open('%s/%s' % ( self.conf['url'], body['resource']))
 		
 		body = json.load(response)
 		
 		self.assertTrue(body['name'] == username)
 		self.assertTrue(body['numberOfTorrents'] == 0)
+		
+
+		
 		
 	def test_getSession(self):
 		response = self.open("%s/api/session" % self.conf['url'])

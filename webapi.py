@@ -11,6 +11,21 @@ import urlparse
 
 from restInterface import *
 
+def decodePassword(password):
+	#Password comes across as 64 bytes of base64 encoded data
+	#with trailing ='s lopped off. 
+	password += '=='
+	
+	if len(password) != 88: #64 bytes in base64 is length 88
+		return None
+	
+	try:
+		return base64.urlsafe_b64decode(password)
+	except TypeError:
+		return None
+		
+
+
 class Webapi(restInterface):
 	def __init__(self,users,authmgr,torrents,httpPathDepth):
 		def authenticateUser(username,password):	
@@ -39,6 +54,17 @@ class Webapi(restInterface):
 		self.torrents = torrents
 		self.users = users
 
+	@resource(True,'POST','users','*','password')
+	@parameter('password',decodePassword)
+	def changePassword(self,env,start_response,session,password):
+		userId = int(env['fairywren.pathComponents'][-2],16)
+		
+		if None == self.authmgr.changePassword(userId,password):
+			return vanilla.http_error(400,env,start_response)
+		
+		return vanilla.sendJsonWsgiResponse(env,start_response,{})
+		
+		
 	@resource(True,'GET','users','*')
 	def userInfo(self,env,start_response,session):
 		number = env['fairywren.pathComponents'][-1]
@@ -53,39 +79,14 @@ class Webapi(restInterface):
 		
 	@requireAuthorization()
 	@resource(True,'POST','users')
-	def addUser(self,env,start_response,session):
-		
-		cl = vanilla.getContentLength(env)
-		if cl == None:
-			return vanilla.http_error(411,env,start_response,'missing Content-Length header')
-		
-		query = urlparse.parse_qs(env['wsgi.input'].read(cl))
-		
-		if 'username' not in query:
-			return vanilla.http_error(400,env,start_response,msg='missing username')
-		#Use first occurence from query string
-		username = query['username'][0]
-		
-		if 'password' not in query:
-			return vanilla.http_error(400,env,start_response,msg='missing password')
-		#Use first occurence from query string
-		password = query['password'][0]
-		
-		#Password comes across as 64 bytes of base64 encoded data
-		#with trailing ='s lopped off. 
-		password += '=='
-		
-		if len(password) != 88: #64 bytes in base64 is length 88
-			return None
-			return vanilla.http_error(400,env,start_response,msg='password too short')
-		
-		try:
-			password = base64.urlsafe_b64decode(password)
-		except TypeError:
-			return None
-			return vanilla.http_error(400,env,start_response,msg='password poorly formed')		
+	@parameter('password',decodePassword)
+	@parameter('username')
+	def addUser(self,env,start_response,session,password,username):
 		
 		resourceForNewUser = self.authmgr.addUser(username,password)
+		
+		if resourceForNewUser == None:
+			return vanilla.http_error(409,env,start_response,'user already exists')
 		
 		response = { 'resource' : resourceForNewUser } 
 		return vanilla.sendJsonWsgiResponse(env,start_response,response)
