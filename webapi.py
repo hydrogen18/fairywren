@@ -24,7 +24,8 @@ def decodePassword(password):
 	except TypeError:
 		return None
 		
-
+def extractUserId(*pathComponents):
+	return int(pathComponents[1],16)
 
 class Webapi(restInterface):
 	def __init__(self,users,authmgr,torrents,httpPathDepth):
@@ -54,6 +55,10 @@ class Webapi(restInterface):
 		self.torrents = torrents
 		self.users = users
 
+
+
+	@authorizeSelf(extractUserId)
+	@requireAuthorization('Administrator')
 	@resource(True,'POST','users','*','password')
 	@parameter('password',decodePassword)
 	def changePassword(self,env,start_response,session,password):

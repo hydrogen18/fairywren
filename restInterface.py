@@ -17,6 +17,7 @@ class resource(object):
 		func.method = self.method
 		func.path = self.path
 		func.requireAuthentication = self.requireAuth
+		
 		return func
 
 class parameter(object):
@@ -31,6 +32,16 @@ class parameter(object):
 		func.parameters.append((self.name,self.conversionFunc))
 		return func
 
+class authorizeSelf(object):
+	def __init__(self,getOwnerId):		
+		self.getOwnerId = getOwnerId
+	
+	def __call__(self,func):
+		if not hasattr(func,'allowedRoles'):
+			raise ValueError( func.__name__ + ' is requested to authorize self, but without authentication enforced')
+		func.allowSelf = True
+		func.getOwnerId = self.getOwnerId
+		return func
 		
 class requireAuthorization(object):
 	def __init__(self, *allowedRoles):
@@ -38,9 +49,10 @@ class requireAuthorization(object):
 		
 	def __call__(self,func):
 		if not hasattr(func, 'requireAuthentication') or func.requireAuthentication != True:
-			raise ValueError(func.__name__ + ' is requested to have authorization enforced, without authorization')
+			raise ValueError(func.__name__ + ' is requested to have authorization enforced, without authentication')
 		func.allowedRoles = [func.__name__]
 		func.allowedRoles += list(self.allowedRoles)
+		func.allowSelf = False
 		return func
 
 					
@@ -254,16 +266,17 @@ class restInterface(object):
 					errorCode = 405					
 				elif resource.requireAuthentication:
 					session = self.sm.getSession(env)
-		
+
 					if session == None:
 						return vanilla.sendJsonWsgiResponse(env,start_response,restInterface.NOT_AUTHENTICATED)
 						
 					#Check to see if the resource requires authorization
-					if hasattr(resource,'allowedRoles'):
-						if not self.authorizeUser(session,resource.allowedRoles):
+					if hasattr(resource,'allowedRoles'):	
+						authorized = resource.allowSelf and resource.getOwnerId(*pathComponents)==session.getId()
+						authorized |= self.authorizeUser(session,resource.allowedRoles)
+						if not authorized:
 							return vanilla.sendJsonWsgiResponse(env,start_response,restInterface.NOT_AUTHORIZED)
 						
-
 					kwargs = extractParams(resource,env)
 					
 					if kwargs == None:

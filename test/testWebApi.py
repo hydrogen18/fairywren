@@ -48,14 +48,64 @@ class WebapiTest(unittest.TestCase):
 		
 		self.open = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookies),MultipartPostHandler.MultipartPostHandler).open
 
-		
-		
-	
 	def setUp(self):
 		with open("test.json",'r') as fin:
 			self.conf = json.load(fin)
 			
 		self.buildFairywrenOpener(  self.conf['url'], self.conf['username'],self.conf['password'] )
+
+class ChangeOwnPassword(WebapiTest):
+	
+	def setUp(self):
+		WebapiTest.setUp(self)
+		
+		with open('/dev/urandom','r') as randomIn:
+			username = randomIn.read(64)
+			username = ''.join([c for c in username if c in string.ascii_letters])
+					
+		pwHash = hashlib.sha512()
+		password = 'foo'
+		pwHash.update(password)
+		pwHash = base64.urlsafe_b64encode(pwHash.digest()).replace('=','')
+		qp = {'username': username, 'password' : pwHash }
+		
+		response  = self.open('%s/api/users' % self.conf['url'] , qp)
+		body = json.load(response)
+		
+		self.assertTrue('resource' in body)
+		
+		WebapiTest.buildFairywrenOpener(self,self.conf['url'],username,password)
+		
+		pwHash = hashlib.sha512()
+		with open('/dev/urandom','r') as randomIn:
+			password = randomIn.read(64)
+			password = ''.join([c for c in password if c in string.ascii_letters])
+
+		pwHash.update(password)
+		pwHash = base64.urlsafe_b64encode(pwHash.digest()).replace('=','')
+		query = { 'password' : pwHash }
+		response = self.open('%s/%s/password' % (self.conf['url'], body['resource']),query)		
+		
+		updatePwBody = json.load(response)
+		self.assertTrue('error' not in updatePwBody)
+		
+		WebapiTest.buildFairywrenOpener(self,self.conf['url'],username,password)
+		
+	def test_getTorrents(self):
+		response = self.open("%s/api/torrents" % self.conf['url'])
+		
+		body = json.load(response)
+		
+		self.assertTrue('torrents' in body)
+		
+		for t in body['torrents']:
+			self.assertTrue('resource' in t)
+			self.assertTrue('infoResource' in t)
+			self.assertTrue('title' in t)
+			self.assertTrue('creationDate' in t)
+			self.assertTrue('creator' in t)
+			self.assertTrue('resource' in t['creator'])
+			self.assertTrue('name' in t['creator'])		
 
 class RainyDay(WebapiTest):
 	def test_addExistingUser(self):
@@ -77,10 +127,11 @@ class RainyDay(WebapiTest):
 		self.assertRaisesRegexp(urllib2.HTTPError,'.*409.*',self.open,'%s/api/users' % self.conf['url'] , qp)
 		
 
+		
+
 class SunnyDay(WebapiTest):
 		
 	def test_addUser(self):
-		
 		with open('/dev/urandom','r') as randomIn:
 			username = randomIn.read(64)
 		username = ''.join([c for c in username if c in string.ascii_letters])
@@ -101,6 +152,9 @@ class SunnyDay(WebapiTest):
 		pwHash = base64.urlsafe_b64encode(pwHash.digest()).replace('=','')
 		query = { 'password' : pwHash }
 		response = self.open('%s/%s/password' % (self.conf['url'], body['resource']),query)		
+		
+		updatePwBody = json.load(response)
+		self.assertTrue('error' not in updatePwBody)
 		
 		response = self.open('%s/%s' % ( self.conf['url'], body['resource']))
 		
@@ -158,7 +212,6 @@ class SunnyDay(WebapiTest):
 		finally:
 			os.remove(torrentFileName)
 		
-		print torrentUrl	
 		response = self.open(torrentUrl)
 		
 		print response.read()
