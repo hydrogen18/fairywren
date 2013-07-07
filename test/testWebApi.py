@@ -52,7 +52,6 @@ class SunnyDay(unittest.TestCase):
 		
 		body = json.load(response)
 		
-		self.assertTrue('announceResource' in body)
 	
 	def test_getTorrents(self):
 		response = self.open("%s/torrents" % self.conf['url'])
