@@ -10,6 +10,18 @@ class Auth(object):
 	def setConnectionPool(self,pool):
 		self.connPool = pool
 
+	def isUserMemberOfRole(self,userId,roles):
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			
+			cur.execute("SELECT roles.name from rolemember left join roles on roles.id=rolemember.roleid where userid=%s;",(userId,));
+
+			for role, in iter(cur.fetchone,None):
+				if role in roles:
+					return True
+					
+			return False
+
 	def addUser(self,username,pwHash):
 		with self.connPool.item() as conn:
 			cur = conn.cursor()

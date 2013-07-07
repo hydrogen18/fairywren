@@ -21,13 +21,14 @@ class resource(object):
 
 		
 class requireAuthorization(object):
-	def __init__(self, *allowed):
-		self.allowed = allowed
+	def __init__(self, *allowedRoles):
+		self.allowedRoles = allowedRoles
 		
 	def __call__(self,func):
 		if not hasattr(func, 'requireAuthentication') or func.requireAuthentication != True:
 			raise ValueError(func.__name__ + ' is requested to have authorization enforced, without authorization')
-		func.allowed = self.allowed
+		func.allowedRoles = [func.__name__]
+		func.allowedRoles += list(self.allowedRoles)
 		return func
 
 					
@@ -111,8 +112,9 @@ class SessionManager(object):
 		
 class restInterface(object):
 	NOT_AUTHENTICATED = {'error':'not authenticated'}
+	NOT_AUTHORIZED = {'error':'not authorized'}
 	
-	def __init__(self,pathDepth,authenticateUser):		
+	def __init__(self,pathDepth,authenticateUser, authorizeUser):		
 		
 		#Inspect each member of this object. If it has a member 
 		#and path it has been decorated by the resource decorator
@@ -132,6 +134,7 @@ class restInterface(object):
 		self.sm = SessionManager()
 		
 		self.authenticateUser = authenticateUser
+		self.authorizeUser = authorizeUser
 
 	@resource(False,'POST','session')
 	def login(self,env,start_response):
@@ -212,8 +215,10 @@ class restInterface(object):
 						return vanilla.sendJsonWsgiResponse(env,start_response,restInterface.NOT_AUTHENTICATED)
 						
 					#Check to see if the resource requires authorization
-					if hasattr(resource,'allowed'):
-						pass
+					if hasattr(resource,'allowedRoles'):
+						if not self.authorizeUser(session,resource.allowedRoles):
+							return vanilla.sendJsonWsgiResponse(env,start_response,restInterface.NOT_AUTHORIZED)
+						
 						
 					return resource(env,start_response,session)
 				else:

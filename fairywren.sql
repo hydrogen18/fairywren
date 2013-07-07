@@ -15,5 +15,17 @@ CREATE TABLE torrents(
 	lengthInbytes BIGINT NOT NULL,
 	PRIMARY KEY(id,infoHash)
 );
+
+CREATE TABLE roles(
+	id SERIAL UNIQUE,
+	name varchar NOT NULL UNIQUE,
+	PRIMARY KEY(id)
+);
+
+CREATE TABLE roleMember(
+	roleId INTEGER REFERENCES roles(id) NOT NULL,
+	userId INTEGER REFERENCES users(id) NOT NULL,
+	PRIMARY KEY(roleId,userId)
+);
 	
 	

@@ -30,7 +30,11 @@ class Webapi(restInterface):
 			
 			return authmgr.authenticateUser(username,password)
 
-		super(Webapi,self).__init__(httpPathDepth,authenticateUser)
+		def authorizeUser(session,roles):
+			return authmgr.isUserMemberOfRole(session.getId(),roles)
+			
+
+		super(Webapi,self).__init__(httpPathDepth,authenticateUser,authorizeUser)
 		self.authmgr = authmgr
 		self.torrents = torrents
 		self.users = users
@@ -47,6 +51,7 @@ class Webapi(restInterface):
 				
 		return vanilla.sendJsonWsgiResponse(env,start_response,response)
 		
+	@requireAuthorization()
 	@resource(True,'POST','users')
 	def addUser(self,env,start_response,session):
 		

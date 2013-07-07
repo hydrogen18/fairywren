@@ -82,14 +82,6 @@ class SunnyDay(unittest.TestCase):
 		self.assertTrue(body['name'] == username)
 		self.assertTrue(body['numberOfTorrents'] == 0)
 		
-		
-		
-	
-	"""def open(self,*url):
-		request = urllib2.Request(*url)
-		request.add_header('Cookie',self.cookie)
-		return urllib2.urlopen(request)"""
-	
 	def test_getSession(self):
 		response = self.open("%s/api/session" % self.conf['url'])
 		
