@@ -64,9 +64,32 @@ Fairywren.showTorrents = function()
 						var downloadUrl = data.torrents[i].resource;
 						var lengthInBytes = data.torrents[i].lengthInBytes;
 						
+						var adjustedLength = lengthInBytes;
+						var adjustedUnits = 'bytes';
+						
+						var ADJUSTMENTS = ['kilobytes','megabytes','gigabytes'];
+						var SCALE = 1024;
+						for(var i = 0;i < ADJUSTMENTS.length; ++i)
+						{
+							if(SCALE > adjustedLength )
+							{
+								break;
+							}
+							var adjustment = Math.pow(SCALE,i);
+							adjustedLength = lengthInBytes / adjustment;
+							adjustedUnits = ADJUSTMENTS[i];
+						}
+						
+						
+						var displayLengthFixed = parseInt(adjustedLength) !== adjustedLength;
+						if(displayLengthFixed)
+						{
+							adjustedLength = adjustedLength.toFixed(2);
+						}
+						
 						var row = '<tr><td>' + title + 
 						'&nbsp;<a href="' + downloadUrl + '">Download</a></td>\
-						<td>' + lengthInBytes +' bytes</td>\
+						<td>' + adjustedLength + ' ' + adjustedUnits + '</td>\
 						<td>' + uploadTime + "</td>\
 						<td>" + uploader + "</td></tr>";
 						$("#torrentTable tr:last").after(row);
