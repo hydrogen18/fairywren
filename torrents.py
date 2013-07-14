@@ -17,7 +17,12 @@ class Torrent(object):
 	def fromBencodedData(data):
 		"""Build a Torrent object from bencoded data"""
 		
-		return Torrent.fromDict(bencode.bdecode(data))
+		try:
+			decoded = bencode.bdecode(data)
+		except bencode.BTFailure:
+			return None
+		
+		return Torrent.fromDict(decoded)
 		
 	
 	@staticmethod 

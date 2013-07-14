@@ -84,6 +84,9 @@ class Webapi(restInterface):
 		
 		if response == None:
 			return vanilla.http_error(404,env,start_response)
+			
+		if session.getId() == number:
+			response['announceResource'] = self.torrents.getAnnounceUrlForUser(number)
 				
 		return vanilla.sendJsonWsgiResponse(env,start_response,response)
 		
@@ -147,6 +150,9 @@ class Webapi(restInterface):
 		
 		data = files['torrent'].raw
 		newTorrent = torrents.Torrent.fromBencodedData(data)
+		
+		if newTorrent == None:
+			return vanilla.http_error(400,env,start_response,'torrent is not valid bencoded data')
 		
 		if newTorrent.scrub():
 			response['redownload'] = True

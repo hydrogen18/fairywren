@@ -5,6 +5,8 @@ Fairywren.MIN_PASSWORD_LENGTH = 12;
 
 $(document).ready(function(){
 	
+	$("#torrentUpload").ajaxForm();
+	
 	jQuery.get("api/torrents").
 	done(
 		function(data)
@@ -51,6 +53,20 @@ $(document).ready(function(){
 			else
 			{
 				Fairywren.my = data.my;
+				jQuery.get(Fairywren.my).
+				done(
+					function(data)
+					{
+						if("error" in data)
+						{
+							$("#message").text(data.error);
+						}
+						else
+						{
+							Fairywren.account = data;
+						}
+					}
+				);
 			}
 		}
 		);
@@ -60,30 +76,52 @@ $(document).ready(function(){
 });
 
 
+Fairywren.uploadTorrent = function()
+{
+	
+	var showOnSuccess = $("#torrentUpload").find(".success");
+	var showOnFailure = $("#torrentUpload").find(".failure");
+	
+	showOnSuccess.hide();
+	showOnFailure.hide();
+	
+	var options ={
+		
+		success : function(responseText,statusText,xhr,$form)
+		{
+			showOnSuccess.show();
+		},
+		
+		error : function()
+		{
+			showOnFailure.show();
+		},
+		clearForm : true,
+		
+	};
+		
+	$("#torrentUpload").ajaxSubmit(options);
+	
+	return false;
+}
+
 Fairywren.loadAccount = function()
 {
 	var list = $("#accountInfo");
 	
-	jQuery.get(Fairywren.my).
-	done(
-		function(data)
-		{
-			if("error" in data)
-			{
-				$("#message").text(data.error);
-			}
-			else
-			{
-				Fairywren.account = data;
-				list.empty();
-				list.append($("<dt/>").text("Username"));
-				list.append($("<dd/>").text(data.name));
-				
-				list.append($("<dt/>").text("Number of torrents uploaded"));
-				list.append($("<dd/>").text(data.numberOfTorrents));
-			}
-		}
-	);
+	data = Fairywren.account;
+	list.empty();
+	list.append($("<dt/>").text("Username"));
+	list.append($("<dd/>").text(data.name));
+	
+	list.append($("<dt/>").text("Number of torrents uploaded"));
+	list.append($("<dd/>").text(data.numberOfTorrents));
+}
+
+Fairywren.loadUpload = function()
+{
+	
+	$("#announceUrl").text(Fairywren.account.announceResource);
 }
 
 Fairywren.changePassword = function()
