@@ -46,7 +46,8 @@ class WebapiTest(unittest.TestCase):
 			if c.name == "session":
 				self.cookie = "%s=%s" % (c.name,c.value,)
 		
-		self.open = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookies),MultipartPostHandler.MultipartPostHandler).open
+		self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookies),MultipartPostHandler.MultipartPostHandler)
+		self.open = self.opener.open
 
 	def setUp(self):
 		with open("test.json",'r') as fin:
@@ -126,6 +127,12 @@ class RainyDay(WebapiTest):
 		
 		self.assertRaisesRegexp(urllib2.HTTPError,'.*409.*',self.open,'%s/api/users' % self.conf['url'] , qp)
 		
+	def test_uploadBadTorrent(self):
+		with tempfile.NamedTemporaryFile(delete=True) as randomFile:
+			randomFile.write(os.urandom(128))
+			randomFile.flush()
+			self.assertRaisesRegexp(urllib2.HTTPError,'.*400.*',self.opener.open,str('%s/api/torrents'%self.conf['url']),data={"title":'Random Test Data',"torrent":open(randomFile.name)})
+			
 
 		
 
