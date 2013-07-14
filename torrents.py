@@ -261,7 +261,7 @@ class TorrentStore(object):
 					'creationDate' : torrentsCreationDate,
 					'lengthInBytes' : lengthInBytes,
 					'creator': {
-						'resource' : '%x.json' % userId,
+						'resource' : 'api/users/%.8x' % userId,
 						'name' : userName
 						}
 					}
