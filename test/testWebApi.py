@@ -147,25 +147,23 @@ class SunnyDay(WebapiTest):
 		
 		self.assertTrue('resource' in body)
 		
-		pwHash = hashlib.sha512()
-		pwHash.update('password1')
-		pwHash = base64.urlsafe_b64encode(pwHash.digest()).replace('=','')
-		query = { 'password' : pwHash }
-		response = self.open('%s/%s/password' % (self.conf['url'], body['resource']),query)		
-		
-		updatePwBody = json.load(response)
-		self.assertTrue('error' not in updatePwBody)
-		
 		response = self.open('%s/%s' % ( self.conf['url'], body['resource']))
 		
 		body = json.load(response)
 		
 		self.assertTrue(body['name'] == username)
 		self.assertTrue(body['numberOfTorrents'] == 0)
+		self.assertTrue('password' in body)
 		
-
+		pwHash = hashlib.sha512()
+		pwHash.update('password1')
+		pwHash = base64.urlsafe_b64encode(pwHash.digest()).replace('=','')
+		query = { 'password' : pwHash }
+		response = self.open('%s/%s' % (self.conf['url'], body['password']),query)		
 		
-		
+		updatePwBody = json.load(response)
+		self.assertTrue('error' not in updatePwBody)
+	
 	def test_getSession(self):
 		response = self.open("%s/api/session" % self.conf['url'])
 		

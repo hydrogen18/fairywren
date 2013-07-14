@@ -6,14 +6,18 @@
 Torrents
 </title>
 
+<link rel="stylesheet" type="text/css" href="js/jquery-ui/css/start/jquery-ui-1.10.3.custom.min.css">
 <link rel="stylesheet" type="text/css" href="torrents.css">
+
+
+<script src="js/jquery.js"></script>
+<script src="js/jquery-ui/js/jquery-ui-1.10.3.custom.min.js"></script>
+<script src="js/sha.js"></script>
+<script src="js/torrents.js"></script>
+
 </head>
 
 <body>
-
-<script src="js/sha.js"></script>
-<script src="js/jquery.js"></script>
-<script src="js/torrents.js"></script>
 
 <div id="main" align="center">
 
@@ -21,12 +25,33 @@ Torrents
 
 </div>
 
-<div id="navigation">
-<a href="upload.html">Upload</a>
+<div id="main">
+
+<ul>
+<li><a href="#torrents">Torrents</a></li>
+<li><a href="#account" onclick="Fairywren.loadAccount()">Account</a></li>
+</ul>
+
+<div id="account">
+<div align="left" width=33% class="contentBox ui-corner-all"><dl id="accountInfo"></dl></div>
+
+<div align="left" width=33% class="contentBox ui-corner-all" id="changePassword" >
+	<div class="contentBoxHeader ui-corner-all">Change Password</div>
+	<div class="warning"></div>
+	
+<form>
+<label for="password0">Password</label>
+<input type="password" name="password0"/><br />
+<label for="password1">Re-enter</label>
+<input type="password" name="password1"/><br />
+
+<input type="submit" value="Change Password" onclick="Fairywren.changePassword(); return false;"/>
+<span class="success">&#x2713;</span>
+</form>
+</div>
 </div>
 
 <div id="torrents">
-
 <table id="torrentTable" width=85%>
 
 <tr>
@@ -40,6 +65,7 @@ Torrents
 </tr>
 
 </table>
+</div>
 
 
 </div>

@@ -1,3 +1,15 @@
+
+html, body {
+    height: 100%; /* IMPORTANT!!! stretches viewport to 100% */
+}
+
+#main {
+    min-height: 100%; /* min. height for modern browser */
+    height:auto !important; /* important rule for modern Browser */
+    height:100%; /* min. height for IE */
+    overflow: hidden !important; /* FF scroll-bar */
+}
+
 table{
 border-collapse:collapse;
 }
@@ -14,4 +26,37 @@ text-align:left;
 div#message
 {
 color:red;
+}
+
+#accountInfo, dt
+{
+font-size:1.05em;
+}
+
+div.contentBox
+{
+border-style: solid;
+border-width: 1px;
+margin:5px;
+}
+
+div.contentBoxHeader
+{
+margin: 1px;
+border-style:solid;
+border-width:1px;
+font-size:1.09em;
+}
+
+div.warning
+{
+color:red;
+margin:0px;
+}
+
+.success
+{
+color:green;
+font-size:1.12em;
+display:none;
 }

@@ -18,7 +18,7 @@ class Users(object):
 				return None
 			else:
 				name, = result
-				retval =  {'id': idNumber, 'name':name}
+				retval =  {'id': idNumber, 'name':name, 'password' : 'api/users/%.8x/password' % idNumber}
 				
 			cur.execute("Select count(1) from torrents where creator=%s",
 			(idNumber,))

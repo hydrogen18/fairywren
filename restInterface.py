@@ -217,11 +217,7 @@ class restInterface(object):
 		return vanilla.sendJsonWsgiResponse(env,start_response,{},additionalHeaders=[session.getCookie()])
 		
 
-	@resource(True,'GET','session')
-	def showSession(self,env,start_response,session):		
-		response = {}
 	
-		return vanilla.sendJsonWsgiResponse(env,start_response,response,additionalHeaders=[session.getCookie()])		
 		
 
 

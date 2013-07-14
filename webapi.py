@@ -55,6 +55,13 @@ class Webapi(restInterface):
 		self.torrents = torrents
 		self.users = users
 
+	@resource(True,'GET','session')
+	def showSession(self,env,start_response,session):		
+		response = {'my' : 'api/users/%.8x' % session.getId() }
+	
+		return vanilla.sendJsonWsgiResponse(env,start_response,response,additionalHeaders=[session.getCookie()])			
+		
+
 	@authorizeSelf(extractUserId)
 	@requireAuthorization('Administrator')
 	@resource(True,'POST','users','*','password')
