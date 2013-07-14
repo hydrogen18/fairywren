@@ -21,6 +21,7 @@ border:1px solid black;
 td, th
 {
 text-align:left;
+padding: 2px;
 }
 
 div#message
@@ -73,3 +74,19 @@ color:red;
 font-size:1.18em;
 display:none;
 }
+
+.clickable
+{
+border-style:dashed;
+border-width:3px;
+padding:1px;
+margin:1px;
+background-color:#00CCFF;
+}
+
+.clickable:hover
+{
+background-color:#66FFFF;
+border-style:solid;
+}
+
