@@ -55,8 +55,6 @@ class Webapi(restInterface):
 		self.torrents = torrents
 		self.users = users
 
-
-
 	@authorizeSelf(extractUserId)
 	@requireAuthorization('Administrator')
 	@resource(True,'POST','users','*','password')

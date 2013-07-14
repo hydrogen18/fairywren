@@ -95,10 +95,10 @@ class Torrent(object):
 
 class TorrentStore(object):
 	
-	def __init__(self,torrentPath,trackerUrl,apiUrl):
+	def __init__(self,torrentPath,trackerUrl):
 		self.torrentPath = torrentPath
 		self.trackerUrl = str(trackerUrl)
-		self.apiUrl = str(apiUrl)
+		
 		
 	def setConnectionPool(self,pool):
 		self.connPool = pool
@@ -220,7 +220,7 @@ class TorrentStore(object):
 		
 		torrentId -- the id of the torrent 
 		"""
-		return '%s/torrents/%.8x.torrent' % (self.apiUrl, torrentId,)
+		return 'api/torrents/%.8x.torrent' % torrentId
 		
 	def getInfoResourceForTorrent(self,torrentId):
 		"""
@@ -228,7 +228,7 @@ class TorrentStore(object):
 		
 		torrentId -- the id of the torrent
 		"""
-		return '%s/torrents/%.8x.json'  % (self.apiUrl,torrentId,)
+		return 'api/torrents/%.8x.json'  % torrentId
 	
 	def getTorrents(self,limit,subset):
 		"""

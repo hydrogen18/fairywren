@@ -212,9 +212,9 @@ class SunnyDay(WebapiTest):
 		finally:
 			os.remove(torrentFileName)
 		
-		response = self.open(torrentUrl)
+		response = self.open('%s/%s' % ( self.conf['url'] , torrentUrl,))
 		
-		print response.read()
+		
 			
 if __name__ == '__main__':
     unittest.main()

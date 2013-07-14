@@ -69,7 +69,7 @@ class Auth(object):
 			cur.close()
 			conn.close()
 			
-			return 'api/users/%x'  % newId
+			return 'api/users/%.8x'  % newId
 			
 		
 	def authenticateSecretKey(self,key):
