@@ -190,8 +190,8 @@ class SunnyDay(WebapiTest):
 		#create a torrent
 		with tempfile.NamedTemporaryFile(delete=True) as fout:
 		
-			for c in random.sample(range(0,256),128):
-				fout.write(chr(c))
+			
+			fout.write(os.urandom(65535))
 			
 			fout.flush()
 			
