@@ -1,7 +1,7 @@
 
-Fairywren = {}
+
 Fairywren.account = null;
-Fairywren.MIN_PASSWORD_LENGTH = 12;
+
 
 $(document).ready(function(){
 	
@@ -156,7 +156,6 @@ Fairywren.loadUpload = function()
 
 Fairywren.changePassword = function()
 {
-	
 	var passwords = $("#changePassword").find("input");
 	var password0 = $(passwords[0]);
 	var password1 = $(passwords[1]);
@@ -165,9 +164,11 @@ Fairywren.changePassword = function()
 	var showOnSuccess = $("#changePassword").find(".success");
 	showOnSuccess.hide();
 	errDisplay.text("");
-	if(password0.val().length < Fairywren.MIN_PASSWORD_LENGTH)
+	
+	var validPassword = Fairywren.validatePassword(password0.val());
+	if( validPassword !== null)
 	{
-		errDisplay.text("Password too short, must be at least " + Fairywren.MIN_PASSWORD_LENGTH + " characters");
+		errDisplay.text(validPassword);
 		return;
 	}
 	
@@ -177,10 +178,7 @@ Fairywren.changePassword = function()
 		return;
 	}
 	
-	var pwSha = new jsSHA(password0.val(),"TEXT");
-	var pwHash = pwSha.getHash("SHA-512","B64").replace(/=/g,"");
-	
-	jQuery.post(Fairywren.account.password, { "password" :pwHash }).
+	jQuery.post(Fairywren.account.password, { "password" : Fairywren.hashPassword(password0.val()) }).
 	done(
 		function(data){
 			if("error" in data)
@@ -193,7 +191,6 @@ Fairywren.changePassword = function()
 				password0.val("");
 				password1.val("");
 			}
-
 		}
 	).
 	fail(

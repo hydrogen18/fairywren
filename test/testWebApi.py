@@ -196,8 +196,6 @@ class SunnyDay(WebapiTest):
 	def test_addTorrent(self):
 		#create a torrent
 		with tempfile.NamedTemporaryFile(delete=True) as fout:
-		
-			
 			fout.write(os.urandom(65535))
 			
 			fout.flush()

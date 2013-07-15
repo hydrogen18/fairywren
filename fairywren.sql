@@ -28,4 +28,12 @@ CREATE TABLE roleMember(
 	PRIMARY KEY(roleId,userId)
 );
 	
-	
+CREATE TABLE invites(
+	id SERIAL UNIQUE,
+	owner INTEGER REFERENCES users(id) NOT NULL,
+	uid char(12) not NULL,
+	invitee INTEGER REFERENCES users(id) NULL,
+	claimedOn TIMESTAMP WITHOUT TIME ZONE NULL,
+	claimedBy inet NULL,
+	PRIMARY KEY(id,uid)
+);

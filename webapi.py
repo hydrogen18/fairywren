@@ -55,6 +55,12 @@ class Webapi(restInterface):
 		self.torrents = torrents
 		self.users = users
 
+	@resource(False,'POST','invites','*')
+	@parameter('password',decodePassword)
+	@parameter('username')
+	def claimInvite(self,env,start_response):
+		return vanilla.sendJsonWsgiResponse(env,start_response,{})
+
 	@resource(True,'GET','session')
 	def showSession(self,env,start_response,session):		
 		response = {'my' : 'api/users/%.8x' % session.getId() }
