@@ -11,8 +11,7 @@ function login()
 		return false;
 	}
 	
-	var pwSha = new jsSHA(password,"TEXT");
-	var pwHash = pwSha.getHash("SHA-512","B64").replace(/=/g,"");
+	pwHash = Fairywren.hashPassword(password);
 	
 	jQuery.post("api/session", { "username": username,"password" :pwHash }).
 	done(
