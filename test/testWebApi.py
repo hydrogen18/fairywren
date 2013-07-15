@@ -62,7 +62,7 @@ class ChangeOwnPassword(WebapiTest):
 		
 		with open('/dev/urandom','r') as randomIn:
 			username = randomIn.read(64)
-			username = ''.join([c for c in username if c in string.ascii_letters])
+			username = ''.join([c for c in username if c in string.ascii_lowercase])
 					
 		pwHash = hashlib.sha512()
 		password = 'foo'
@@ -112,7 +112,7 @@ class RainyDay(WebapiTest):
 	def test_addExistingUser(self):
 		with open('/dev/urandom','r') as randomIn:
 			username = randomIn.read(64)
-		username = ''.join([c for c in username if c in string.ascii_letters])
+		username = ''.join([c for c in username if c in string.ascii_lowercase])
 		password = 'password'
 			
 		pwHash = hashlib.sha512()
@@ -141,7 +141,7 @@ class SunnyDay(WebapiTest):
 	def test_addUser(self):
 		with open('/dev/urandom','r') as randomIn:
 			username = randomIn.read(64)
-		username = ''.join([c for c in username if c in string.ascii_letters])
+		username = ''.join([c for c in username if c in string.ascii_lowercase])
 		password = 'password'
 			
 		pwHash = hashlib.sha512()

@@ -8,7 +8,7 @@ import sys
 import torrents
 import logging
 import urlparse
-
+import string
 from restInterface import *
 
 def decodePassword(password):
@@ -23,6 +23,17 @@ def decodePassword(password):
 		return base64.urlsafe_b64decode(password)
 	except TypeError:
 		return None
+
+def validateUsername(username):
+	allowedChars = string.digits + string.ascii_lowercase
+	
+	for c in username:
+		if c not in allowedChars:
+			return None
+			
+	return username
+
+		
 		
 def extractUserId(*pathComponents):
 	return int(pathComponents[1],16)
@@ -57,8 +68,8 @@ class Webapi(restInterface):
 
 	@resource(False,'POST','invites','*')
 	@parameter('password',decodePassword)
-	@parameter('username')
-	def claimInvite(self,env,start_response):
+	@parameter('username',validateUsername)
+	def claimInvite(self,env,start_response,password,username):
 		return vanilla.sendJsonWsgiResponse(env,start_response,{})
 
 	@resource(True,'GET','session')
@@ -99,7 +110,7 @@ class Webapi(restInterface):
 	@requireAuthorization()
 	@resource(True,'POST','users')
 	@parameter('password',decodePassword)
-	@parameter('username')
+	@parameter('username',validateUsername)
 	def addUser(self,env,start_response,session,password,username):
 		
 		resourceForNewUser = self.authmgr.addUser(username,password)
