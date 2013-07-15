@@ -70,6 +70,11 @@ class Webapi(restInterface):
 	@parameter('password',decodePassword)
 	@parameter('username',validateUsername)
 	def claimInvite(self,env,start_response,password,username):
+		try:
+			inviteUid = base64.urlsafe_b64decode(env['fairyrwen.pathComponents'][-1])
+		except TypeError:
+			return vanilla.http_error(400,env,start_response)
+			
 		return vanilla.sendJsonWsgiResponse(env,start_response,{})
 
 	@resource(True,'GET','session')

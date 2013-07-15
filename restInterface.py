@@ -164,8 +164,8 @@ def extractParams(func,env):
 
 		
 class restInterface(object):
-	NOT_AUTHENTICATED = {'error':'not authenticated'}
-	NOT_AUTHORIZED = {'error':'not authorized'}
+	NOT_AUTHENTICATED = {'error':'not authenticated', 'authenticated': False,'authorized':False}
+	NOT_AUTHORIZED = {'error':'not authorized' , 'authenticated':True, 'authorized':False}
 	
 	def __init__(self,pathDepth,authenticateUser, authorizeUser):		
 		
@@ -215,13 +215,6 @@ class restInterface(object):
 		session = self.sm.startSession(username,userId)
 			
 		return vanilla.sendJsonWsgiResponse(env,start_response,{},additionalHeaders=[session.getCookie()])
-		
-
-	
-		
-
-
-			
 		
 	def __call__(self,env,start_response):		
 		#Extract and normalize the path

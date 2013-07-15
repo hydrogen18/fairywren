@@ -13,7 +13,7 @@ $(document).ready(function(){
 		{
 			if("error" in data)
 			{
-				$("#message").text(data.error);
+				Fairywren.errorHandler(data);
 			}
 			else
 			{
@@ -24,7 +24,7 @@ $(document).ready(function(){
 					{
 						if("error" in data)
 						{
-							$("#message").text(data.error);
+							Fairywren.errorHandler(data);
 						}
 						else
 						{
