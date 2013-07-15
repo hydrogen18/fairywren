@@ -75,7 +75,7 @@ Fairywren.showTorrents = function()
 							{
 								break;
 							}
-							var adjustment = Math.pow(SCALE,i);
+							var adjustment = Math.pow(SCALE,i+1);
 							adjustedLength = lengthInBytes / adjustment;
 							adjustedUnits = ADJUSTMENTS[i];
 						}
