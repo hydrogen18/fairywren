@@ -59,15 +59,16 @@ class requireAuthorization(object):
 class SessionManager(object):
 	cookieName = 'session'
 	class Session(object):
-		__slots__ = ['username','sessionIdentifier','userId']
+		__slots__ = ['username','sessionIdentifier','userId','secure']
 		
-		def __init__(self,username,userId,sessionIdentifier):
+		def __init__(self,username,userId,sessionIdentifier,secure):
 			self.userId = userId
 			self.username = username
 			self.sessionIdentifier = sessionIdentifier
+			self.secure = secure
 			
 		def getCookie(self):
-			return ('Set-Cookie','%s=%s; HttpOnly' % (SessionManager.cookieName, str(self.sessionIdentifier), ) )
+			return ('Set-Cookie','%s=%s; HttpOnly%s' % (SessionManager.cookieName, str(self.sessionIdentifier), '; Secure' if self.secure else '') )
 			
 		def getId(self):
 			return self.userId
@@ -75,7 +76,8 @@ class SessionManager(object):
 		def getUsername(self):
 			return self.username
 			
-	def __init__(self):
+	def __init__(self,secure):
+		self.secure = secure
 		self.logger = logging.getLogger('fairywren.restInterface.SessionManager')
 		self.sessions = {}
 		self.usernameToSessionIdentifier = {}
@@ -100,7 +102,7 @@ class SessionManager(object):
 		
 		#Populate both dictionaries
 		#The session dictionary maps the identifier to a session object
-		self.sessions[newIdentifier] = self.Session(username,userId,newIdentifier)
+		self.sessions[newIdentifier] = self.Session(username,userId,newIdentifier,self.secure)
 		#The second dictionary maps the username to the identifier
 		self.usernameToSessionIdentifier[username] = newIdentifier
 		
@@ -167,7 +169,7 @@ class restInterface(object):
 	NOT_AUTHENTICATED = {'error':'not authenticated', 'authenticated': False,'authorized':False}
 	NOT_AUTHORIZED = {'error':'not authorized' , 'authenticated':True, 'authorized':False}
 	
-	def __init__(self,pathDepth,authenticateUser, authorizeUser):		
+	def __init__(self,pathDepth,authenticateUser, authorizeUser,secure):		
 		
 		#Inspect each member of this object. If it has a member 
 		#and path it has been decorated by the resource decorator
@@ -184,7 +186,7 @@ class restInterface(object):
 		
 		self.pathDepth = pathDepth
 		
-		self.sm = SessionManager()
+		self.sm = SessionManager(secure)
 		
 		self.authenticateUser = authenticateUser
 		self.authorizeUser = authorizeUser

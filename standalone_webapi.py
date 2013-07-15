@@ -36,5 +36,5 @@ if __name__ == '__main__':
 	users = Users()
 	users.setConnectionPool(connPool)
 	
-	webapi = Webapi(users,authmgr,torrents,httpPathDepth)
+	webapi = Webapi(users,authmgr,torrents,httpPathDepth,conf['webapi']['secure'])
 	wsgi.server(eventlet.listen((httpListenIp, httpListenPort)), webapi)

@@ -39,7 +39,7 @@ def extractUserId(*pathComponents):
 	return int(pathComponents[1],16)
 
 class Webapi(restInterface):
-	def __init__(self,users,authmgr,torrents,httpPathDepth):
+	def __init__(self,users,authmgr,torrents,httpPathDepth,secure):
 		def authenticateUser(username,password):	
 			#Password comes across as 64 bytes of base64 encoded data
 			#with trailing ='s lopped off. 
@@ -61,7 +61,7 @@ class Webapi(restInterface):
 			return authmgr.isUserMemberOfRole(session.getId(),roles)
 			
 
-		super(Webapi,self).__init__(httpPathDepth,authenticateUser,authorizeUser)
+		super(Webapi,self).__init__(httpPathDepth,authenticateUser,authorizeUser,secure)
 		self.authmgr = authmgr
 		self.torrents = torrents
 		self.users = users
