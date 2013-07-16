@@ -63,6 +63,8 @@ Fairywren.showTorrents = function()
 						var uploader = data.torrents[i].creator.name;
 						var downloadUrl = data.torrents[i].resource;
 						var lengthInBytes = data.torrents[i].lengthInBytes;
+						var seeds = data.torrents[i].seeds;
+						var leeches = data.torrents[i].leeches;
 						
 						var adjustedLength = lengthInBytes;
 						var adjustedUnits = 'bytes';
@@ -88,7 +90,8 @@ Fairywren.showTorrents = function()
 						}
 						
 						var row = '<tr><td>' + title + 
-						'&nbsp;<a href="' + downloadUrl + '">Download</a></td>\
+						'&nbsp;<a href="' + downloadUrl + '">Download</a>\
+						<span style="float:right;" >'+ '&uarr;' + seeds  + '&nbsp;&darr;' + leeches + '</span></td>\
 						<td>' + adjustedLength + ' ' + adjustedUnits + '</td>\
 						<td>' + uploadTime + "</td>\
 						<td>" + uploader + "</td></tr>";
