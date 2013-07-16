@@ -108,6 +108,10 @@ torrentPath
     A string pointing to the path where fairywren stores uploaded
     BitTorrent files. This can be an empty folder. All needed
     folders and files are created as needed.
+
+secure
+    A boolean indicating if sesssion cookies issued should be flagged
+    with the 'Secure' option. Used when running behind an HTTPS proxy.
     
 Adding users
 ====
