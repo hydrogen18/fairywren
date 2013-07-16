@@ -240,6 +240,7 @@ class Tracker(object):
 		response['peers'] = []
 		
 		change = False
+		
 		#For all 3 cases here just return peers
 		if p['event'] in ['started','completed','update']:
 			response['complete'] = self.peers.getNumberOfLeeches(p['info_hash'])
@@ -264,9 +265,10 @@ class Tracker(object):
 			
 			change = self.peers.updatePeer(p['info_hash'],peer)
 			
-		elif p['event'] == ['stopped']:
+		elif p['event'] == 'stopped':
 			self.peers.removePeer(p['info_hash'],peer)
 			change = True
+			
 			
 		if change:
 			self.statsQueue.put(p['info_hash'])
