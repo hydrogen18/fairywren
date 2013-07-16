@@ -247,7 +247,7 @@ class TorrentStore(object):
 		with self.connPool.item() as conn:
 			cur = conn.cursor()
 			cur.execute(
-			"Select torrents.id,torrents.title,torrents.creationdate, \
+			"Select torrents.infoHash,torrents.id,torrents.title,torrents.creationdate, \
 			users.id,users.name,torrents.lengthInBytes \
 			from torrents \
 			left join users on torrents.creator = users.id \
@@ -257,9 +257,10 @@ class TorrentStore(object):
 			while True:
 				r = cur.fetchone()
 				if r!=None:
-					torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes =r
-					
+					infoHash,torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes =r
+					infoHash = base64.urlsafe_b64decode(infoHash + '==')
 					yield {
+					'infoHash' : infoHash ,
 					'resource' : self.getResourceForTorrent(torrentId),
 					'infoResource' : self.getInfoResourceForTorrent(torrentId),
 					'title' : torrentTitle,

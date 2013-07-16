@@ -12,6 +12,7 @@ from eventlet.green import zmq
 import cPickle as pickle
 import eventlet.queue
 import fairywren
+import itertools
 
 def sendBencodedWsgiResponse(env,start_response,responseDict):
 	headers = [('Content-Type','text/plain')]
@@ -32,7 +33,7 @@ class TrackerStats(object):
 	def __init__(self,tracker):
 		self.zmq = zmq.Context(1)
 		self.pub = self.zmq.socket(zmq.PUB)
-		self.pub.bind('ipc:///tmp/fairywrenStats')
+		self.pub.bind(fairywren.IPC_PATH)
 		self.queue = tracker.getQueue()
 		self.tracker = tracker
 		
@@ -43,8 +44,30 @@ class TrackerStats(object):
 			scrape = self.tracker.getScrape([info_hash])
 			
 			self.pub.send_multipart([fairywren.MSG_SCRAPE,pickle.dumps(scrape,-1)])
-			
 
+class TorrentStats(object):
+	def __init__(self):
+		self.zmq = zmq.Context(1)
+		self.sub = self.zmq.socket(zmq.SUB)
+		self.sub.connect(fairywren.IPC_PATH)
+		self.sub.setsockopt(zmq.SUBSCRIBE,fairywren.MSG_SCRAPE)
+		
+		self.counts = {}
+		
+	def __call__(self):
+		
+		while True:
+			recvdmsg = self.sub.recv_multipart()
+			recvdmsg = pickle.loads(recvdmsg[1])
+			
+			for info_hash,stats in recvdmsg['files'].iteritems():
+				self.counts[info_hash] = (stats['complete'],stats['incomplete'])
+		
+	def getCount(self,info_hash):
+		if not info_hash in self.counts:
+			return (0,0)
+			
+		return self.counts[info_hash]
 
 class Tracker(object):
 	def __init__(self,auth,peers,pathDepth):

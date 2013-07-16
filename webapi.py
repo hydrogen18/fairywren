@@ -39,7 +39,8 @@ def extractUserId(*pathComponents):
 	return int(pathComponents[1],16)
 
 class Webapi(restInterface):
-	def __init__(self,users,authmgr,torrents,httpPathDepth,secure):
+	def __init__(self,torrentStats,users,authmgr,torrents,httpPathDepth,secure):
+		self.torrentStats = torrentStats
 		def authenticateUser(username,password):	
 			#Password comes across as 64 bytes of base64 encoded data
 			#with trailing ='s lopped off. 
@@ -140,8 +141,17 @@ class Webapi(restInterface):
 			return vanilla.http_error(400,env,start_response,'subset must be integer')
 		
 
+		listOfTorrents = []
+		
+		for torrent in self.torrents.getTorrents(resultSize,subset):
+			seeds, leeches = self.torrentStats.getCount(torrent['infoHash'])
+			torrent.pop('infoHash')
+			torrent['seeds'] = seeds
+			torrent['leeches'] = leeches
+			listOfTorrents.append(torrent)
+
 		return vanilla.sendJsonWsgiResponse(env,start_response,
-		{'torrents' : [i for i in self.torrents.getTorrents(resultSize,subset)] } )
+		{'torrents' : listOfTorrents } )
 		
 	@resource(True,'POST','torrents')
 	def createTorrent(self,env,start_response,session):
