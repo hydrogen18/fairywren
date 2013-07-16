@@ -6,11 +6,12 @@ from eventlet import wsgi
 from webapi import Webapi
 from auth import *
 from torrents import TorrentStore
-
+from users import Users
 import vanilla
 import psycopg2
 import sys
 import json
+
 
 DEFAULT_LISTEN_IP ='127.0.0.1'
 DEFAULT_LISTEN_PORT = 8081
@@ -25,12 +26,15 @@ if __name__ == '__main__':
 	authmgr = Auth(conf['salt'])
 	authmgr.setConnectionPool(connPool)
 	
-	torrents = TorrentStore(conf['webapi']['torrentPath'],conf['trackerUrl'],conf['apiUrl'])
+	torrents = TorrentStore(conf['webapi']['torrentPath'],conf['trackerUrl'])
 	torrents.setConnectionPool(connPool)
 		
 	httpListenIp = conf['webapi'].get('ip',DEFAULT_LISTEN_IP)
 	httpListenPort = conf['webapi'].get('port',DEFAULT_LISTEN_PORT)
 	httpPathDepth = conf.get('pathDepth',DEFAULT_PATH_DEPTH)
-		
-	webapi = Webapi(authmgr,torrents,httpPathDepth)
+
+	users = Users()
+	users.setConnectionPool(connPool)
+	
+	webapi = Webapi(users,authmgr,torrents,httpPathDepth,conf['webapi']['secure'])
 	wsgi.server(eventlet.listen((httpListenIp, httpListenPort)), webapi)

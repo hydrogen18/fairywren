@@ -1,5 +1,25 @@
-
+import json
 import eventlet
+import datetime
+
+def sendJsonWsgiResponse(env,start_response,response,additionalHeaders=None):
+	headers = [('Content-Type','text/json')]
+	headers.append(('Cache-Control','no-cache'))
+	
+	if additionalHeaders:
+		headers += additionalHeaders
+	
+	start_response('200 OK',headers)
+	
+	class DateTimeJSONEncoder(json.JSONEncoder):
+		def default(self, obj):
+			if isinstance(obj, datetime.datetime):
+				return obj.isoformat()
+			else:
+				return super(DateTimeJSONEncoder, self).default(obj)
+				
+	yield DateTimeJSONEncoder().encode(response)
+
 
 def http_error(num,env,start_response,msg=None):
 	if num < 400 or num > 599:

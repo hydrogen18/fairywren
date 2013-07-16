@@ -6,14 +6,21 @@
 Torrents
 </title>
 
+<link rel="stylesheet" type="text/css" href="js/jquery-ui/css/start/jquery-ui-1.10.3.custom.min.css">
 <link rel="stylesheet" type="text/css" href="torrents.css">
+
+
+<script src="js/jquery.js"></script>
+<script src="js/jquery-ui/js/jquery-ui-1.10.3.custom.min.js"></script>
+<script src="js/jquery.form.js"></script>
+<script src="js/sha.js"></script>
+
+<script src="js/fairywren.js"></script>
+<script src="js/torrents.js"></script>
+
 </head>
 
 <body>
-
-<script src="js/sha.js"></script>
-<script src="js/jquery.js"></script>
-<script src="js/torrents.js"></script>
 
 <div id="main" align="center">
 
@@ -21,25 +28,70 @@ Torrents
 
 </div>
 
-<div id="navigation">
-<a href="upload.html">Upload</a>
+<div id="main">
+
+<ul>
+<li><a href="#torrents">Torrents</a></li>
+<li><a href="#account" onclick="Fairywren.loadAccount()">Account</a></li>
+<li><a href="#upload" onclick="Fairywren.loadUpload()">Upload</a></li>
+</ul>
+
+<div id="upload">
+	<div class="contentBox ui-corner-all">
+		<div class="contentBoxHeader ui-corner-all">Announce URL</div>
+		<p>When creating a torrent, you'll need to supply the correct announce URL. Your announce URL is specific to you and is used by the tracker to identify you. Never share your announce URL or any .torrent files downloaded from this site. You can copy the announce URL from below.</p>
+		<div id="announceUrl" style="font-size:0.85em;margin-left:auto;margin-right:auto; max-width:90%; whitespace: pre; text-align: center; padding:3px;  border-style:dashed;border-width:1px;"></div>
+		
+		<p>Always select the option for 'Private torrent' when creating a torrent.</p>
+	</div>
+	
+	<div class="contentBox ui-corner-all">
+		<div class="contentBoxHeader ui-corner-all">Upload New Torrent</div>
+		<form id="torrentUpload" action="api/torrents" method="POST" enctype="multipart/form-data" encoding="multipart/form-data">
+<label for="title">Title</label> <input type="text" name="title"><br>
+<label for="file">Torrent File</label> <input type="file" name="torrent"><br>
+<input type="submit" value="Upload"  onClick="Fairywren.uploadTorrent(); return false;"><span class="success">&#x2713;</span><span class="failure"> &#x2718;</span>
+	</div>
+</div>
+
+<div id="account">
+<div width=33% class="contentBox ui-corner-all">
+	<div class="contentBoxHeader ui-corner-all">Statistics</div>
+	<dl id="accountInfo"></dl>
+</div>
+
+<div width=33% class="contentBox ui-corner-all" id="changePassword" >
+	<div class="contentBoxHeader ui-corner-all">Change Password</div>
+	<div class="warning"></div>
+	
+<form>
+<label for="password0">Password</label>
+<input type="password" name="password0"/><br />
+<label for="password1">Re-enter</label>
+<input type="password" name="password1"/><br />
+
+<input type="submit" value="Change Password" onclick="Fairywren.changePassword(); return false;"/>
+<span class="success">&#x2713;</span>
+</form>
+</div>
 </div>
 
 <div id="torrents">
+	<div onclick="Fairywren.showTorrents()" class="clickable" style="text-align:center;font-size:2em;width:50px;height:50px" >&#x21bb;</div>
+	<table id="torrentTable" width=90%>
 
-<table id="torrentTable" width=85%>
+	<tr>
+	<th>Title</th>
 
-<tr>
-<th>Title</th>
+	<th width=15%>Size</th>
 
-<th width=15%>Size</th>
+	<th width=15%>Upload Time</th>
 
-<th width=15%>Upload Time</th>
-
-<th width=15%>Uploader</th>
+	<th width=15%>Uploader</th>
 </tr>
 
 </table>
+</div>
 
 
 </div>
