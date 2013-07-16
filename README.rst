@@ -29,7 +29,7 @@ Architecture
 
 HTTP
 ------
-Two seperate Python instances are launched. Each hosts and HTTP
+Two seperate Python instances are launched. Each hosts a single HTTP
 server. One instance is the tracker, which is used by BitTorrent clients
 to exchange peers. The second is the web interface, which is a RESTful API
 for interacting with the private tracker. 
