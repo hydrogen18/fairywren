@@ -8,6 +8,10 @@ import socket
 import peers
 import ctypes
 import posixpath
+from eventlet.green import zmq
+import cPickle as pickle
+import eventlet.queue
+import fairywren
 
 def sendBencodedWsgiResponse(env,start_response,responseDict):
 	headers = [('Content-Type','text/plain')]
@@ -23,13 +27,47 @@ def getClientAddress(environ):
     except KeyError:
         return environ['REMOTE_ADDR']
 
+
+class TrackerStats(object):
+	def __init__(self,tracker):
+		self.zmq = zmq.Context(1)
+		self.pub = self.zmq.socket(zmq.PUB)
+		self.pub.bind('ipc:///tmp/fairywrenStats')
+		self.queue = tracker.getQueue()
+		self.tracker = tracker
+		
+	def __call__(self):
+		
+		while True:
+			info_hash = self.queue.get()
+			scrape = self.tracker.getScrape([info_hash])
+			
+			self.pub.send_multipart([fairywren.MSG_SCRAPE,pickle.dumps(scrape,-1)])
+			
+
+
 class Tracker(object):
 	def __init__(self,auth,peers,pathDepth):
 		self.auth = auth
 		self.peers = peers
 		self.pathDepth = pathDepth
+		self.statsQueue = eventlet.queue.LightQueue()
 		
-	
+	def getQueue(self):
+		return self.statsQueue
+		
+	def getScrape(self,info_hashes):
+		retval = {}
+		retval['files'] = {}
+		for info_hash in info_hashes:
+			result = {}
+			result['downloaded'] = 0
+			result['complete'] = self.peers.getNumberOfSeeds(info_hash)
+			result['incomplete'] = self.peers.getNumberOfLeeches(info_hash)
+			retval['files'][info_hash] = result
+			
+		return retval
+		
 	def announce(self,env,start_response):
 		#Extract and normalize the path
 		#Posix path may not be the best approach here but 
@@ -178,6 +216,7 @@ class Tracker(object):
 		response['incomplete'] = 0
 		response['peers'] = []
 		
+		change = False
 		#For all 3 cases here just return peers
 		if p['event'] in ['started','completed','update']:
 			response['complete'] = self.peers.getNumberOfLeeches(p['info_hash'])
@@ -200,10 +239,14 @@ class Tracker(object):
 				for peer in peerForResponse:
 					response['peers'].append({'peer id':peer.peerId,'ip':socket.inet_ntoa(struct.pack('!I',peer.ip)),port:peer.port})
 			
-			self.peers.updatePeer(p['info_hash'],peer)
+			change = self.peers.updatePeer(p['info_hash'],peer)
 			
 		elif p['event'] == ['stopped']:
 			self.peers.removePeer(p['info_hash'],peer)
+			change = True
+			
+		if change:
+			self.statsQueue.put(p['info_hash'])
 			
 		return sendBencodedWsgiResponse(env,start_response,response)
 

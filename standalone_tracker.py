@@ -2,7 +2,7 @@ import eventlet
 eventlet.monkey_patch()
 import eventlet.backdoor
 from eventlet import wsgi
-from tracker import Tracker
+from tracker import Tracker, TrackerStats
 from auth import *
 from peers import *
 
@@ -25,4 +25,10 @@ if __name__ == '__main__':
 	httpListenIp = conf['tracker'].get('ip',DEFAULT_LISTEN_IP)
 	httpListenPort = conf['tracker'].get('port',DEFAULT_LISTEN_PORT)
 	httpPathDepth = conf.get('pathDepth',DEFAULT_PATH_DEPTH)
-	wsgi.server(eventlet.listen((httpListenIp, httpListenPort)), Tracker(authmgr,Peers(),httpPathDepth))
+	
+	tracker = Tracker(authmgr,Peers(),httpPathDepth)
+	trackerStats = TrackerStats(tracker)
+	
+	eventlet.spawn_n(trackerStats)
+	
+	wsgi.server(eventlet.listen((httpListenIp, httpListenPort)), tracker)

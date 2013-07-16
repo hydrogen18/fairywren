@@ -1,0 +1,2 @@
+
+MSG_SCRAPE = 'x01'

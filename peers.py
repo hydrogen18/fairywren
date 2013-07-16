@@ -5,9 +5,9 @@ class Peer(object):
 	def __init__(self,ip,port,left,downloaded,uploaded,peerId):
 		self.ip = ip
 		self.port = port
-		self.left = 0
-		self.downloaded = 0
-		self.uploaded = 0
+		self.left = left
+		self.downloaded = downloaded
+		self.uploaded = uploaded
 		self.peerId = peerId
 		
 		
@@ -63,9 +63,24 @@ class Peers(object):
 			indexOfPeer = self.torrents[info_hash].index(peer)
 		except ValueError:
 			exists = False
-			
+		
+		#While updating the peers, determine if the number of seeders
+		#or leechers has changed
+		change = False
 		if exists:
+			extantPeer = self.torrents[info_hash][indexOfPeer]
+			
+			#If the peer changes from seed to leech, or from leech
+			#to seed then the count has changed
+			if extantPeer.left==0 != peer.left ==0:
+				change = True
+			
 			self.torrents[info_hash][indexOfPeer] = peer
+			
 		else:
+			#New peers mean the count has always changed
+			change = True
 			self.torrents[info_hash].append(peer)
+			
+		return change
 		
