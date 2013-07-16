@@ -11,7 +11,8 @@
         "dbname" : "fairywrenTracker",
         "user" : "webapi"
         },
-"torrentPath" : "/var/fairywren/torrents"
+"torrentPath" : "/var/fairywren/torrents",
+"secure" : false
 },
 
 "trackerUrl" : "https://full.path.of.how.to.get.to.the.tracker",
