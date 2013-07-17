@@ -66,9 +66,6 @@ file is a dictionary. The keys are
 trackerUrl
     The external URL that the web server proxies to the tracker
     
-apiUrl
-    The external URL that the api proxies to the API
-    
 pathDepth
     An integer specifying the depth at which the API and the tracker are proxied from. This is
     used to allow the code to be independent of the website it is hosted
