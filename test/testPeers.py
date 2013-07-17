@@ -34,6 +34,7 @@ class PeersTest(unittest.TestCase):
 			for peer in peerList:
 				self.assertTrue(peerTracker.updatePeer(info_hash,peer))
 				self.assertTrue(peer in peerTracker.getPeers(info_hash))
+				self.assertEqual(1,sum(1 for p in peerTracker.getPeers(info_hash) if p==peer ))
 		
 		for info_hash in info_hashes:		
 			self.assertEqual(peerTracker.getNumberOfLeeches(info_hash)+peerTracker.getNumberOfSeeds(info_hash),len(peerList))
