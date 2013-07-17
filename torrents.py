@@ -161,7 +161,7 @@ class TorrentStore(object):
 			os.makedirs(containingFolder)
 			
 		with open(path,'w') as fout:
-			pickle.dump(torrent.dict,fout)
+			pickle.dump(torrent.dict,fout,-1)
 		
 	def _retrieveTorrent(self,torrentId):		
 		_, path = self._buildPathFromId(torrentId)
