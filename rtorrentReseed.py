@@ -74,7 +74,8 @@ if __name__ == "__main__":
 	fairywren = buildFairywrenOpener(conf['fairywren']['url'],conf['fairywren']['username'],conf['fairywren']['password'])
 	
 	#Retrieve the announce url
-	announceUrl = json.loads(fairywren('session').read())['announceResource']
+	account = json.loads(fairywren('session').read())
+	announceUrl = json.loads(fairywren(account['my']).read())['announceResource']
 	
 	#Open an RPC session to the local rtorrent instance
 	rtorrentLocal = xmlrpclib.ServerProxy(conf['rtorrentLocal']['url'])
