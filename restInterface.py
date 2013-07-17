@@ -161,6 +161,8 @@ def extractParams(func,env):
 					return None
 				
 		return retval
+	elif requestMethod == 'GET':
+		raise NotImplementedError
 	else:
 		return None
 
