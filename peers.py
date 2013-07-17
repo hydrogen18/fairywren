@@ -13,7 +13,7 @@ class Peer(object):
 		
 	def __eq__(self,other):
 		if isinstance(other,Peer):
-			return self.port == other.port and self.ip == self.ip
+			return self.port == other.port and self.ip == other.ip
 			
 		return NotImplemented
 
