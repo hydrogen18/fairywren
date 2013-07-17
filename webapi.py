@@ -10,6 +10,7 @@ import logging
 import urlparse
 import string
 from restInterface import *
+import fairywren
 
 def decodePassword(password):
 	#Password comes across as 64 bytes of base64 encoded data
@@ -71,7 +72,7 @@ class Webapi(restInterface):
 
 	@resource(True,'GET','session')
 	def showSession(self,env,start_response,session):		
-		response = {'my' : 'api/users/%.8x' % session.getId() }
+		response = {'my' : fairywren.USER_FMT % session.getId() }
 	
 		return vanilla.sendJsonWsgiResponse(env,start_response,response,additionalHeaders=[session.getCookie()])			
 		

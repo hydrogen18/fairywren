@@ -5,8 +5,8 @@ import cPickle as pickle
 import psycopg2
 import os
 import os.path
+import fairywren
 
-	
 class Torrent(object):
 	def __init__(self):
 		self.infoHash = None
@@ -225,7 +225,7 @@ class TorrentStore(object):
 		
 		torrentId -- the id of the torrent 
 		"""
-		return 'api/torrents/%.8x.torrent' % torrentId
+		return fairywren.TORRENT_FMT % torrentId
 		
 	def getInfoResourceForTorrent(self,torrentId):
 		"""
@@ -233,7 +233,7 @@ class TorrentStore(object):
 		
 		torrentId -- the id of the torrent
 		"""
-		return 'api/torrents/%.8x.json'  % torrentId
+		return fairywren.TORRENT_INFO_FMT % torrentId
 	
 	def getTorrents(self,limit,subset):
 		"""
@@ -267,7 +267,7 @@ class TorrentStore(object):
 					'creationDate' : torrentsCreationDate,
 					'lengthInBytes' : lengthInBytes,
 					'creator': {
-						'resource' : 'api/users/%.8x' % userId,
+						'resource' : fairywren.USER_FMT % userId,
 						'name' : userName
 						}
 					}
