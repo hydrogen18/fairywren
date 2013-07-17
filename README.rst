@@ -17,10 +17,13 @@ To run fairywren you'll need the following
 .. _Eventlet: http://eventlet.net
 .. _Psycopg2: https://pypi.python.org/pypi/psycopg2 
 .. _Multipart: https://github.com/defnull/multipart
+.. 0mq: http://www.zeromq.org/area:download
 - Stackless_
 - Eventlet_
 - Psycopg2_
 - Multipart_
+- 0mq
+- pyzmq: http://www.zeromq.org/bindings:python
 - A web server that supports proxying.
 - A postgresql server.
 
