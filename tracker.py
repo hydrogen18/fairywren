@@ -260,7 +260,7 @@ class Tracker(object):
 					
 				response['peers'] = peersBuffer.raw[:actualSize]
 			else:
-				for peer in peerForResponse:
+				for peer in peersForResponse:
 					response['peers'].append({'peer id':peer.peerId,'ip':socket.inet_ntoa(struct.pack('!I',peer.ip)),port:peer.port})
 			
 			change = self.peers.updatePeer(p['info_hash'],peer)
