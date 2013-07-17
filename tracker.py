@@ -246,6 +246,8 @@ class Tracker(object):
 			response['complete'] = self.peers.getNumberOfLeeches(p['info_hash'])
 			response['incomplete'] = self.peers.getNumberOfSeeds(p['info_hash'])
 			
+			change = self.peers.updatePeer(p['info_hash'],peer)
+			
 			peersForResponse = self.peers.getPeers(p['info_hash'])
 			
 			if p['compact'] > 0:
@@ -260,10 +262,10 @@ class Tracker(object):
 					
 				response['peers'] = peersBuffer.raw[:actualSize]
 			else:
-				for peer in peersForResponse:
+				for peer in peersForResponse[:p['numwant']]:
 					response['peers'].append({'peer id':peer.peerId,'ip':socket.inet_ntoa(struct.pack('!I',peer.ip)),'port':peer.port})
 			
-			change = self.peers.updatePeer(p['info_hash'],peer)
+			
 			
 		elif p['event'] == 'stopped':
 			self.peers.removePeer(p['info_hash'],peer)
