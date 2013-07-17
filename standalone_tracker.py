@@ -2,7 +2,8 @@ import eventlet
 eventlet.monkey_patch()
 import eventlet.backdoor
 from eventlet import wsgi
-from tracker import Tracker, TrackerStats
+from tracker import Tracker
+from stats import TrackerStatsPublisher
 from auth import *
 from peers import *
 
@@ -27,7 +28,7 @@ if __name__ == '__main__':
 	httpPathDepth = conf.get('pathDepth',DEFAULT_PATH_DEPTH)
 	
 	tracker = Tracker(authmgr,Peers(),httpPathDepth)
-	trackerStats = TrackerStats(tracker)
+	trackerStats = TrackerStatsPublisher(tracker)
 	
 	eventlet.spawn_n(trackerStats)
 	

@@ -7,7 +7,7 @@ from webapi import Webapi
 from auth import *
 from torrents import TorrentStore
 from users import Users
-from tracker import TorrentStats
+from stats import TrackerStatsSubscriber
 import vanilla
 import psycopg2
 import sys
@@ -37,7 +37,7 @@ if __name__ == '__main__':
 	users = Users()
 	users.setConnectionPool(connPool)
 	
-	torrentStats = TorrentStats()
-	eventlet.spawn_n(torrentStats)
-	webapi = Webapi(torrentStats,users,authmgr,torrents,httpPathDepth,conf['webapi']['secure'])
+	tssub = TrackerStatsSubscriber()
+	eventlet.spawn_n(tssub)
+	webapi = Webapi(tssub,users,authmgr,torrents,httpPathDepth,conf['webapi']['secure'])
 	wsgi.server(eventlet.listen((httpListenIp, httpListenPort)), webapi)
