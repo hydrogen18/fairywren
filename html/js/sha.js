@@ -8,6 +8,33 @@
  See http://caligatio.github.com/jsSHA/ for more information
 
  Several functions taken from Paul Johnson
+ * 
+ * Copyright (c) 2008-2013, Brian Turek
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+ * Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+ * The names of the contributors may not be used to endorse or promote products
+   derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ANDANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIEDWARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED.IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING,BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE,DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OFLIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCEOR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISEDOF THE POSSIBILITY OF SUCH DAMAGE.
+
+ * 
 */
 function p(a){throw a;}var r=null;function t(a,b){this.a=a;this.b=b}function v(a,b){var d=[],f,e=[],g=0,j;if("UTF8"==b)for(j=0;j<a.length;j+=1){f=a.charCodeAt(j);e=[];2048<f?(e[0]=224|(f&61440)>>>12,e[1]=128|(f&4032)>>>6,e[2]=128|f&63):128<f?(e[0]=192|(f&1984)>>>6,e[1]=128|f&63):e[0]=f;for(f=0;f<e.length;f+=1)d[g>>>2]|=e[f]<<24-8*(g%4),g+=1}else if("UTF16"==b)for(j=0;j<a.length;j+=1)d[g>>>2]|=a.charCodeAt(j)<<16-8*(g%4),g+=2;return{value:d,binLen:8*g}}
 function y(a){var b=[],d=a.length,f,e;0!==d%2&&p("String of HEX type must be in byte increments");for(f=0;f<d;f+=2)e=parseInt(a.substr(f,2),16),isNaN(e)&&p("String of HEX type contains invalid characters"),b[f>>>3]|=e<<24-4*(f%8);return{value:b,binLen:4*d}}
