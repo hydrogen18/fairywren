@@ -95,9 +95,14 @@ class Tracker(object):
 		self.statsQueue = eventlet.queue.LightQueue()
 		
 	def getQueue(self):
+		"""Return the queue that this object uses to push
+		events to other worker threads"""
 		return self.statsQueue
 		
 	def getScrape(self,info_hashes):
+		"""Return a dictionary object that contains a tracker scrape. 
+		@param info_hashes: list on info_hashes to include in the scrape
+		"""
 		retval = {}
 		retval['files'] = {}
 		for info_hash in info_hashes:
