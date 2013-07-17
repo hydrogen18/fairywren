@@ -19,12 +19,16 @@ class Auth(object):
 			cur = conn.cursor()
 			
 			cur.execute("SELECT roles.name from rolemember left join roles on roles.id=rolemember.roleid where userid=%s;",(userId,));
-
+			
+			retVal = False
 			for role, in iter(cur.fetchone,None):
 				if role in roles:
-					return True
-					
-			return False
+					retVal = True
+			
+			conn.rollback()
+			cur.close()
+			
+			return retVal
 	def changePassword(self,userId,pwHash):
 		saltedPw = self._saltPwhash(pwHash)
 		with self.connPool.item() as conn:
@@ -34,8 +38,9 @@ class Auth(object):
 				(saltedPw,userId,))
 			except StandardError:
 				return None
-			conn.commit()
-			cur.close()
+			finally:
+				conn.commit()
+				cur.close()
 				
 		return True
 
@@ -62,7 +67,10 @@ class Auth(object):
 					saltedPw,
 					base64.urlsafe_b64encode(secretKey.digest()).replace('=',''),) ) 
 			except IntegrityError:
+				conn.rollback()
+				cur.close()
 				return None
+				
 			conn.commit()
 			
 			newId, = cur.fetchone()
@@ -80,7 +88,9 @@ class Auth(object):
 			(base64.urlsafe_b64encode(key).replace('=','') ,))
 		
 			allowed = cur.fetchone() != None
+		
 			cur.close()
+			conn.rollback()
 			
 			return allowed
 		
@@ -91,7 +101,9 @@ class Auth(object):
 			{'infoHash' : base64.urlsafe_b64encode(info_hash).replace('=','') })
 			
 			allowed = cur.fetchone() != None
+			
 			cur.close()
+			conn.rollback()
 		
 			return allowed
 
@@ -108,11 +120,12 @@ class Auth(object):
 			
 			allowed = cur.fetchone() 
 			cur.close()
+			conn.rollback()
 			
 			if allowed == None:
 				return None
 			userId, = allowed
-			return userId;
+			return userId
 			
 			
 			

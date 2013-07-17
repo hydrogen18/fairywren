@@ -158,9 +158,10 @@ class SunnyDay(WebapiTest):
 		
 		body = json.load(response)
 		
-		self.assertTrue(body['name'] == username)
-		self.assertTrue(body['numberOfTorrents'] == 0)
+		self.assertEqual(body['name'], username)
 		self.assertTrue('password' in body)
+		self.assertEqual(body['numberOfTorrents'], 0)
+		
 		
 		pwHash = hashlib.sha512()
 		pwHash.update('password1')

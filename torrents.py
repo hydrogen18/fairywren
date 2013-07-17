@@ -188,7 +188,7 @@ class TorrentStore(object):
 			(user,))
 			
 			result = cur.fetchone()
-			
+			conn.rollback()
 			cur.close()
 			
 		if None == result:
@@ -272,6 +272,7 @@ class TorrentStore(object):
 						}
 					}
 				else:
+					conn.rollback()
 					cur.close()
 					break
 			
