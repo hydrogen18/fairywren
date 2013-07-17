@@ -1,5 +1,5 @@
 #!/bin/bash
-PYTHONPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export PYTHONPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 python $PYTHONPATH/test/testPeers.py
 python $PYTHONPATH/test/testTracker.py
