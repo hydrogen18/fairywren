@@ -40,9 +40,13 @@ class TrackerStats(object):
 	def __call__(self):
 		
 		while True:
+			#Only info hashes are pushed onto this queue
 			info_hash = self.queue.get()
+			#Get a tracker scrape for the info hash
 			scrape = self.tracker.getScrape([info_hash])
 			
+			#Pickle the scrape and send it with the leading type
+			#identifier
 			self.pub.send_multipart([fairywren.MSG_SCRAPE,pickle.dumps(scrape,-1)])
 
 class TorrentStats(object):
@@ -50,20 +54,34 @@ class TorrentStats(object):
 		self.zmq = zmq.Context(1)
 		self.sub = self.zmq.socket(zmq.SUB)
 		self.sub.connect(fairywren.IPC_PATH)
+		#Only receive messages of type scrape. These are sent
+		#by the tracker whenever the peer count changes for a torrent
 		self.sub.setsockopt(zmq.SUBSCRIBE,fairywren.MSG_SCRAPE)
 		
 		self.counts = {}
 		
 	def __call__(self):
 		
+		#Receive messages forever
 		while True:
 			recvdmsg = self.sub.recv_multipart()
+			
+			#The second item in the message is a dictionary conforming
+			#to the structure defined by the tracker 'scrape'
+			#convention
 			recvdmsg = pickle.loads(recvdmsg[1])
 			
+			#For each torrent present, update the counts object
 			for info_hash,stats in recvdmsg['files'].iteritems():
 				self.counts[info_hash] = (stats['complete'],stats['incomplete'])
 		
 	def getCount(self,info_hash):
+		"""Return the peer count as tuple. The first value is the number of 
+			seeders, the second is the number of leechers"""
+			
+		#If the info hash is not present, it is not an error.
+		#It just means the API has never received an update from the
+		#tracker
 		if not info_hash in self.counts:
 			return (0,0)
 			
@@ -111,7 +129,6 @@ class Tracker(object):
 		if env['REQUEST_METHOD'] != 'GET':
 			return vanilla.http_error(405,env,start_response)
 		
-		
 		#Add the omitted equals signs back in
 		secretKey = pathComponents[0] + '=='
 		
@@ -150,6 +167,7 @@ class Tracker(object):
 		params = []
 		
 		def validateInfoHash(info_hash):
+			#Info hashes are a SHA1 hash, and are always 20 bytes
 			if len(info_hash) != 20:
 				raise ValueError("Length " + str(len(info_hash)) + ' not acceptable')
 			return info_hash
@@ -157,6 +175,8 @@ class Tracker(object):
 		params.append(('info_hash',None,validateInfoHash))
 		
 		def validatePeerId(peer_id):
+			#Peer IDs are a string chosen by the peer to identify itself
+			#and are always 20 bytes
 			if len(peer_id) != 20:
 				raise ValueError("Improper Length")
 			return peer_id
@@ -165,7 +185,7 @@ class Tracker(object):
 		
 		def validatePort(port):
 			port = int(port)
-			
+			#Ipv4 ports should not be higher than this value
 			if port > 2 ** 16 - 1:
 				raise ValueError("Port too high")
 			return port
@@ -174,6 +194,8 @@ class Tracker(object):
 		params.append(('uploaded',None,int))
 		params.append(('downloaded',None,int))
 		params.append(('left',None,int))
+		#If the client doesn't specify the compact parameter, it is
+		#safe to assume that compact responses are understood
 		params.append(('compact',1,int))
 		
 		def validateEvent(event):
@@ -239,6 +261,8 @@ class Tracker(object):
 		response['incomplete'] = 0
 		response['peers'] = []
 		
+		#This value is set to True if the number of seeds or leeches
+		#changes in the course of processing this result
 		change = False
 		
 		#For all 3 cases here just return peers
@@ -250,6 +274,9 @@ class Tracker(object):
 			
 			peersForResponse = self.peers.getPeers(p['info_hash'])
 			
+			
+			#Return a compact response or a traditional response
+			#based on what is requested
 			if p['compact'] > 0:
 				peerStruct = struct.Struct('!IH')
 				maxSize = p['numwant'] * peerStruct.size
@@ -264,14 +291,15 @@ class Tracker(object):
 			else:
 				for peer in peersForResponse[:p['numwant']]:
 					response['peers'].append({'peer id':peer.peerId,'ip':socket.inet_ntoa(struct.pack('!I',peer.ip)),'port':peer.port})
-			
-			
-			
+		#For stop event, just remove the peer. Don't return anything	
 		elif p['event'] == 'stopped':
 			self.peers.removePeer(p['info_hash'],peer)
+			#Assume that the count of seeders or leechers is always 
+			#decreased by one
 			change = True
 			
-			
+		#If the number of seeders or leechers has changed then
+		#dispatch an update message
 		if change:
 			self.statsQueue.put(p['info_hash'])
 			
