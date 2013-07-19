@@ -4,6 +4,8 @@ import tracker
 import socket
 import urllib
 import bencode
+import logging
+import logging.handlers
 
 class MockAuth(object):
 	def authenticateSecretKey(self,key):
@@ -12,7 +14,13 @@ class MockAuth(object):
 	def authorizeInfoHash(self,info_hash):
 		return True
 
-class PeersTest(unittest.TestCase):
+class TrackerTest(unittest.TestCase):
+	def setUp(self):
+		logger = logging.getLogger('fairywren')
+		logger.setLevel(logging.DEBUG)
+		logger.addHandler(logging.StreamHandler())
+		
+	
 	def test_creation(self):
 		tracker.Tracker(MockAuth(),peers.Peers(),0)
 		
