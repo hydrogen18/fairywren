@@ -1,6 +1,7 @@
 from eventlet.green import zmq
 import fairywren
 import cPickle as pickle
+import logging
 
 class TrackerStatsPublisher(object):
 	def __init__(self,tracker):
@@ -9,6 +10,7 @@ class TrackerStatsPublisher(object):
 		self.pub.bind(fairywren.IPC_PATH)
 		self.queue = tracker.getQueue()
 		self.tracker = tracker
+		self.log = logging.getLogger('fairywren.stats.pub')
 		
 	def __call__(self):
 		while True:
@@ -20,6 +22,8 @@ class TrackerStatsPublisher(object):
 			#Pickle the scrape and send it with the leading type
 			#identifier
 			self.pub.send_multipart([fairywren.MSG_SCRAPE,pickle.dumps(scrape,-1)])
+			
+			self.log.info('Sent scrape for:%s',info_hash.encode('hex').upper())
 
 class TrackerStatsSubscriber(object):
 	def __init__(self):
@@ -31,6 +35,8 @@ class TrackerStatsSubscriber(object):
 		self.sub.setsockopt(zmq.SUBSCRIBE,fairywren.MSG_SCRAPE)
 		
 		self.counts = {}
+		
+		self.log = logging.getLogger('fairywren.stats.sub')
 		
 	def __call__(self):
 		
@@ -46,6 +52,7 @@ class TrackerStatsSubscriber(object):
 			#For each torrent present, update the counts object
 			for info_hash,stats in recvdmsg['files'].iteritems():
 				self.counts[info_hash] = (stats['complete'],stats['incomplete'])
+				self.log.info('Recvd scrape for:%s;%d;%d',info_hash.encode('hex'),upper(),stats['complete'],stats['incomplete'])
 		
 	def getCount(self,info_hash):
 		"""Return the peer count as tuple. The first value is the number of 

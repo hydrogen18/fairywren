@@ -39,6 +39,8 @@ class Tracker(object):
 		self.announceLog = logging.getLogger('fairywren.announce')
 		self.trackerLog = logging.getLogger('fairywren.tracker')
 		
+		self.trackerLog.info('Started')
+		
 	def getQueue(self):
 		"""Return the queue that this object uses to push
 		events to other worker threads"""
