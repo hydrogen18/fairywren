@@ -67,6 +67,9 @@ class Webapi(restInterface):
 		self.authmgr = authmgr
 		self.torrents = torrents
 		self.users = users
+		
+		self.log = logging.getLogger('fairywren.webapi')
+		self.log.info('Started')
 
 
 

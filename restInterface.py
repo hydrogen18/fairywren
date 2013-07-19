@@ -17,7 +17,6 @@ class resource(object):
 		func.method = self.method
 		func.path = self.path
 		func.requireAuthentication = self.requireAuth
-		
 		return func
 
 class parameter(object):
@@ -214,6 +213,7 @@ class restInterface(object):
 		
 		userId = self.authenticateUser(username,password)
 		if userId == None:
+			self.logger.info('Failed authorization for user:%s' , username)
 			return vanilla.sendJsonWsgiResponse(env,start_response,{'error':'bad username or password'})
 		
 		session = self.sm.startSession(username,userId)
@@ -275,14 +275,16 @@ class restInterface(object):
 					if kwargs == None:
 						return vanilla.http_error(400,env,start_response,'missing one or more parameters')
 					
+					self.logger.debug('%s:%s handled by %s',requestMethod,pathInfo,resource)
+					
 					return resource(env,start_response,session,**kwargs)
 				else:
-					self.logger.info('%s:%s handled by %s',requestMethod,pathInfo,resource)
+					self.logger.debug('%s:%s handled by %s',requestMethod,pathInfo,resource)
 					kwargs = extractParams(resource,env)
 
 					if kwargs == None:
 						return vanilla.http_error(400,env,start_response,'missing one or more parameters')
 
 					return resource(env,start_response,**kwargs)
-					
+		self.logger.info('%s:%s not handled', requestMethod,pathInfo)
 		return vanilla.http_error(errorCode,env,start_response)

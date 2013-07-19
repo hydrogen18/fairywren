@@ -12,6 +12,7 @@ import vanilla
 import psycopg2
 import sys
 import json
+import logging.config
 
 
 DEFAULT_LISTEN_IP ='127.0.0.1'
@@ -21,6 +22,9 @@ DEFAULT_PATH_DEPTH = 1
 if __name__ == '__main__':
 	with open(sys.argv[1],'r') as fin:
 		conf = json.load(fin)
+
+	if 'logging' in conf['webapi']:
+		logging.config.dictConfig(conf['webapi']['logging'])
 		
 	connPool = vanilla.buildConnectionPool(psycopg2,**conf['webapi']['postgresql'])
 	

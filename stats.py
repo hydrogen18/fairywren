@@ -11,6 +11,7 @@ class TrackerStatsPublisher(object):
 		self.queue = tracker.getQueue()
 		self.tracker = tracker
 		self.log = logging.getLogger('fairywren.stats.pub')
+		self.log.info('Publisher started')
 		
 	def __call__(self):
 		while True:
@@ -37,6 +38,7 @@ class TrackerStatsSubscriber(object):
 		self.counts = {}
 		
 		self.log = logging.getLogger('fairywren.stats.sub')
+		self.log.info('Subscriber started')
 		
 	def __call__(self):
 		
