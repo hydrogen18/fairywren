@@ -54,7 +54,7 @@ class TrackerStatsSubscriber(object):
 			#For each torrent present, update the counts object
 			for info_hash,stats in recvdmsg['files'].iteritems():
 				self.counts[info_hash] = (stats['complete'],stats['incomplete'])
-				self.log.info('Recvd scrape for:%s;%d;%d',info_hash.encode('hex'),upper(),stats['complete'],stats['incomplete'])
+				self.log.info('Recvd scrape for:%s;%d;%d',info_hash.encode('hex').upper(),stats['complete'],stats['incomplete'])
 		
 	def getCount(self,info_hash):
 		"""Return the peer count as tuple. The first value is the number of 
