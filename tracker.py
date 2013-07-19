@@ -13,6 +13,7 @@ import cPickle as pickle
 import eventlet.queue
 import fairywren
 import itertools
+import logging
 
 def sendBencodedWsgiResponse(env,start_response,responseDict):
 	headers = [('Content-Type','text/plain')]
@@ -34,6 +35,9 @@ class Tracker(object):
 		self.peers = peers
 		self.pathDepth = pathDepth
 		self.statsQueue = eventlet.queue.LightQueue()
+		
+		self.announceLog = logging.getLogger('fairywren.announce')
+		self.trackerLog = logging.getLogger('fairywren.tracker')
 		
 	def getQueue(self):
 		"""Return the queue that this object uses to push
@@ -86,7 +90,7 @@ class Tracker(object):
 		
 		#Extract the IP of the peer
 		peerIp = getClientAddress(env)
-		
+		peerIpAsString = peerIp
 		#Chance the peer IP into an integer
 		try:
 			peerIp = socket.inet_aton(peerIp)
@@ -248,6 +252,9 @@ class Tracker(object):
 		#dispatch an update message
 		if change:
 			self.statsQueue.put(p['info_hash'])
+			
+		#Log the successful announce
+		self.announceLog.info('%s:%d %s,%s,%d',peerIpAsString,p['port'],p['info_hash'].encode('hex').upper(),p['event'],p['left'])
 			
 		return sendBencodedWsgiResponse(env,start_response,response)
 
