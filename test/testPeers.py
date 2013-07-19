@@ -6,6 +6,19 @@ class PeersTest(unittest.TestCase):
 	def test_creation(self):
 		peers.Peers()
 		
+	def test_change(self):
+		peerTracker = peers.Peers()
+		info_hash = '0'*20
+		ip = socket.inet_aton('192.168.0.1')
+		p = peers.Peer(ip,1025,3,0,0,'a')
+		self.assertTrue(peerTracker.updatePeer(info_hash,p))
+		p = peers.Peer(ip,1025,2,0,0,'a')
+		self.assertTrue(not peerTracker.updatePeer(info_hash,p))
+		p = peers.Peer(ip,1025,1,0,0,'a')
+		self.assertTrue(not peerTracker.updatePeer(info_hash,p))
+		p = peers.Peer(ip,1025,0,0,0,'a')
+		self.assertTrue(peerTracker.updatePeer(info_hash,p))
+		
 	def test_addingPeers(self):
 		
 		peerList = []
@@ -31,9 +44,11 @@ class PeersTest(unittest.TestCase):
 			
 			self.assertEqual(len(peerTracker.getPeers(info_hash)),0)
 			
-			for peer in peerList:
+			for i,peer in enumerate(peerList):
 				self.assertTrue(peerTracker.updatePeer(info_hash,peer))
-				self.assertTrue(peer in peerTracker.getPeers(info_hash))
+				l = peerTracker.getPeers(info_hash)
+				self.assertIn(peer,l)
+				self.assertEqual(i+1,len(l))
 				self.assertEqual(1,sum(1 for p in peerTracker.getPeers(info_hash) if p==peer ))
 		
 		for info_hash in info_hashes:		

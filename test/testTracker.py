@@ -18,7 +18,7 @@ class TrackerTest(unittest.TestCase):
 	def setUp(self):
 		logger = logging.getLogger('fairywren')
 		logger.setLevel(logging.DEBUG)
-		logger.addHandler(logging.StreamHandler())
+		#logger.addHandler(logging.StreamHandler())
 		
 	
 	def test_creation(self):

@@ -72,8 +72,11 @@ class Peers(object):
 			
 			#If the peer changes from seed to leech, or from leech
 			#to seed then the count has changed
-			if extantPeer.left==0 != peer.left ==0:
-				change = True
+			wasSeed = extantPeer.left == 0
+			isSeed = peer.left == 0
+
+			change = wasSeed!=isSeed
+			
 			
 			self.torrents[info_hash][indexOfPeer] = peer
 			
