@@ -1,5 +1,3 @@
-
-
 from eventlet.green import zmq
 import fairywren
 import cPickle as pickle
