@@ -138,16 +138,25 @@ class Tracker(object):
 		def validatePort(port):
 			port = int(port)
 			#Ipv4 ports should not be higher than this value
-			if port > 2 ** 16 - 1:
-				raise ValueError("Port too high")
+			if port > 2 ** 16 - 1 or port <= 0:
+				raise ValueError("Port outside of range")
 			return port
 			
+		def validateByteCount(byteCount):
+			byteCount = int(byteCount)
+				
+			if byteCount < 0:
+				raise ValueError('byte count cannot be negative')
+			return byteCount
+			
 		params.append(('port',None,validatePort))
-		params.append(('uploaded',None,int))
-		params.append(('downloaded',None,int))
-		params.append(('left',None,int))
+		params.append(('uploaded',None,validateByteCount))
+		params.append(('downloaded',None,validateByteCount))
+		params.append(('left',None,validateByteCount))
 		#If the client doesn't specify the compact parameter, it is
-		#safe to assume that compact responses are understood
+		#safe to assume that compact responses are understood. So a
+		#default value of 1 is used. Additionally, any non zero
+		#value provided assumes the client wants a compact response
 		params.append(('compact',1,int))
 		
 		def validateEvent(event):
@@ -229,7 +238,7 @@ class Tracker(object):
 			
 			#Return a compact response or a traditional response
 			#based on what is requested
-			if p['compact'] > 0:
+			if p['compact'] != 0:
 				peerStruct = struct.Struct('!IH')
 				maxSize = p['numwant'] * peerStruct.size
 				peersBuffer = ctypes.create_string_buffer(maxSize)
