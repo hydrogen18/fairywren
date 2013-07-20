@@ -22,13 +22,30 @@ class MockAuth(object):
 
 class WSGITrackerTest(unittest.TestCase):
 	def createTracker(self):
-		return tracker.Tracker(MockAuth(),peers.Peers(),0)
+		return tracker.Tracker(MockAuth(),peers.Peers(0),0)
 		
 	def setUp(self):
 		install_opener()
 		
 		wsgi_intercept.add_wsgi_intercept('tracker',80,self.createTracker)
 		self.urlopen = urllib2.urlopen
+		
+class PathLopping(unittest.TestCase):
+	def test_lopping(self):
+		
+		for i in range(0,2**7):
+			def mkTracker():
+				return tracker.Tracker(MockAuth(),peers.Peers(0),i)
+				
+			wsgi_intercept.add_wsgi_intercept('tracker',80,mkTracker)
+			query = {'peer_id':'A'*20,'port':1025,'uploaded':0,'downloaded':0,'left':0,'info_hash':'C'*20}
+			
+			r = urllib2.urlopen('http://tracker/' + 'a/'*i + 86*'0' + '/announce?' + urllib.urlencode(query))
+			r = r.read()
+			r = bencode.bdecode(r)
+			self.assertIn('peers',r)
+			self.assertIn('interval',r)				
+			self.assertRaisesRegexp(urllib2.HTTPError,'.*404.*',urllib2.urlopen,'http://tracker/' + 'a/'*(i+1) + 86*'0' + '/announce?' + urllib.urlencode(query))
 		
 class Unauthorized(WSGITrackerTest):
 	def authenticateSecretKey(self,key):
@@ -39,7 +56,7 @@ class Unauthorized(WSGITrackerTest):
 	
 	def createTracker(self):
 
-		return tracker.Tracker(self,peers.Peers(),0)
+		return tracker.Tracker(self,peers.Peers(0),0)
 		
 	def test_UnauthSecretKey(self):
 		self.keys = ['0'*64]
@@ -288,10 +305,10 @@ class TrackerTest(unittest.TestCase):
 		#logger.addHandler(logging.StreamHandler())
 		
 	def test_creation(self):
-		tracker.Tracker(MockAuth(),peers.Peers(),0)
+		tracker.Tracker(MockAuth(),peers.Peers(0),0)
 		
 	def test_addingPeers(self):
-		testTracker = tracker.Tracker(MockAuth(),peers.Peers(),0)
+		testTracker = tracker.Tracker(MockAuth(),peers.Peers(0),0)
 		def assert200(status,headers):
 			self.assertTrue('200' in status)
 			
@@ -331,7 +348,7 @@ class TrackerTest(unittest.TestCase):
 				self.assertEqual(len(response['peers']),cnt+1)
 				
 	def test_compactResponse(self):
-		testTracker = tracker.Tracker(MockAuth(),peers.Peers(),0)
+		testTracker = tracker.Tracker(MockAuth(),peers.Peers(0),0)
 		def assert200(status,headers):
 			self.assertTrue('200' in status)
 			
