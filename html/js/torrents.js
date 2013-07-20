@@ -38,15 +38,34 @@ $(document).ready(function(){
 	
 	
 	$("#main").tabs();
+	$("#torrentBrowseBar").hide();
 	Fairywren.showTorrents();
 });
 
+Fairywren.torrents = {};
+Fairywren.torrents.pageSize = 20;
+Fairywren.torrents.page = 0;
+
+Fairywren.torrents.maxPage = null;
+
+Fairywren.flipPage = function(dist)
+{
+	
+	Fairywren.torrents.page += dist;
+	if (Fairywren.torrents.page < 0 || Fairywren.torrents.page >= Fairywren.torrents.maxPage)
+	{
+		Fairywren.torrents.page -= dist;
+		return;
+	}
+	
+	Fairywren.showTorrents();
+}
 Fairywren.showTorrents = function()
 {
 
 	var torrentTable = $("#torrentTable");
 	torrentTable.find('tr:gt(0)').remove();
-	jQuery.get("api/torrents").
+	jQuery.get("api/torrents",{'resultSize': Fairywren.torrents.pageSize, 'subset':Fairywren.torrents.page}).
 		done(
 			function(data)
 			{
@@ -56,6 +75,7 @@ Fairywren.showTorrents = function()
 				}
 				else
 				{
+					Fairywren.torrents.maxPage = data.maxSubset;
 					for(i in data.torrents)
 					{
 						var title = data.torrents[i].title;
@@ -97,7 +117,9 @@ Fairywren.showTorrents = function()
 						<td>" + uploader + "</td></tr>";
 						$("#torrentTable tr:last").after(row);
 					}
+					$("#torrentBrowseBar").show();
 				}
+				
 			}
 		).
 		fail(

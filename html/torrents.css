@@ -79,10 +79,11 @@ display:none;
 {
 border-style:dashed;
 border-width:3px;
-padding:1px;
+padding:2px;
 margin:1px;
 background-color:#00CCFF;
 font-family:sans-serif;
+
 }
 
 .clickable:hover
