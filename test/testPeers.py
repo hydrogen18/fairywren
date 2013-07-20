@@ -4,10 +4,10 @@ import socket
 
 class PeersTest(unittest.TestCase):
 	def test_creation(self):
-		peers.Peers()
+		peers.Peers(0)
 		
 	def test_change(self):
-		peerTracker = peers.Peers()
+		peerTracker = peers.Peers(0)
 		info_hash = '0'*20
 		ip = socket.inet_aton('192.168.0.1')
 		p = peers.Peer(ip,1025,3,0,0,'a')
@@ -36,7 +36,7 @@ class PeersTest(unittest.TestCase):
 			
 		info_hashes = [chr(i)*20 for i in range(0,128)]
 		
-		peerTracker = peers.Peers()
+		peerTracker = peers.Peers(0)
 		
 		for info_hash in info_hashes:
 			self.assertEqual(peerTracker.getNumberOfLeeches(info_hash),0)
