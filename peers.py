@@ -1,6 +1,9 @@
+from monotonic import monotonic_time
+import logging
+
 
 class Peer(object):
-	__slots__ = ['ip','port','left','downloaded','uploaded','peerId']
+	__slots__ = ['ip','port','left','downloaded','uploaded','peerId','created']
 	
 	def __init__(self,ip,port,left,downloaded,uploaded,peerId):
 		self.ip = ip
@@ -9,7 +12,15 @@ class Peer(object):
 		self.downloaded = downloaded
 		self.uploaded = uploaded
 		self.peerId = peerId
+		self.created = monotonic_time()
 		
+	def ipAsDottedQuad(self):
+		result = []
+		for mask,shift in zip((2**i - 1 for i in range(8,40,8) ), range(0,32,8)):
+			result.append( str((self.ip & mask) >> shift ))
+			
+		result.reverse()
+		return '.'.join(result)
 		
 	def __eq__(self,other):
 		if isinstance(other,Peer):
@@ -19,9 +30,36 @@ class Peer(object):
 
 class Peers(object):
 	
-	def __init__(self):
+	def __init__(self,peerGracePeriod):
+		self.peerGracePeriod = peerGracePeriod
 		self.torrents = {}
-		pass
+		self.log = logging.getLogger('fairywren.peers')
+		self.log.info('Started')
+		
+	def removeOldPeers(self):
+		currentTime = monotonic_time()
+		
+		self.log.info('Cleaning up expired peers')
+		
+		for infoHash,peerList in self.torrents.iteritems():
+			self.log.debug('Checking for expired peers in: %s', infoHash.encode('hex').upper())
+			expirations = []
+			#Iterate over the peer list, saving the indices
+			#of expired peers
+			for i, peer in enumerate(peerList):
+				if currentTime - peer.created >= peerGracePeriod:
+					self.log.info('%s,peer expired: %s,%d',infoHash.encode('hex').upper(),peer.ipAsDottedQuad(),peer.port)
+					expirations.append(i)
+			
+			#Reverse the list of indices, so the 
+			#positions aren't modified as peers are removed
+			expirations.reverse()
+			
+			#Remove each expired peer
+			for expiration in expirations:
+				peer = peerList.pop(expiration)
+				self.log.debug('%s,peer popped: %s,%d',infoHash.encode('hex').upper(),peer.ipAsDottedQuad(),peer.port)
+			
 		
 	def getNumberOfSeeds(self,info_hash):
 		if info_hash not in self.torrents:
