@@ -235,13 +235,23 @@ class TorrentStore(object):
 		"""
 		return fairywren.TORRENT_INFO_FMT % torrentId
 	
+	def getNumTorrents(self):
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			
+			cur.execute('Select count(1) from torrents;')
+			numTorrents, = cur.fetchone()
+			cur.close()
+			conn.rollback()
+		return numTorrents
+	
 	def getTorrents(self,limit,subset):
 		"""
 		Return a list of information about torrents
 		
-		limits -- the maximum number of torrents to return
+		limit -- the maximum number of torrents to return
 		offset -- the starting point of torrents to be returned. This
-		is expressed as a factor of limits
+		is expressed as a factor of limit
 		
 		"""
 		with self.connPool.item() as conn:
