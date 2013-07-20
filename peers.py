@@ -36,7 +36,7 @@ class Peers(object):
 		self.log = logging.getLogger('fairywren.peers')
 		self.log.info('Started')
 		
-	def removeOldPeers(self):
+	def removeExpiredPeers(self):
 		currentTime = monotonic_time()
 		
 		self.log.info('Cleaning up expired peers')
@@ -47,7 +47,7 @@ class Peers(object):
 			#Iterate over the peer list, saving the indices
 			#of expired peers
 			for i, peer in enumerate(peerList):
-				if currentTime - peer.created >= peerGracePeriod:
+				if currentTime - peer.created >= self.peerGracePeriod:
 					self.log.info('%s,peer expired: %s,%d',infoHash.encode('hex').upper(),peer.ipAsDottedQuad(),peer.port)
 					expirations.append(i)
 			

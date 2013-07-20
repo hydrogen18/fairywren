@@ -1,6 +1,47 @@
 import unittest
 import peers
+import time
 import socket
+
+class TestExpiration(unittest.TestCase):
+	def test_expireFunc(self):
+		peerTracker = peers.Peers(1)
+		peerTracker.removeExpiredPeers()
+		
+		
+		info_hashes = [ i*20 for i in 'abcdefghijk']
+		for info_hash in info_hashes:
+			for ip in xrange(0,2**9):
+				p = peers.Peer(ip,1025,3,0,0,'a')
+				self.assertTrue(peerTracker.updatePeer(info_hash,p))
+				
+		time.sleep(2)
+		peerTracker.removeExpiredPeers()
+		
+		for info_hash in info_hashes:
+			self.assertEqual(0,len(peerTracker.getPeers(info_hash)))
+			
+	def test_expireFuncPartial(self):
+		gracePeriod = 60*60
+		peerTracker = peers.Peers(gracePeriod)
+		
+		info_hashes = [ i*20 for i in 'abcdefghijk']
+		for info_hash in info_hashes:
+			for ip in xrange(0,2**9):
+				p = peers.Peer(ip,1025,3,0,0,'a')
+				if ip%2 == 0:
+					p.created = p.created - gracePeriod - 1 
+				self.assertTrue(peerTracker.updatePeer(info_hash,p))
+				
+		peerTracker.removeExpiredPeers()
+		
+		for info_hash in info_hashes:
+			pList = peerTracker.getPeers(info_hash)
+			self.assertEqual(len(pList),2**8)
+			for peer in pList:
+				self.assertTrue(peer.created%2!=0)
+		
+		
 
 class PeersTest(unittest.TestCase):
 	def test_creation(self):
