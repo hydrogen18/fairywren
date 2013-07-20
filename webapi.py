@@ -130,14 +130,18 @@ class Webapi(restInterface):
 		else:
 			query = urlparse.parse_qs(env['QUERY_STRING'])
 		
-		resultSize = query.get('resultSize',50)
+		#Use the first occurence of the supplied parameter
+		#With a default of 50
+		resultSize = query.get('resultSize',[50])[0]
 		
 		try:
 			resultSize = int(resultSize)
 		except ValueError:
 			return vanilla.http_error(400,env,start_response,'resultSize must be integer')
-			
-		subset = query.get('subset',0)
+		
+		#Use the first occurence of the supplied parameter
+		#With a default of zero	
+		subset = query.get('subset',[0])[0]
 		
 		try:
 			subset = int(subset)
@@ -155,7 +159,7 @@ class Webapi(restInterface):
 			listOfTorrents.append(torrent)
 
 		return vanilla.sendJsonWsgiResponse(env,start_response,
-		{'torrents' : listOfTorrents } )
+		{'torrents' : listOfTorrents ,'maxSubset' : self.torrents.getNumTorrents() / resultSize  + 1} )
 		
 	@resource(True,'POST','torrents')
 	def createTorrent(self,env,start_response,session):
