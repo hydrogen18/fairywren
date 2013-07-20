@@ -1,6 +1,6 @@
 from monotonic import monotonic_time
 import logging
-
+import eventlet
 
 class Peer(object):
 	__slots__ = ['ip','port','left','downloaded','uploaded','peerId','created']
@@ -34,8 +34,17 @@ class Peers(object):
 		self.peerGracePeriod = peerGracePeriod
 		self.torrents = {}
 		self.log = logging.getLogger('fairywren.peers')
-		self.log.info('Started')
+		self.log.info('Created')
 		
+	def __call__(self):
+		self.log.info('Started')
+		if self.peerGracePeriod == 0:
+			self.log.warn('Peer grace period is zero, assuming no expiration is to be done')
+			return
+		while True:
+			eventlet.sleep(self.peerGracePeriod)
+			self.removeExpiredPeers()
+			
 	def removeExpiredPeers(self):
 		currentTime = monotonic_time()
 		
