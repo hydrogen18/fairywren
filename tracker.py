@@ -170,6 +170,10 @@ class Tracker(object):
 		maxNumWant = 35
 		def limitNumWant(numwant):
 			numwant = int(numwant)
+			
+			if numwant < 0:
+				raise ValueError('numwant cannot be negative')
+			
 			numwant = min(numwant,maxNumWant)
 			return numwant
 			

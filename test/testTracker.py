@@ -20,13 +20,13 @@ class MockAuth(object):
 		return True
 
 class WSGITrackerTest(unittest.TestCase):
+	def createTracker(self):
+		return tracker.Tracker(MockAuth(),peers.Peers(),0)
+		
 	def setUp(self):
 		install_opener()
 		
-		def createTracker():
-			return tracker.Tracker(MockAuth(),peers.Peers(),0)
-		
-		wsgi_intercept.add_wsgi_intercept('tracker',80,createTracker)
+		wsgi_intercept.add_wsgi_intercept('tracker',80,self.createTracker)
 		self.urlopen = urllib2.urlopen
 	
 class BadAnnounce(WSGITrackerTest):
@@ -34,27 +34,109 @@ class BadAnnounce(WSGITrackerTest):
 		for i in range(1,86):
 			self.assertRaisesRegexp(urllib2.HTTPError, '.*404.*', self.urlopen,'http://tracker/' + i*'0' + '/announce')
 		
+	def test_misingInfoHash(self):
+		query = {'peer_id':'A'*20,'port':1025,'uploaded':0,'downloaded':0,'left':0}
+		
+		try:
+			self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+		except urllib2.HTTPError, e:
+			self.assertEqual(e.code, 400)
+			r = e.read()
+			self.assertIn('missing',r)
+			self.assertIn('info_hash',r)
+			return
+		self.assertTrue(False)		
+
+	def test_misingPeerId(self):
+		query = {'info_hash':'A'*20,'port':1025,'uploaded':0,'downloaded':0,'left':0}
+		
+		try:
+			self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+		except urllib2.HTTPError, e:
+			self.assertEqual(e.code, 400)
+			r = e.read()
+			self.assertIn('missing',r)
+			self.assertIn('peer_id',r)
+			return
+		self.assertTrue(False)		
+
+	def test_misingPort(self):
+		query = {'info_hash':'A'*20,'peer_id':'B'*20,'uploaded':0,'downloaded':0,'left':0}
+		
+		try:
+			self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+		except urllib2.HTTPError, e:
+			self.assertEqual(e.code, 400)
+			r = e.read()
+			self.assertIn('missing',r)
+			self.assertIn('port',r)
+			return
+		self.assertTrue(False)		
+		
+	def test_misingUploaded(self):
+		query = {'info_hash':'A'*20,'peer_id':'B'*20,'port':1025,'downloaded':0,'left':0}
+		
+		try:
+			self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+		except urllib2.HTTPError, e:
+			self.assertEqual(e.code, 400)
+			r = e.read()
+			self.assertIn('missing',r)
+			self.assertIn('uploaded',r)
+			return
+		self.assertTrue(False)			
+		
+	def test_misingDownloaded(self):
+		query = {'info_hash':'A'*20,'peer_id':'B'*20,'port':1025,'uploaded':0,'left':0}
+		
+		try:
+			self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+		except urllib2.HTTPError, e:
+			self.assertEqual(e.code, 400)
+			r = e.read()
+			self.assertIn('missing',r)
+			self.assertIn('downloaded',r)
+			return
+		self.assertTrue(False)					
+
+	def test_misingLeft(self):
+		query = {'info_hash':'A'*20,'peer_id':'B'*20,'port':1025,'uploaded':0,'downloaded':0}
+		
+		try:
+			self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+		except urllib2.HTTPError, e:
+			self.assertEqual(e.code, 400)
+			r = e.read()
+			self.assertIn('missing',r)
+			self.assertIn('left',r)
+			return
+		self.assertTrue(False)					
+		
 	def test_badInfoHash(self):
-		for i in range(0,20):
+		for i in range(1,20):
 			query = {'info_hash':i*'\0','peer_id':'A'*20,'port':1025,'uploaded':0,'downloaded':0,'left':0}
 			
 			try:
 				self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
 			except urllib2.HTTPError, e:
 				self.assertEqual(e.code, 400)
-				self.assertIn('info_hash',e.read())
+				r = e.read()
+				self.assertIn('bad value',r)
+				self.assertIn('info_hash',r)
 				continue
 			self.assertTrue(False)
 
 	def test_badPeerId(self):
-		for i in range(0,20):
+		for i in range(1,20):
 			query = {'info_hash':'\0'*20,'peer_id':'A'*i,'port':1025,'uploaded':0,'downloaded':0,'left':0}
 			
 			try:
 				self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
 			except urllib2.HTTPError, e:
 				self.assertEqual(e.code, 400)
-				self.assertIn('peer_id',e.read())
+				r = e.read()
+				self.assertIn('bad value',r)
+				self.assertIn('peer_id',r)
 				continue
 			self.assertTrue(False)
 
@@ -66,7 +148,9 @@ class BadAnnounce(WSGITrackerTest):
 				self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
 			except urllib2.HTTPError, e:
 				self.assertEqual(e.code, 400)
-				self.assertIn('port',e.read())
+				r = e.read()
+				self.assertIn('bad value',r)
+				self.assertIn('port',r)
 				continue
 			self.assertTrue(False)
 
@@ -78,7 +162,9 @@ class BadAnnounce(WSGITrackerTest):
 				self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
 			except urllib2.HTTPError, e:
 				self.assertEqual(e.code, 400)
-				self.assertIn('uploaded',e.read())
+				r = e.read()
+				self.assertIn('bad value',r)
+				self.assertIn('uploaded',r)
 				continue
 			self.assertTrue(False)
 
@@ -90,7 +176,9 @@ class BadAnnounce(WSGITrackerTest):
 				self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
 			except urllib2.HTTPError, e:
 				self.assertEqual(e.code, 400)
-				self.assertIn('downloaded',e.read())
+				r = e.read()
+				self.assertIn('bad value',r)
+				self.assertIn('downloaded',r)
 				continue
 			self.assertTrue(False)
 
@@ -102,9 +190,53 @@ class BadAnnounce(WSGITrackerTest):
 				self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
 			except urllib2.HTTPError, e:
 				self.assertEqual(e.code, 400)
-				self.assertIn('left',e.read())
+				r = e.read()
+				self.assertIn('bad value',r)
+				self.assertIn('left',r)
 				continue
 			self.assertTrue(False)
+			
+	def test_badNumwant(self):
+		for i in [-1,'foobar','a']:
+			query = {'info_hash':'\0'*20,'peer_id':'A'*20,'port':1025,'uploaded':0,'downloaded':0,'left':0,'numwant':i}
+			
+			try:
+				self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+			except urllib2.HTTPError, e:
+				self.assertEqual(e.code, 400)
+				r = e.read()
+				self.assertIn('bad value',r)
+				self.assertIn('numwant',r)
+				continue
+			self.assertTrue(False)			
+			
+	def test_badEvent(self):
+		for i in ['foo','bar','qux',42]:
+			query = {'info_hash':'\0'*20,'peer_id':'A'*20,'port':1025,'uploaded':0,'downloaded':0,'left':0,'event':i}
+			
+			try:
+				self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+			except urllib2.HTTPError, e:
+				self.assertEqual(e.code, 400)
+				r = e.read()
+				self.assertIn('bad value',r)
+				self.assertIn('event',r)
+				continue
+			self.assertTrue(False)		
+				
+	def test_badCompact(self):
+		for i in ['foo','bar','qux']:
+			query = {'info_hash':'\0'*20,'peer_id':'A'*20,'port':1025,'uploaded':0,'downloaded':0,'left':0,'compact':i}
+			
+			try:
+				self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+			except urllib2.HTTPError, e:
+				self.assertEqual(e.code, 400)
+				r = e.read()
+				self.assertIn('bad value',r)
+				self.assertIn('compact',r)
+				continue
+			self.assertTrue(False)				
 		
 
 class TrackerTest(unittest.TestCase):
