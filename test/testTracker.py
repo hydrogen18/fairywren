@@ -6,6 +6,7 @@ import urllib
 import bencode
 import logging
 import logging.handlers
+import base64
 
 from wsgi_intercept.urllib2_intercept import install_opener
 import wsgi_intercept
@@ -28,6 +29,47 @@ class WSGITrackerTest(unittest.TestCase):
 		
 		wsgi_intercept.add_wsgi_intercept('tracker',80,self.createTracker)
 		self.urlopen = urllib2.urlopen
+		
+class Unauthorized(WSGITrackerTest):
+	def authenticateSecretKey(self,key):
+		return key in self.keys
+	
+	def authorizeInfoHash(self,info_hash):
+		return info_hash in self.info_hashes
+	
+	def createTracker(self):
+
+		return tracker.Tracker(self,peers.Peers(),0)
+		
+	def test_UnauthSecretKey(self):
+		self.keys = ['0'*64]
+		self.info_hashes = []
+		query = {'peer_id':'A'*20,'port':1025,'uploaded':0,'downloaded':0,'left':0,'info_hash':'C'*20}
+		
+		r = self.urlopen('http://tracker/' + 86*'A' + '/announce?' + urllib.urlencode(query))
+		r = bencode.bdecode(r.read())
+		self.assertIn('failure reason',r)
+		self.assertIn('secret key',r['failure reason'])
+		
+	def test_UnauthInfoHash(self):
+		self.keys = ['0'*64]
+		self.info_hashes = []
+		query = {'peer_id':'A'*20,'port':1025,'uploaded':0,'downloaded':0,'left':0,'info_hash':'C'*20}
+		
+		r = self.urlopen('http://tracker/' + base64.urlsafe_b64encode(self.keys[0]).replace('=','') + '/announce?' + urllib.urlencode(query))
+		r = bencode.bdecode(r.read())
+		self.assertIn('failure reason',r)
+		self.assertIn('info hash',r['failure reason'])		
+		
+	def test_authd(self):
+		self.keys = ['0'*64]
+		self.info_hashes = ['C'*20]
+		query = {'peer_id':'A'*20,'port':1025,'uploaded':0,'downloaded':0,'left':0,'info_hash':'C'*20}
+		
+		r = self.urlopen('http://tracker/' + base64.urlsafe_b64encode(self.keys[0]).replace('=','') + '/announce?' + urllib.urlencode(query))
+		r = bencode.bdecode(r.read())
+		self.assertIn('peers',r)
+		self.assertIn('interval',r)				
 	
 class BadAnnounce(WSGITrackerTest):
 	def test_badSecretKey(self):
