@@ -266,7 +266,7 @@ class Tracker(object):
 		#If the number of seeders or leechers has changed then
 		#dispatch an update message
 		if change:
-			self.trackerLog.info('Dispatching stats update for: %s',p['info_hash'].encode('hex').upper())
+			self.trackerLog.debug('Dispatching stats update for: %s',p['info_hash'].encode('hex').upper())
 			self.statsQueue.put(p['info_hash'])
 			
 		#Log the successful announce
