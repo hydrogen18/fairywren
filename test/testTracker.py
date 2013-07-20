@@ -7,6 +7,11 @@ import bencode
 import logging
 import logging.handlers
 
+from wsgi_intercept.urllib2_intercept import install_opener
+import wsgi_intercept
+
+import urllib2
+
 class MockAuth(object):
 	def authenticateSecretKey(self,key):
 		return True
@@ -14,13 +19,100 @@ class MockAuth(object):
 	def authorizeInfoHash(self,info_hash):
 		return True
 
+class WSGITrackerTest(unittest.TestCase):
+	def setUp(self):
+		install_opener()
+		
+		def createTracker():
+			return tracker.Tracker(MockAuth(),peers.Peers(),0)
+		
+		wsgi_intercept.add_wsgi_intercept('tracker',80,createTracker)
+		self.urlopen = urllib2.urlopen
+	
+class BadAnnounce(WSGITrackerTest):
+	def test_badSecretKey(self):
+		for i in range(1,86):
+			self.assertRaisesRegexp(urllib2.HTTPError, '.*404.*', self.urlopen,'http://tracker/' + i*'0' + '/announce')
+		
+	def test_badInfoHash(self):
+		for i in range(0,20):
+			query = {'info_hash':i*'\0','peer_id':'A'*20,'port':1025,'uploaded':0,'downloaded':0,'left':0}
+			
+			try:
+				self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+			except urllib2.HTTPError, e:
+				self.assertEqual(e.code, 400)
+				self.assertIn('info_hash',e.read())
+				continue
+			self.assertTrue(False)
+
+	def test_badPeerId(self):
+		for i in range(0,20):
+			query = {'info_hash':'\0'*20,'peer_id':'A'*i,'port':1025,'uploaded':0,'downloaded':0,'left':0}
+			
+			try:
+				self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+			except urllib2.HTTPError, e:
+				self.assertEqual(e.code, 400)
+				self.assertIn('peer_id',e.read())
+				continue
+			self.assertTrue(False)
+
+	def test_badPort(self):
+		for i in [-1,0,2**16]:
+			query = {'info_hash':'\0'*20,'peer_id':'A'*20,'port':i,'uploaded':0,'downloaded':0,'left':0}
+			
+			try:
+				self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+			except urllib2.HTTPError, e:
+				self.assertEqual(e.code, 400)
+				self.assertIn('port',e.read())
+				continue
+			self.assertTrue(False)
+
+	def test_badUploaded(self):
+		for i in [-1,'foobar','a']:
+			query = {'info_hash':'\0'*20,'peer_id':'A'*20,'port':1025,'uploaded':i,'downloaded':0,'left':0}
+			
+			try:
+				self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+			except urllib2.HTTPError, e:
+				self.assertEqual(e.code, 400)
+				self.assertIn('uploaded',e.read())
+				continue
+			self.assertTrue(False)
+
+	def test_badDownloaded(self):
+		for i in [-1,'foobar','a']:
+			query = {'info_hash':'\0'*20,'peer_id':'A'*20,'port':1025,'uploaded':0,'downloaded':i,'left':0}
+			
+			try:
+				self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+			except urllib2.HTTPError, e:
+				self.assertEqual(e.code, 400)
+				self.assertIn('downloaded',e.read())
+				continue
+			self.assertTrue(False)
+
+	def test_badLeft(self):
+		for i in [-1,'foobar','a']:
+			query = {'info_hash':'\0'*20,'peer_id':'A'*20,'port':1025,'uploaded':0,'downloaded':0,'left':i}
+			
+			try:
+				self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+			except urllib2.HTTPError, e:
+				self.assertEqual(e.code, 400)
+				self.assertIn('left',e.read())
+				continue
+			self.assertTrue(False)
+		
+
 class TrackerTest(unittest.TestCase):
 	def setUp(self):
 		logger = logging.getLogger('fairywren')
 		logger.setLevel(logging.DEBUG)
 		#logger.addHandler(logging.StreamHandler())
 		
-	
 	def test_creation(self):
 		tracker.Tracker(MockAuth(),peers.Peers(),0)
 		
