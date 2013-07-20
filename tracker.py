@@ -39,7 +39,7 @@ class Tracker(object):
 		self.announceLog = logging.getLogger('fairywren.announce')
 		self.trackerLog = logging.getLogger('fairywren.tracker')
 		
-		self.trackerLog.info('Started')
+		self.trackerLog.info('Created')
 		
 	def getQueue(self):
 		"""Return the queue that this object uses to push

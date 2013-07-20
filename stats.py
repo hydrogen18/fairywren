@@ -11,9 +11,10 @@ class TrackerStatsPublisher(object):
 		self.queue = tracker.getQueue()
 		self.tracker = tracker
 		self.log = logging.getLogger('fairywren.stats.pub')
-		self.log.info('Publisher started')
+		self.log.info('Created')
 		
 	def __call__(self):
+		self.log.info('Started')
 		while True:
 			#Only info hashes are pushed onto this queue
 			info_hash = self.queue.get()
@@ -38,10 +39,11 @@ class TrackerStatsSubscriber(object):
 		self.counts = {}
 		
 		self.log = logging.getLogger('fairywren.stats.sub')
-		self.log.info('Subscriber started')
+		self.log.info('Created')
 		
 	def __call__(self):
 		
+		self.log.info('Started')
 		#Receive messages forever
 		while True:
 			recvdmsg = self.sub.recv_multipart()

@@ -286,5 +286,5 @@ class restInterface(object):
 						return vanilla.http_error(400,env,start_response,'missing one or more parameters')
 
 					return resource(env,start_response,**kwargs)
-		self.logger.info('%s:%s not handled', requestMethod,pathInfo)
+		self.logger.info('%s:%s not handled, %d', requestMethod,pathInfo,errorCode)
 		return vanilla.http_error(errorCode,env,start_response)

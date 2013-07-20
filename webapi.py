@@ -69,9 +69,7 @@ class Webapi(restInterface):
 		self.users = users
 		
 		self.log = logging.getLogger('fairywren.webapi')
-		self.log.info('Started')
-
-
+		self.log.info('Created')
 
 	@resource(True,'GET','session')
 	def showSession(self,env,start_response,session):		
