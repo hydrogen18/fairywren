@@ -76,6 +76,9 @@ Fairywren.showTorrents = function()
 				else
 				{
 					Fairywren.torrents.maxPage = data.maxSubset;
+					
+					$("#pageNumbers").text((Fairywren.torrents.page +1 )+ ' / ' + Fairywren.torrents.maxPage);
+					
 					for(i in data.torrents)
 					{
 						var title = data.torrents[i].title;

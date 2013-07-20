@@ -78,12 +78,15 @@ Torrents
 
 <div id="torrents">
 	<div id="torrentBrowseBar">
-		<span onclick="Fairywren.flipPage(-1)" class="clickable" style="text-align:center;font-size:2em;" >&larr;&nbsp;</span>
-		<span onclick="Fairywren.showTorrents()" class="clickable" style="text-align:center;font-size:2em;" >&nbsp;&#x21bb;&nbsp;</span>
-		<span onclick="Fairywren.flipPage(1)" class="clickable" style="text-align:center;font-size:2em;" >&nbsp;&rarr;</span>
+		<div id="browseButtons">
+			<span onclick="Fairywren.flipPage(-1)" class="clickable" style="text-align:center;font-size:2em;" >&larr;&nbsp;</span>
+			<span onclick="Fairywren.showTorrents()" class="clickable" style="text-align:center;font-size:2em;" >&nbsp;&#x21bb;&nbsp;</span>
+			<span onclick="Fairywren.flipPage(1)" class="clickable" style="text-align:center;font-size:2em;" >&nbsp;&rarr;</span>
+		</div>
+		<div style="margin-top:5px;" id="pageIndicator"> <span id="pageNumbers" >999/999</span></div>
 	</div>
 
-	<div style="margin-top:5px;">
+	<div >
 		<table id="torrentTable" width=90%>
 
 		<tr>
