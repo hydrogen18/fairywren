@@ -271,13 +271,13 @@ class TorrentStore(object):
 					infoHash = base64.urlsafe_b64decode(infoHash + '==')
 					yield {
 					'infoHash' : infoHash ,
-					'resource' : self.getResourceForTorrent(torrentId),
-					'infoResource' : self.getInfoResourceForTorrent(torrentId),
+					'metainfo' : { 'href' : self.getResourceForTorrent(torrentId) },
+					'info' : {'href' : self.getInfoResourceForTorrent(torrentId) },
 					'title' : torrentTitle,
 					'creationDate' : torrentsCreationDate,
 					'lengthInBytes' : lengthInBytes,
 					'creator': {
-						'resource' : fairywren.USER_FMT % userId,
+						'href' : fairywren.USER_FMT % userId,
 						'name' : userName
 						}
 					}

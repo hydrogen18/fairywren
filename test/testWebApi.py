@@ -73,7 +73,7 @@ class ChangeOwnPassword(WebapiTest):
 		response  = self.open('%s/api/users' % self.conf['url'] , qp)
 		body = json.load(response)
 		
-		self.assertTrue('resource' in body)
+		self.assertTrue('href' in body)
 		
 		WebapiTest.buildFairywrenOpener(self,self.conf['url'],username,password)
 		
@@ -85,7 +85,7 @@ class ChangeOwnPassword(WebapiTest):
 		pwHash.update(password)
 		pwHash = base64.urlsafe_b64encode(pwHash.digest()).replace('=','')
 		query = { 'password' : pwHash }
-		response = self.open('%s/%s/password' % (self.conf['url'], body['resource']),query)		
+		response = self.open('%s/%s/password' % (self.conf['url'], body['href']),query)		
 		
 		updatePwBody = json.load(response)
 		self.assertTrue('error' not in updatePwBody)
@@ -100,13 +100,15 @@ class ChangeOwnPassword(WebapiTest):
 		self.assertTrue('torrents' in body)
 		
 		for t in body['torrents']:
-			self.assertTrue('resource' in t)
-			self.assertTrue('infoResource' in t)
-			self.assertTrue('title' in t)
-			self.assertTrue('creationDate' in t)
-			self.assertTrue('creator' in t)
-			self.assertTrue('resource' in t['creator'])
-			self.assertTrue('name' in t['creator'])		
+			self.assertIn('metainfo' , t)
+			self.assertIn('href',t['metainfo'])
+			self.assertIn('info' ,t)
+			self.assertIn('href',t['info'])
+			self.assertIn('title' , t)
+			self.assertIn('creationDate' , t)
+			self.assertIn('creator' , t)
+			self.assertIn('href' , t['creator'])
+			self.assertIn('name' , t['creator'])		
 
 class RainyDay(WebapiTest):
 	def test_addExistingUser(self):
@@ -123,7 +125,7 @@ class RainyDay(WebapiTest):
 		response  = self.open('%s/api/users' % self.conf['url'] , qp)
 		body = json.load(response)
 		
-		self.assertTrue('resource' in body)
+		self.assertTrue('href', body)
 		
 		self.assertRaisesRegexp(urllib2.HTTPError,'.*409.*',self.open,'%s/api/users' % self.conf['url'] , qp)
 		
@@ -152,9 +154,9 @@ class SunnyDay(WebapiTest):
 		response  = self.open('%s/api/users' % self.conf['url'] , qp)
 		body = json.load(response)
 		
-		self.assertTrue('resource' in body)
+		self.assertTrue('href' in body)
 		
-		response = self.open('%s/%s' % ( self.conf['url'], body['resource']))
+		response = self.open('%s/%s' % ( self.conf['url'], body['href']))
 		
 		body = json.load(response)
 		
@@ -176,6 +178,8 @@ class SunnyDay(WebapiTest):
 		response = self.open("%s/api/session" % self.conf['url'])
 		
 		body = json.load(response)
+		self.assertIn('my',body)
+		self.assertIn('href',body['my'])
 		
 	
 	def test_getTorrents(self):
@@ -186,13 +190,15 @@ class SunnyDay(WebapiTest):
 		self.assertTrue('torrents' in body)
 		
 		for t in body['torrents']:
-			self.assertTrue('resource' in t)
-			self.assertTrue('infoResource' in t)
-			self.assertTrue('title' in t)
-			self.assertTrue('creationDate' in t)
-			self.assertTrue('creator' in t)
-			self.assertTrue('resource' in t['creator'])
-			self.assertTrue('name' in t['creator'])
+			self.assertIn('metainfo', t)
+			self.assertIn('href', t['metainfo'])
+			self.assertIn('info' , t)
+			self.assertIn('href', t['info'])
+			self.assertIn('title' , t)
+			self.assertIn('creationDate' , t)
+			self.assertIn('creator' , t)
+			self.assertIn('href' , t['creator'])
+			self.assertIn('name' , t['creator'])
 			
 	def test_addTorrent(self):
 		#create a torrent
@@ -210,7 +216,7 @@ class SunnyDay(WebapiTest):
 			with open(torrentFileName,'r') as fin:
 				response = multipart.post_multipart('192.168.12.182','/nihitorrent/api/torrents', self.cookie, [('title','Test Torrent')],[('torrent','test.torrent',fin.read())])
 				response = json.loads(response)
-				torrentUrl = response['resource']
+				torrentUrl = response['metainfo']['href']
 		except Exception:
 			raise
 		finally:

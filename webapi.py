@@ -73,7 +73,7 @@ class Webapi(restInterface):
 
 	@resource(True,'GET','session')
 	def showSession(self,env,start_response,session):		
-		response = {'my' : fairywren.USER_FMT % session.getId() }
+		response = {'my' : {'href':fairywren.USER_FMT % session.getId()} }
 	
 		return vanilla.sendJsonWsgiResponse(env,start_response,response,additionalHeaders=[session.getCookie()])			
 		
@@ -102,7 +102,7 @@ class Webapi(restInterface):
 			return vanilla.http_error(404,env,start_response)
 			
 		if session.getId() == number:
-			response['announceResource'] = self.torrents.getAnnounceUrlForUser(number)
+			response['announce'] = { 'href': self.torrents.getAnnounceUrlForUser(number) }
 				
 		return vanilla.sendJsonWsgiResponse(env,start_response,response)
 		
@@ -117,7 +117,7 @@ class Webapi(restInterface):
 		if resourceForNewUser == None:
 			return vanilla.http_error(409,env,start_response,'user already exists')
 		
-		response = { 'resource' : resourceForNewUser } 
+		response = { 'href' : resourceForNewUser } 
 		return vanilla.sendJsonWsgiResponse(env,start_response,response)
 		
 	@resource(True,'GET','torrents')
@@ -187,8 +187,8 @@ class Webapi(restInterface):
 			response['redownload'] = True
 			
 		url,infoUrl = self.torrents.addTorrent(newTorrent,forms['title'],session.getId())
-		response['resource'] = url
-		response['infoResource'] = infoUrl
+		response['metainfo'] = { 'href' : url }
+		response['info'] = { 'href' : infoUrl }
 			
 		return vanilla.sendJsonWsgiResponse(env,start_response,response)
 

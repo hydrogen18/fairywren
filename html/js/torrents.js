@@ -18,7 +18,7 @@ $(document).ready(function(){
 			else
 			{
 				Fairywren.my = data.my;
-				jQuery.get(Fairywren.my).
+				jQuery.get(Fairywren.my.href).
 				done(
 					function(data)
 					{
@@ -84,7 +84,7 @@ Fairywren.showTorrents = function()
 						var title = data.torrents[i].title;
 						var uploadTime = data.torrents[i].creationDate;
 						var uploader = data.torrents[i].creator.name;
-						var downloadUrl = data.torrents[i].resource;
+						var downloadUrl = data.torrents[i].metainfo.href;
 						var lengthInBytes = data.torrents[i].lengthInBytes;
 						var seeds = data.torrents[i].seeds;
 						var leeches = data.torrents[i].leeches;
@@ -179,7 +179,7 @@ Fairywren.loadAccount = function()
 Fairywren.loadUpload = function()
 {
 	
-	$("#announceUrl").text(Fairywren.account.announceResource);
+	$("#announceUrl").text(Fairywren.account.announce.href);
 }
 
 Fairywren.changePassword = function()
