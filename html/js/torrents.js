@@ -113,7 +113,7 @@ Fairywren.showTorrents = function()
 						}
 						
 						var row = '<tr><td>' + title + 
-						'&nbsp;<a href="' + downloadUrl + '">Download</a>\
+						'&nbsp;<a style="float:right;" class="downloadLink" href="' + downloadUrl + '">Download</a>\
 						<span style="float:right;" >'+ '&uarr;' + seeds  + '&nbsp;&darr;' + leeches + '</span></td>\
 						<td>' + adjustedLength + ' ' + adjustedUnits + '</td>\
 						<td>' + uploadTime + "</td>\

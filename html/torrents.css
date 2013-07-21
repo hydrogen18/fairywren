@@ -75,6 +75,23 @@ font-size:1.18em;
 display:none;
 }
 
+.downloadLink
+{
+border-style:dashed;
+border-width:1px;
+padding:1px;
+margin:1px;
+margin-left:3px;
+background-color:#00CCFF;
+font-family:sans-serif;
+}
+
+.downloadLink:hover
+{
+background-color:#66FFFF;
+border-style:solid;
+}
+
 .clickable
 {
 border-style:dashed;
@@ -83,7 +100,6 @@ padding:2px;
 margin:1px;
 background-color:#00CCFF;
 font-family:sans-serif;
-
 }
 
 .clickable:hover
