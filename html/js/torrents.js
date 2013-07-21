@@ -82,7 +82,7 @@ Fairywren.showTorrents = function()
 					for(i in data.torrents)
 					{
 						var title = data.torrents[i].title;
-						var uploadTime = data.torrents[i].creationDate;
+						var uploadTime = data.torrents[i].creationDate.substr(0,19);
 						var uploader = data.torrents[i].creator.name;
 						var downloadUrl = data.torrents[i].metainfo.href;
 						var lengthInBytes = data.torrents[i].lengthInBytes;
