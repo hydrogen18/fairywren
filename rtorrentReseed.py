@@ -32,8 +32,8 @@ def mktorrent(target,announce,pieceLength,private):
 		raise EnvironmentError("mktorrent failed")
 		
 	return outfile
-
-def buildFairywrenOpener(url,username,password):
+	
+def buildOpener(url,username,password):
 
 	def hashPassword(pw):
 		h = hashlib.sha512()
@@ -53,29 +53,22 @@ def buildFairywrenOpener(url,username,password):
 	
 	cookies.extract_cookies(response,request)
 	
-	opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookies),MultipartPostHandler.MultipartPostHandler)
+	return urllib2.build_opener(urllib2.HTTPCookieProcessor(cookies),MultipartPostHandler.MultipartPostHandler)
 	
-	opener.fairywrenUrl = str(url)
-	
-	def fairywrenRest(self,res,**kwargs):
-		return self.open('%s/%s' % ( self.fairywrenUrl, res,) , **kwargs)
-	
-	setattr(opener,'__call__',types.MethodType(fairywrenRest,opener)) 
-	
-	return opener
-
 if __name__ == "__main__":
 	with open(sys.argv[1],'r') as fin:
 		conf = json.load(fin)
 
 	infoHash = sys.argv[2]
 	
+	fwurl = conf['fairywren']['url']
+	
 	#Login to the fairywren instance
-	fairywren = buildFairywrenOpener(conf['fairywren']['url'],conf['fairywren']['username'],conf['fairywren']['password'])
+	fairywren = buildOpener(fwurl,conf['fairywren']['username'],conf['fairywren']['password'])
 	
 	#Retrieve the announce url
-	account = json.loads(fairywren('session').read())
-	announceUrl = json.loads(fairywren(account['my']).read())['announceResource']
+	account = json.loads(fairywren.open('%/api/session' % fwurl ).read())
+	announceUrl = json.loads(fairywren.open(account['my']['href']).read())['announce']['href']
 	
 	#Open an RPC session to the local rtorrent instance
 	rtorrentLocal = xmlrpclib.ServerProxy(conf['rtorrentLocal']['url'])
@@ -103,7 +96,7 @@ if __name__ == "__main__":
 	
 	#Upload the torrent to fairywren
 	
-	fairywren('torrents',data={"title":str(sourceTorrent['info']['name']),"torrent":open(newTorrentPath,'rb')})
+	fairywren.open('%s/api/torrents' % fwurl ,data={"title":str(sourceTorrent['info']['name']),"torrent":open(newTorrentPath,'rb')})
 	
 	#Add the new torrent to the local rtorrent instance
 	rtorrentLocal.load.start('',newTorrentPath)
