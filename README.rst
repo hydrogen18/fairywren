@@ -17,13 +17,14 @@ To run fairywren you'll need the following
 .. _Eventlet: http://eventlet.net
 .. _Psycopg2: https://pypi.python.org/pypi/psycopg2 
 .. _Multipart: https://github.com/defnull/multipart
-.. _ZeroMq: http://www.zeromq.org/area:download
+.. _ZeroMq: http://www.zeromq.org/area%3Adownload
+.. _pyzmq: http://www.zeromq.org/bindings%3Apython
 - Stackless_
 - Eventlet_
 - Psycopg2_
 - Multipart_
 - ZeroMq
-- pyzmq: http://www.zeromq.org/bindings:python
+- pyzmq 
 - Postgresql
 - A web server that supports proxying. I use lighttpd.
 
@@ -88,11 +89,13 @@ salt
     value after adding users is equivalent to setting all users passwords to 
     random values.
     
+.. _webapi:
 webapi
-    Configuration values specific to the API. See the subsection.
+    Configuration values specific to the API. See webapi_.
     
+.. _tracker:
 tracker
-    Configuration values specific to the tracker. See the subsection.
+    Configuration values specific to the tracker. See the tracker_.
     
     
 tracker
