@@ -11,6 +11,17 @@ import base64
 from wsgi_intercept.urllib2_intercept import install_opener
 import wsgi_intercept
 
+remoteAddr = '127.0.0.1'
+make_environ = wsgi_intercept.make_environ		
+def make_environ_wrapper(*args,**kwargs):
+	retval = make_environ(*args,**kwargs)
+
+	retval['REMOTE_ADDR'] = remoteAddr 
+	return retval
+
+wsgi_intercept.make_environ = make_environ_wrapper
+		
+
 import urllib2
 
 class MockAuth(object):
@@ -22,9 +33,13 @@ class MockAuth(object):
 
 class WSGITrackerTest(unittest.TestCase):
 	def createTracker(self):
-		return tracker.Tracker(MockAuth(),peers.Peers(0),0)
+		if self.tracker == None:
+			self.tracker = tracker.Tracker(MockAuth(),peers.Peers(0),0)
+		return self.tracker 
+
 		
 	def setUp(self):
+		self.tracker = None
 		install_opener()
 		
 		wsgi_intercept.add_wsgi_intercept('tracker',80,self.createTracker)
@@ -298,34 +313,19 @@ class BadAnnounce(WSGITrackerTest):
 			self.assertTrue(False)				
 		
 
-class TrackerTest(unittest.TestCase):
-	def setUp(self):
-		logger = logging.getLogger('fairywren')
-		logger.setLevel(logging.DEBUG)
-		#logger.addHandler(logging.StreamHandler())
-		
-	def test_creation(self):
-		tracker.Tracker(MockAuth(),peers.Peers(0),0)
-		
+class TrackerTest(WSGITrackerTest):
 	def test_addingPeers(self):
-		testTracker = tracker.Tracker(MockAuth(),peers.Peers(0),0)
-		def assert200(status,headers):
-			self.assertTrue('200' in status)
-			
 		peerList = []
 		for peerIp in range(1,32):
 			peerList.append(('192.168.0.' + str(peerIp),peerIp%4 + 1025))
 			
-		info_hashes = [chr(i)*20 for i in range(0,128)]
-		
-		env = {}
-		env['PATH_INFO'] = '/' + 86*'0' + '/announce'
-		env['REQUEST_METHOD'] = 'GET'
+		info_hashes = (chr(i)*20 for i in range(0,128))
 			
 		for info_hash in info_hashes:
 			for cnt,peer in enumerate(peerList):
 				peerIp,peerPort = peer
-				env['REMOTE_ADDR'] = peerIp
+				global remoteAddr
+				remoteAddr = peerIp
 				
 				query = {}
 				query['info_hash'] = info_hash
@@ -336,36 +336,25 @@ class TrackerTest(unittest.TestCase):
 				query['left'] = 128
 				query['compact'] = 0
 				query['event'] = 'started'
+				r = self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+				self.assertEqual(200,r.code)
 				
-				env['QUERY_STRING'] = urllib.urlencode(query)
-				
-				response = testTracker(env,assert200)
-				
-				response = ''.join(response)
-				
-				response = bencode.bdecode(response)
-
+				response = bencode.bdecode(r.read())
+				self.assertIn('peers',response)
 				self.assertEqual(len(response['peers']),cnt+1)
 				
 	def test_compactResponse(self):
-		testTracker = tracker.Tracker(MockAuth(),peers.Peers(0),0)
-		def assert200(status,headers):
-			self.assertTrue('200' in status)
-			
+		global remoteAddr
 		peerList = []
 		for peerIp in range(1,32):
 			peerList.append(('192.168.0.' + str(peerIp),peerIp%4 + 1025))
 			
 		info_hashes = [chr(i)*20 for i in range(0,128)]
-		
-		env = {}
-		env['PATH_INFO'] = '/' + 86*'0' + '/announce'
-		env['REQUEST_METHOD'] = 'GET'
 			
 		for info_hash in info_hashes:
 			for cnt,peer in enumerate(peerList):
 				peerIp,peerPort = peer
-				env['REMOTE_ADDR'] = peerIp
+				remoteAddr = peerIp
 				
 				query = {}
 				query['info_hash'] = info_hash
@@ -381,21 +370,19 @@ class TrackerTest(unittest.TestCase):
 				query['compact'] = 1
 				query['event'] = 'started'
 				
-				env['QUERY_STRING'] = urllib.urlencode(query)
+				r = self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+				self.assertEqual(200,r.code)
 				
-				response = testTracker(env,assert200)
-				
-				response = ''.join(response)
-				
-				response = bencode.bdecode(response)
-
+				response = bencode.bdecode(r.read())
+				self.assertIn('peers',response)
 				self.assertEqual(len(response['peers']),(cnt+1)*6)
 		
 		#Test Update events
 		for info_hash in info_hashes:
 			for peer in peerList:
 				peerIp,peerPort = peer
-				env['REMOTE_ADDR'] = peerIp
+
+				remoteAddr = peerIp
 				
 				query = {}
 				query['info_hash'] = info_hash
@@ -410,18 +397,12 @@ class TrackerTest(unittest.TestCase):
 					query['downloaded'] = 0
 				query['compact'] = 1
 				
-				env['QUERY_STRING'] = urllib.urlencode(query)
-				
-				response = testTracker(env,assert200)
-				
-				response = ''.join(response)
-				
-				response = bencode.bdecode(response)
+				r = self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+				self.assertEqual(200,r.code)
+				response = bencode.bdecode(r.read())
+				self.assertIn('peers',response)
 
 				self.assertEqual(len(response['peers']),len(peerList)*6)
-				
-				
-			
 				
 if __name__ == '__main__':
     unittest.main()
