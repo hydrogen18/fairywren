@@ -1,5 +1,5 @@
 import posixpath
-import fnmatch
+import re
 import logging
 import vanilla
 import itertools
@@ -237,6 +237,8 @@ class restInterface(object):
 		#The default is request not found
 		errorCode = 404
 		
+		kwargs = {}
+		
 		#Find a resource with a patch matching the requested one
 		for resource in self.resources:
 			#If the requested path and the number of components in the 
@@ -247,9 +249,10 @@ class restInterface(object):
 			#Compare each path component individually. If any of them
 			#do not match then go to the next immediately.
 			for candidate, requested in itertools.izip(resource.path,pathComponents):
-				if not fnmatch.fnmatch(requested,candidate):
+				matches = re.compile(candidate).match(requested)
+				if matches == None:
 					break				
-					
+				kwargs.update(matches.groupdict())
 				self.logger.debug('%s matches %s', candidate, requested)
 			#Loop ran to exhaustion, this is a match
 			else:
@@ -270,10 +273,12 @@ class restInterface(object):
 						if not authorized:
 							return vanilla.sendJsonWsgiResponse(env,start_response,restInterface.NOT_AUTHORIZED)
 						
-					kwargs = extractParams(resource,env)
+					extractedParams = extractParams(resource,env)
 					
-					if kwargs == None:
+					if extractedParams == None:
 						return vanilla.http_error(400,env,start_response,'missing one or more parameters')
+					
+					kwargs.update(extractedParams)
 					
 					self.logger.debug('%s:%s handled by %s',requestMethod,pathInfo,resource)
 					

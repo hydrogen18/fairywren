@@ -40,6 +40,7 @@ def extractUserId(*pathComponents):
 	return int(pathComponents[1],16)
 
 class Webapi(restInterface):
+	UID_FMT = '(?P<uid>[abcdefABCDEF0123456789]{8})'
 	def __init__(self,torrentStats,users,authmgr,torrents,httpPathDepth,secure):
 		self.torrentStats = torrentStats
 		def authenticateUser(username,password):	
@@ -80,29 +81,28 @@ class Webapi(restInterface):
 
 	@authorizeSelf(extractUserId)
 	@requireAuthorization('Administrator')
-	@resource(True,'POST','users','*','password')
+	@resource(True,'POST','users',UID_FMT,'password')
 	@parameter('password',decodePassword)
-	def changePassword(self,env,start_response,session,password):
-		userId = int(env['fairywren.pathComponents'][-2],16)
+	def changePassword(self,env,start_response,session,uid,password):
+		uid = int(uid,16)
 		
-		if None == self.authmgr.changePassword(userId,password):
+		if None == self.authmgr.changePassword(uid,password):
 			return vanilla.http_error(400,env,start_response)
 		
 		return vanilla.sendJsonWsgiResponse(env,start_response,{})
 		
 		
-	@resource(True,'GET','users','*')
-	def userInfo(self,env,start_response,session):
-		number = env['fairywren.pathComponents'][-1]
-		number = int(number,16)
+	@resource(True,'GET','users',UID_FMT )
+	def userInfo(self,env,start_response,session,uid):
+		uid = int(uid,16)
 		
-		response = self.users.getInfo(number)
+		response = self.users.getInfo(uid)
 		
 		if response == None:
 			return vanilla.http_error(404,env,start_response)
 			
-		if session.getId() == number:
-			response['announce'] = { 'href': self.torrents.getAnnounceUrlForUser(number) }
+		if session.getId() == uid:
+			response['announce'] = { 'href': self.torrents.getAnnounceUrlForUser(uid) }
 				
 		return vanilla.sendJsonWsgiResponse(env,start_response,response)
 		
@@ -192,13 +192,11 @@ class Webapi(restInterface):
 			
 		return vanilla.sendJsonWsgiResponse(env,start_response,response)
 
-	@resource(True,'GET','torrents','*.torrent')
-	def downloadTorrent(self,env,start_response,session):
-		number = env['fairywren.pathComponents'][-1].split('.')[0]
-		
-		number = int(number,16)
-		
-		torrent = self.torrents.getTorrentForDownload(number,session.getId())
+	
+	@resource(True,'GET','torrents',UID_FMT + '.torrent')
+	def downloadTorrent(self,env,start_response,session,uid):
+		uid = int(uid,16)
+		torrent = self.torrents.getTorrentForDownload(uid,session.getId())
 		
 		if torrent == None:
 			return vanilla.http_error(404,env,start_response)
@@ -211,7 +209,7 @@ class Webapi(restInterface):
 		
 		return [torrent.raw()]
 
-	@resource(True,'GET','torrents','*.json')
+	@resource(True,'GET','torrents',UID_FMT + '.json')
 	def torrentInfo(self,env,start_response):
 		return vanilla.http_error(501,env,start_response)
 		
