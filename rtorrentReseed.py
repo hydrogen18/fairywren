@@ -41,7 +41,7 @@ def buildOpener(url,username,password):
 		return base64.urlsafe_b64encode(h.digest()).replace('=','')
 	
 	qp=urllib.urlencode({"username":username,"password":hashPassword(password)})
-	request = urllib2.Request('%s/session' % url,data=qp)
+	request = urllib2.Request('%s/api/session' % url,data=qp)
 	response = urllib2.urlopen(request)
 	
 	body = json.load(response)
@@ -61,14 +61,14 @@ if __name__ == "__main__":
 
 	infoHash = sys.argv[2]
 	
-	fwurl = conf['fairywren']['url']
+	fwurl = str(conf['fairywren']['url'])
 	
 	#Login to the fairywren instance
 	fairywren = buildOpener(fwurl,conf['fairywren']['username'],conf['fairywren']['password'])
 	
 	#Retrieve the announce url
-	account = json.loads(fairywren.open('%/api/session' % fwurl ).read())
-	announceUrl = json.loads(fairywren.open(account['my']['href']).read())['announce']['href']
+	account = json.loads(fairywren.open('%s/api/session' % fwurl ).read())
+	announceUrl = json.loads(fairywren.open('%s/%s' % ( fwurl, account['my']['href'] ) ).read())['announce']['href']
 	
 	#Open an RPC session to the local rtorrent instance
 	rtorrentLocal = xmlrpclib.ServerProxy(conf['rtorrentLocal']['url'])
