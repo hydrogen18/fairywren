@@ -261,6 +261,7 @@ class restInterface(object):
 				if requestMethod != resource.method:
 					errorCode = 405					
 				elif resource.requireAuthentication:
+					self.logger.debug('%s:%s handled by %s',requestMethod,pathInfo,resource)
 					session = self.sm.getSession(env)
 
 					if session == None:
@@ -271,6 +272,7 @@ class restInterface(object):
 						authorized = resource.allowSelf and resource.getOwnerId(*pathComponents)==session.getId()
 						authorized |= self.authorizeUser(session,resource.allowedRoles)
 						if not authorized:
+							self.logger.debug('%s:%s not authorized for %s',requestMethod,pathInfo,session.getUsername())
 							return vanilla.sendJsonWsgiResponse(env,start_response,restInterface.NOT_AUTHORIZED)
 						
 					extractedParams = extractParams(resource,env)
@@ -280,7 +282,7 @@ class restInterface(object):
 					
 					kwargs.update(extractedParams)
 					
-					self.logger.debug('%s:%s handled by %s',requestMethod,pathInfo,resource)
+					
 					
 					return resource(env,start_response,session,**kwargs)
 				else:
