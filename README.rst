@@ -16,7 +16,7 @@ To run fairywren you'll need the following
 .. _Stackless: http://stackless.com/wiki/Download 
 .. _Eventlet: http://eventlet.net
 .. _Psycopg2: https://pypi.python.org/pypi/psycopg2 
-.. _Multipart: https://github.com/defnull/multipart
+.. _Multipart: https://github.com/hydrogen18/multipart
 .. _ZeroMq: http://www.zeromq.org/area%3Adownload
 .. _pyzmq: http://www.zeromq.org/bindings%3Apython
 - Stackless_
