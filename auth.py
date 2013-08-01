@@ -4,12 +4,15 @@ import base64
 import hashlib
 import os
 from psycopg2 import IntegrityError
+import logging
 
 
 
 class Auth(object):
 	def __init__(self,salt):
 		self.salt = salt
+		self.log = logging.getLogger('fairywren.auth')
+		self.log.info('Created')
 		
 	def setConnectionPool(self,pool):
 		self.connPool = pool
@@ -36,7 +39,8 @@ class Auth(object):
 			try: 
 				cur.execute("UPDATE users SET password=%s where id=%s;",
 				(saltedPw,userId,))
-			except StandardError:
+			except StandardError  as e :
+				self.log.error(e)
 				return None
 			finally:
 				conn.commit()
@@ -51,6 +55,7 @@ class Auth(object):
 		return base64.urlsafe_b64encode(storedHash.digest()).replace('=','')
 
 	def addUser(self,username,pwHash):
+		self.log.debug('Trying to add user %s',username)
 		secretKey = hashlib.sha512()
 		
 		randomValue = os.urandom(1024)
@@ -66,7 +71,8 @@ class Auth(object):
 					(username,
 					saltedPw,
 					base64.urlsafe_b64encode(secretKey.digest()).replace('=',''),) ) 
-			except IntegrityError:
+			except IntegrityError as e:
+				self.log.error(e)
 				conn.rollback()
 				cur.close()
 				return None
@@ -76,7 +82,7 @@ class Auth(object):
 			newId, = cur.fetchone()
 			cur.close()
 			conn.close()
-			
+			self.log.debug('Added user, new id %.8x', newId)
 			return 'api/users/%.8x'  % newId
 			
 		
