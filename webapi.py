@@ -157,7 +157,7 @@ class Webapi(restInterface):
 			listOfTorrents.append(torrent)
 
 		return vanilla.sendJsonWsgiResponse(env,start_response,
-		{'torrents' : listOfTorrents ,'maxSubset' : self.torrents.getNumTorrents() / resultSize  + 1} )
+		{'torrents' : listOfTorrents ,'numSubsets' : self.torrents.getNumTorrents() / resultSize  + 1} )
 		
 	@resource(True,'POST','torrents')
 	def createTorrent(self,env,start_response,session):

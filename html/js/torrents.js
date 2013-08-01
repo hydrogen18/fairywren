@@ -75,7 +75,7 @@ Fairywren.showTorrents = function()
 				}
 				else
 				{
-					Fairywren.torrents.maxPage = data.maxSubset;
+					Fairywren.torrents.maxPage = data.numSubsets;
 					
 					$("#pageNumbers").text((Fairywren.torrents.page +1 )+ ' / ' + Fairywren.torrents.maxPage);
 					
