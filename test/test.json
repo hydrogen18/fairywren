@@ -1,6 +1,6 @@
 
 {
-	"url" : "http://192.168.12.182/nihitorrent",
+	"url" : "http://127.0.0.1/nihitorrent",
 	"username" : "test",
 	"password" : "password12345"
 }
