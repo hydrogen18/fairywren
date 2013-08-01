@@ -54,7 +54,8 @@ The PostgreSQL server is used by both instances. The tracker uses it
 to authorize specific torrents and users. Peers are stored only in memory.
 The web server uses it to allow users to login and upload new torrents.
 
-The tables needed are specified in fairywren.sql.
+The tables needed are specified in fairywren.sql. The roles needed
+are in roles.sql. The permissions for the roles are granted in permissions.sql.
 
 Two users are used in my configuration, a read only user for the tracker
 and a read-write user for the webapi. The example roles and permissions
