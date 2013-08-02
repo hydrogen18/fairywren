@@ -17,6 +17,7 @@ class resource(object):
 		func.method = self.method
 		func.path = self.path
 		func.requireAuthentication = self.requireAuth
+		func.index = False
 		return func
 
 class parameter(object):
@@ -218,7 +219,7 @@ class restInterface(object):
 		
 		session = self.sm.startSession(username,userId)
 			
-		return vanilla.sendJsonWsgiResponse(env,start_response,{},additionalHeaders=[session.getCookie()])
+		return vanilla.sendJsonWsgiResponse(env,start_response,{'authenticated':True},additionalHeaders=[session.getCookie()])
 		
 	def __call__(self,env,start_response):		
 		#Extract and normalize the path

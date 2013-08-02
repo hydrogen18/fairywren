@@ -199,7 +199,7 @@ class Webapi(restInterface):
 		torrent = self.torrents.getTorrentForDownload(uid,session.getId())
 		
 		if torrent == None:
-			return vanilla.http_error(404,env,start_response)
+			return vanilla.http_error(404,env,start_response,msg='Torrent not found')
 		
 		headers = [('Content-Type','application/x-bittorrent')]
 		headers.append(('Content-Disposition','attachment; filename="%s.torrent"' % vanilla.sanitizeForContentDispositionHeaderFilename(torrent.getTitle()) ))

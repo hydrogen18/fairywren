@@ -20,7 +20,7 @@ class Users(object):
 				return None
 			else:
 				name,numberOfTorrents = result
-				retval =  {'numberOfTorrents' : numberOfTorrents, 'id': idNumber, 'name':name, 'password' : 'api/users/%.8x/password' % idNumber}
+				retval =  {'numberOfTorrents' : numberOfTorrents, 'name':name, 'password' : fairywren.USER_PASSWORD_FMT % idNumber}
 			
 			return retval
 			
