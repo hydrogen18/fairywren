@@ -1,6 +1,6 @@
 #!/bin/bash
 export PYTHONPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 set +e
+python $PYTHONPATH/test/testWebApi.py
 python $PYTHONPATH/test/testPeers.py
 python $PYTHONPATH/test/testTracker.py
-python $PYTHONPATH/test/testWebApi.py

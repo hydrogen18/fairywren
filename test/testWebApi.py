@@ -11,8 +11,10 @@ from wsgi_intercept.urllib2_intercept import install_opener
 import wsgi_intercept
 
 class MockStats(object):
+	def __init__(self):
+		self._getCount = (0,0)
 	def getCount(self,info_hash):
-		return (0,0)
+		return self._getCount
 		
 class MockUsers(object):
 	def getInfo(self,idNumber):
@@ -71,6 +73,15 @@ class AuthenticatedWebApiTest(WebApiTest):
 	
 		self.urlopen = urllib2.build_opener(wsgi_intercept.urllib2_intercept.wsgi_urllib2.WSGI_HTTPHandler(),urllib2.HTTPCookieProcessor(cookies),MultipartPostHandler.MultipartPostHandler).open		
 
+class TestSession(AuthenticatedWebApiTest):
+	def test_getSession(self):
+		r = self.urlopen('http://webapi/session')
+		self.assertEqual(r.code,200)
+		r = json.loads(r.read())
+		self.assertNotIn('error',r)
+		self.assertIn('my',r)
+		self.assertIn('href',r['my'])
+
 class TestDownloadTorrent(AuthenticatedWebApiTest):
 	def test_truncatedPath(self):
 		
@@ -105,16 +116,42 @@ class TestDownloadTorrent(AuthenticatedWebApiTest):
 		self.assertTrue(False)
 
 class TestGetTorrents(AuthenticatedWebApiTest):
-	def test_ok(self):
-		self.torrents._getTorrents = [{'infoHash':'0'*20}]
+	def test_noparams(self):
+		NUM_TORRENTS = 5
+		self.torrents._getNumTorrents = NUM_TORRENTS
+		self.torrents._getTorrents = [  {'infoHash':str(i).zfill(20)} for i in range(0,NUM_TORRENTS) ]
+		self.stats._getCount = (2,3)
 		r = self.urlopen('http://webapi/torrents')
 		self.assertEqual(200,r.code)
 		r = json.loads(r.read())
 		self.assertIn('numSubsets',r)
 		self.assertIn('torrents',r)
+		self.assertEqual(r['numSubsets'],1)
 		self.assertGreaterEqual(len(r['torrents']),1)
 		self.assertIn('seeds',r['torrents'][0])
+		self.assertEqual(2,r['torrents'][0]['seeds'])
 		self.assertIn('leeches',r['torrents'][0])
+		self.assertEqual(3,r['torrents'][0]['leeches'])
+	
+	def test_ok(self):
+		NUM_TORRENTS = 100
+		RESULT_SIZE = 20
+		self.torrents._getNumTorrents = NUM_TORRENTS
+		self.torrents._getTorrents = [  {'infoHash':str(i).zfill(20)} for i in range(0,NUM_TORRENTS) ]
+		self.stats._getCount = (2,3)
+		r = self.urlopen('http://webapi/torrents?' + urllib.urlencode({'resultSize':RESULT_SIZE}))
+		self.assertEqual(200,r.code)
+		r = json.loads(r.read())
+		self.assertIn('numSubsets',r)
+		self.assertIn('torrents',r)
+		self.assertEqual(r['numSubsets'],NUM_TORRENTS/RESULT_SIZE)
+		self.assertGreaterEqual(len(r['torrents']),RESULT_SIZE)
+		
+		for torrent in r['torrents']:
+			self.assertIn('seeds',torrent)
+			self.assertEqual(2,torrent['seeds'])
+			self.assertIn('leeches',torrent)
+			self.assertEqual(3,torrent['leeches'])
 		
 	def test_badResultSize(self):
 		try:
@@ -149,9 +186,10 @@ class TestSession(WebApiTest):
 		r = self.urlopen('http://webapi/session',data=urllib.urlencode({'username':'auser','password':'0'*86}))
 		self.assertEqual(r.code,200)
 		r = json.loads(r.read())
-		self.assertIn('authenticated',r)
 		self.assertNotIn('error',r)
-		self.assertTrue(r['authenticated'])
+		self.assertIn('my',r)
+		self.assertIn('href',r['my'])
+		
 		
 	def test_failedLogin(self):
 		self.auth._authenticateUser = None
@@ -167,6 +205,15 @@ class TestAuthentication(WebApiTest):
 		r = json.loads(r.read())
 		self.assertIn('authenticated',r)
 		self.assertTrue ( not r['authenticated'])
+		
+	def test_changePassword(self):
+		r = self.urlopen('http://webapi/users/00000000/password',data=urllib.urlencode({'password':'0'*86}))
+		self.assertEqual(r.code,200)
+		r = json.loads(r.read())
+		self.assertIn('authenticated',r)
+		self.assertTrue ( not r['authenticated'])
+		
+	
 		
 if __name__ == '__main__':
     unittest.main()

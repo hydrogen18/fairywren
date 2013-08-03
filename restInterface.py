@@ -193,6 +193,15 @@ class restInterface(object):
 		self.authenticateUser = authenticateUser
 		self.authorizeUser = authorizeUser
 
+	def getResponseForSession(self,session):
+		return {}
+		
+	@resource(True,'GET','session')
+	def showSession(self,env,start_response,session):		
+		response = getResponseForSession(session)
+	
+		return vanilla.sendJsonWsgiResponse(env,start_response,response,additionalHeaders=[session.getCookie()])	
+
 	@resource(False,'POST','session')
 	def login(self,env,start_response):
 		
@@ -219,7 +228,7 @@ class restInterface(object):
 		
 		session = self.sm.startSession(username,userId)
 			
-		return vanilla.sendJsonWsgiResponse(env,start_response,{'authenticated':True},additionalHeaders=[session.getCookie()])
+		return vanilla.sendJsonWsgiResponse(env,start_response,self.getResponseForSession(session),additionalHeaders=[session.getCookie()])
 		
 	def __call__(self,env,start_response):		
 		#Extract and normalize the path

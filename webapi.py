@@ -11,6 +11,7 @@ import urlparse
 import string
 from restInterface import *
 import fairywren
+import math
 
 def decodePassword(password):
 	#Password comes across as 64 bytes of base64 encoded data
@@ -41,6 +42,7 @@ def extractUserId(*pathComponents):
 
 class Webapi(restInterface):
 	UID_FMT = '(?P<uid>[abcdefABCDEF0123456789]{8})'
+	MAX_TORRENTS_PER_RESULT = 50
 	def __init__(self,torrentStats,users,authmgr,torrents,httpPathDepth,secure):
 		self.torrentStats = torrentStats
 		def authenticateUser(username,password):	
@@ -72,12 +74,8 @@ class Webapi(restInterface):
 		self.log = logging.getLogger('fairywren.webapi')
 		self.log.info('Created')
 
-	@resource(True,'GET','session')
-	def showSession(self,env,start_response,session):		
-		response = {'my' : {'href':fairywren.USER_FMT % session.getId()} }
-	
-		return vanilla.sendJsonWsgiResponse(env,start_response,response,additionalHeaders=[session.getCookie()])			
-		
+	def getResponseForSession(self,session):
+		return {'my' : {'href':fairywren.USER_FMT % session.getId()} }
 
 	@authorizeSelf(extractUserId)
 	@requireAuthorization('Administrator')
@@ -129,8 +127,8 @@ class Webapi(restInterface):
 			query = urlparse.parse_qs(env['QUERY_STRING'])
 		
 		#Use the first occurence of the supplied parameter
-		#With a default of 50
-		resultSize = query.get('resultSize',[50])[0]
+		#With a default 
+		resultSize = query.get('resultSize',[self.MAX_TORRENTS_PER_RESULT])[0]
 		
 		try:
 			resultSize = int(resultSize)
@@ -157,7 +155,7 @@ class Webapi(restInterface):
 			listOfTorrents.append(torrent)
 
 		return vanilla.sendJsonWsgiResponse(env,start_response,
-		{'torrents' : listOfTorrents ,'numSubsets' : self.torrents.getNumTorrents() / resultSize  + 1} )
+		{'torrents' : listOfTorrents ,'numSubsets' : int(math.ceil(self.torrents.getNumTorrents() / float(resultSize)))} )
 		
 	@resource(True,'POST','torrents')
 	def createTorrent(self,env,start_response,session):
