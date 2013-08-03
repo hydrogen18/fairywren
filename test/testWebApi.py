@@ -7,6 +7,9 @@ import urllib2
 import cookielib
 import MultipartPostHandler
 from wsgi_intercept.urllib2_intercept import install_opener
+import tempfile
+import bencode
+import torrents
 
 import wsgi_intercept
 
@@ -17,22 +20,36 @@ class MockStats(object):
 		return self._getCount
 		
 class MockUsers(object):
+	def __init__(self):
+		self._getInfo = {'numberOfTorrents' : 0, 'name':'aTestUser', 'password' : fairywren.USER_PASSWORD_FMT % 1}
 	def getInfo(self,idNumber):
-		return {'numberOfTorrents' : 0, 'name':'aTestUser', 'password' : fairywren.USER_PASSWORD_FMT % 1}
+		return self._getInfo
 
 class MockAuth(object):
 	def __init__(self):
 		self._authenticateUser = 1
+		self._addUser = None
+		self._isUserMemberOfRole = False
+	
+	def isUserMemberOfRole(self,userId,roles):
+		return self._isUserMemberOfRole
 	
 	def authenticateUser(self,username,password):
 		return self._authenticateUser
+		
+	def addUser(self,username,password):
+		return self._addUser
 
 class MockTorrents(object):
 	def __init__(self):
 		self._getTorrents = []
+		self._addTorrent = ('','')
 		self._getNumTorrents = 0
 		self._getTorrentForDownload = None
-		
+		self._getAnnounceUrlForUser = None
+	
+	def addTorrent(self,torrent,title,creator):
+		return self._addTorrent
 	def getTorrentForDownload(self,torrentId,uid):
 		return self._getTorrentForDownload
 		
@@ -42,6 +59,8 @@ class MockTorrents(object):
 	def getNumTorrents(self):
 		return self._getNumTorrents
 
+	def getAnnounceUrlForUser(self,id):
+		return self._getAnnounceUrlForUser
 class WebApiTest(unittest.TestCase):
 	def getWebapi(self):
 		if self.webapi == None:
@@ -83,6 +102,19 @@ class TestSession(AuthenticatedWebApiTest):
 		self.assertIn('href',r['my'])
 
 class TestDownloadTorrent(AuthenticatedWebApiTest):
+	
+	def test_ok(self):
+		orig = {'info': {'length': 65535, 'pieces': '\xc7\xbc\x832]\x80\xfc\xe0\x94\xdf\xf0%\xeds\x1c\xa5\xcb\x02&v', 'piece length': 262144, 'private': 1, 'name': 'tmpRBmSP2'}, 'announce': 'http://127.0.0.1/announce'}
+		self.torrents._getTorrentForDownload = torrents.Torrent.fromDict(orig)
+		
+		r = self.urlopen('http://webapi/torrents/00000000.torrent')
+		self.assertEqual(200,r.code)
+		raw = r.read()
+		returned = bencode.bdecode(raw)
+		self.assertEqual(returned,orig)
+		
+		torrents.Torrent.fromBencodedData(raw)
+		
 	def test_truncatedPath(self):
 		
 		try:
@@ -114,6 +146,208 @@ class TestDownloadTorrent(AuthenticatedWebApiTest):
 			self.assertIn('Torrent not found',r)
 			return
 		self.assertTrue(False)
+		
+		
+
+class TestCreateTorrent(AuthenticatedWebApiTest):
+	def test_wrongPostContentType(self):
+		try:
+			self.urlopen('http://webapi/torrents',data=urllib.urlencode({'foo':5}))
+		except urllib2.HTTPError,e:
+			self.assertEqual(415,e.code)
+			return
+		self.assertTrue(False)
+		
+	def test_postNoTorrent(self):
+		with tempfile.TemporaryFile() as tmpfile:
+			try:
+				self.urlopen('http://webapi/torrents',data={'title':'42','nottorrent':tmpfile})
+			except urllib2.HTTPError,e:
+				self.assertEqual(400,e.code)
+				r = e.read()
+				self.assertIn('missing',r)
+				return
+		self.assertTrue(False)
+		
+	def test_postNoTitle(self):
+		with tempfile.TemporaryFile() as tmpfile:
+			try:
+				self.urlopen('http://webapi/torrents',data={'nottitle':'42','torrent':tmpfile})
+			except urllib2.HTTPError,e:
+				self.assertEqual(400,e.code)
+				r = e.read()
+				self.assertIn('missing',r)
+				return
+		self.assertTrue(False)		
+		
+	def test_postInvalidTorrent(self):
+		with tempfile.TemporaryFile() as tmpfile:
+			tmpfile.write('afjdasklfjdaskjf')
+			tmpfile.flush()
+			try:
+				self.urlopen('http://webapi/torrents',data={'title':'42','torrent':tmpfile})
+			except urllib2.HTTPError,e:
+				self.assertEqual(400,e.code)
+				r = e.read()
+				self.assertIn('not bencoded data',r)
+				return
+		self.assertTrue(False)				
+		
+	def test_ok(self):
+		self.torrents._getAnnounceUrlForUser = 'http://foobar'
+		with tempfile.TemporaryFile() as tmpfile:
+			torrent = {'info': {'length': 65535, 'pieces': '\xc7\xbc\x832]\x80\xfc\xe0\x94\xdf\xf0%\xeds\x1c\xa5\xcb\x02&v', 'piece length': 262144, 'private': 1, 'name': 'tmpRBmSP2'}, 'announce': self.torrents._getAnnounceUrlForUser}
+
+			tmpfile.write(bencode.bencode(torrent))
+			tmpfile.flush()
+			r = self.urlopen('http://webapi/torrents',data={'title':'42','torrent':tmpfile})
+			self.assertEqual(200,r.code)
+			r = json.loads(r.read())
+			self.assertIn('redownload',r)
+			self.assertEqual(False,r['redownload'])
+			self.assertIn('metainfo',r)
+			self.assertIn('href',r['metainfo'])
+			self.assertIn('info',r)
+			self.assertIn('href',r['info'])
+			
+	def test_bencodedTorrentButMissing(self):
+		with tempfile.TemporaryFile() as tmpfile:
+			torrent = {'info': {'length': 65535, 'pieces': '\xc7\xbc\x832]\x80\xfc\xe0\x94\xdf\xf0%\xeds\x1c\xa5\xcb\x02&v', 'piece length': 262144, 'private': 1, 'name': 'tmpRBmSP2'}}
+
+			tmpfile.write(bencode.bencode(torrent))
+			tmpfile.flush()
+			try:
+				 self.urlopen('http://webapi/torrents',data={'title':'42','torrent':tmpfile})
+			except urllib2.HTTPError,e:
+				self.assertEqual(400,e.code)
+				r = e.read()
+				self.assertIn('missing',r)
+				return
+			self.assertTrue(False)
+			
+	def test_needsRedownload(self):
+		self.torrents._getAnnounceUrlForUser = 'http://foobar'
+		
+		with tempfile.TemporaryFile() as tmpfile:
+			torrent = {'info': {'length': 65535, 'pieces': '\xc7\xbc\x832]\x80\xfc\xe0\x94\xdf\xf0%\xeds\x1c\xa5\xcb\x02&v', 'piece length': 262144,  'name': 'tmpRBmSP2','private': 1}, 'announce': 'http://localhost'}
+
+			tmpfile.write(bencode.bencode(torrent))
+			tmpfile.flush()
+			r = self.urlopen('http://webapi/torrents',data={'title':'42','torrent':tmpfile})
+			self.assertEqual(200,r.code)
+			r = json.loads(r.read())
+			self.assertIn('redownload',r)
+			self.assertEqual(True,r['redownload'])
+			self.assertIn('metainfo',r)
+			self.assertIn('href',r['metainfo'])
+			self.assertIn('info',r)
+			self.assertIn('href',r['info'])		
+		
+		with tempfile.TemporaryFile() as tmpfile:
+			torrent = {'info': {'length': 65535, 'pieces': '\xc7\xbc\x832]\x80\xfc\xe0\x94\xdf\xf0%\xeds\x1c\xa5\xcb\x02&v', 'piece length': 262144,  'name': 'tmpRBmSP2'}, 'announce': self.torrents._getAnnounceUrlForUser}
+
+			tmpfile.write(bencode.bencode(torrent))
+			tmpfile.flush()
+			r = self.urlopen('http://webapi/torrents',data={'title':'42','torrent':tmpfile})
+			self.assertEqual(200,r.code)
+			r = json.loads(r.read())
+			self.assertIn('redownload',r)
+			self.assertEqual(True,r['redownload'])
+			self.assertIn('metainfo',r)
+			self.assertIn('href',r['metainfo'])
+			self.assertIn('info',r)
+			self.assertIn('href',r['info'])		
+			
+		with tempfile.TemporaryFile() as tmpfile:
+			torrent = {'info': {'length': 65535, 'pieces': '\xc7\xbc\x832]\x80\xfc\xe0\x94\xdf\xf0%\xeds\x1c\xa5\xcb\x02&v', 'piece length': 262144, 'private': 1, 'name': 'tmpRBmSP2'}, 'announce-list': [['http://127.0.0.1/announce']]}
+
+			tmpfile.write(bencode.bencode(torrent))
+			tmpfile.flush()
+			r = self.urlopen('http://webapi/torrents',data={'title':'42','torrent':tmpfile})
+			self.assertEqual(200,r.code)
+			r = json.loads(r.read())
+			self.assertIn('redownload',r)
+			self.assertEqual(True,r['redownload'])
+			self.assertIn('metainfo',r)
+			self.assertIn('href',r['metainfo'])
+			self.assertIn('info',r)
+			self.assertIn('href',r['info'])				
+
+class TestGetUserInfo(AuthenticatedWebApiTest):
+	def test_badUserId(self):
+		try:
+			self.urlopen('http://webapi/users/000000FG')
+		except urllib2.HTTPError,e:
+			self.assertEqual(404,e.code)
+			return
+		self.assertTrue(False)
+
+	def test_userDoesntExist(self):
+		self.users._getInfo = None 
+		try:
+			self.urlopen('http://webapi/users/000000FF')
+		except urllib2.HTTPError,e:
+			self.assertEqual(404,e.code)
+			return
+		self.assertTrue(False)
+
+
+	def test_ok(self):
+		self.users._getInfo = {'numberOfTorrents' : 23, 'name':'aTestUser', 'password' : {'href' : fairywren.USER_PASSWORD_FMT % 1 }}
+		
+		r = self.urlopen('http://webapi/users/000000FF')
+		self.assertEqual(200,r.code)
+		r = json.loads(r.read())
+		self.assertIn('numberOfTorrents',r)
+		self.assertIn('name',r)
+		self.assertIn('password',r)
+		self.assertIn('href',r['password'])
+		self.assertNotIn('announce',r)
+		self.assertEqual(r['numberOfTorrents'],self.users._getInfo['numberOfTorrents'])
+		
+	def test_getself(self):
+		self.users._getInfo = {'numberOfTorrents' : 23, 'name':'aTestUser', 'password' : {'href' : fairywren.USER_PASSWORD_FMT % 1 }}
+		self.torrents._getAnnounceUrlForUser = 'http://foobar'
+		r = self.urlopen('http://webapi/users/%.8x' % self.auth._authenticateUser)
+		self.assertEqual(200,r.code)
+		r = json.loads(r.read())
+		self.assertIn('numberOfTorrents',r)
+		self.assertIn('name',r)
+		self.assertIn('password',r)
+		self.assertIn('href',r['password'])
+		self.assertIn('announce',r)
+		self.assertIn('href',r['announce'])
+		self.assertEqual(self.torrents._getAnnounceUrlForUser,r['announce']['href'])
+		self.assertEqual(r['numberOfTorrents'],self.users._getInfo['numberOfTorrents'])		
+
+class TestAddUser(AuthenticatedWebApiTest):
+	def test_userAlreadyExists(self):
+		
+		self.auth._addUser = None
+		self.auth._isUserMemberOfRole = True
+		try:
+			self.urlopen('http://webapi/users', data= urllib.urlencode({'username':'foo','password':86*'0'}))
+		except urllib2.HTTPError,e:
+			self.assertEqual(409,e.code)
+			r = e.read()
+			self.assertIn('user already exists',r)
+			return
+		self.assertTrue(False)
+		
+	def test_ok(self):
+		
+		self.auth._addUser = 'FOO'
+		self.auth._isUserMemberOfRole = True
+		
+		r = self.urlopen('http://webapi/users', data= urllib.urlencode({'username':'foo','password':86*'0'}))
+		self.assertEqual(200,r.code)
+		r = json.loads(r.read())
+		self.assertIn('href',r)
+		self.assertEqual(r['href'],self.auth._addUser)
+			
+			
+		
+		
 
 class TestGetTorrents(AuthenticatedWebApiTest):
 	def test_noparams(self):

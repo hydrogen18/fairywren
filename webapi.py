@@ -170,19 +170,18 @@ class Webapi(restInterface):
 		
 		forms,files = multipart.parse_form_data(env)
 		
-		response = {}
-		
 		if 'torrent' not in files or 'title' not in forms:
 			return vanilla.http_error(400,env,start_response,'missing torrent or title')
 		
 		data = files['torrent'].raw
-		newTorrent = torrents.Torrent.fromBencodedData(data)
+		try:
+			newTorrent = torrents.Torrent.fromBencodedData(data)
+		except ValueError as e:
+			return vanilla.http_error(400,env,start_response,str(e))
 		
-		if newTorrent == None:
-			return vanilla.http_error(400,env,start_response,'torrent is not valid bencoded data')
-		
-		if newTorrent.scrub():
-			response['redownload'] = True
+		response = {}
+		response['redownload'] = newTorrent.scrub()
+		response['redownload'] |= self.torrents.getAnnounceUrlForUser(session.getId())!=newTorrent.getAnnounceUrl()
 			
 		url,infoUrl = self.torrents.addTorrent(newTorrent,forms['title'],session.getId())
 		response['metainfo'] = { 'href' : url }

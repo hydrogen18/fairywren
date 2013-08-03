@@ -20,7 +20,7 @@ class Torrent(object):
 		try:
 			decoded = bencode.bdecode(data)
 		except bencode.BTFailure:
-			return None
+			raise ValueError('not bencoded data')
 		
 		return Torrent.fromDict(decoded)
 		
@@ -33,6 +33,34 @@ class Torrent(object):
 		result = Torrent()
 		
 		result.dict = torrentDict
+		
+		if 'info' not in result.dict:
+			raise ValueError('missing info')
+			
+		if type(result.dict['info'])!=dict:
+			raise ValueError('info not dict')
+				
+		if not ( 'announce'  in result.dict  or 'announce-list'  in result.dict):
+			raise ValueError('missing announce')
+			
+		if 'piece length' not in result.dict['info']:
+			raise ValueError('missing piece length')
+			
+		if type(result.dict['info']['piece length'])!=int:
+			raise ValueError('piece length not integer')
+			
+		if 'pieces' not in result.dict['info']:
+			raise ValueError('missing pieces')
+			
+		if type(result.dict['info']['pieces'])!=str:
+			raise ValueError('pieces not string')
+			
+		if 'name' not in result.dict['info']:
+			raise ValueError('missing name')
+			
+		if type(result.dict['info']['name'])!=str:
+			raise ValueError('name not string')
+			
 		#TODO sanity check for required fields in bit torrent
 		#file
 		
@@ -69,13 +97,17 @@ class Torrent(object):
 		of which require the user to redownload it."""
 		touched = False
 		def removeIfPresent(d,k):
-			if k in d:
+			if k in d.keys():
 				d.pop(k)
 				return True
 				
 			return False
 		
 		touched |= removeIfPresent(self.dict,'announce-list')
+		
+		if touched and 'announce' not in self.dict :
+			self.dict['announce'] = ''
+		
 		removeIfPresent(self.dict,'creation date')
 		removeIfPresent(self.dict,'comment')
 		removeIfPresent(self.dict,'created by')

@@ -250,7 +250,7 @@ Fairywren.changePassword = function()
 		return;
 	}
 	
-	jQuery.post(Fairywren.account.password, { "password" : Fairywren.hashPassword(password0.val()) }).
+	jQuery.post(Fairywren.account.password.href, { "password" : Fairywren.hashPassword(password0.val()) }).
 	done(
 		function(data){
 			if("error" in data)
