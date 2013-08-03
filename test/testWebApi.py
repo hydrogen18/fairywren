@@ -407,6 +407,14 @@ class TestGetTorrents(AuthenticatedWebApiTest):
 			return
 		self.assertTrue(False)
 
+class TestGetSession(AuthenticatedWebApiTest):
+	def test_it(self):
+		r = self.urlopen('http://webapi/session')
+		self.assertEqual(r.code,200)
+		r = json.loads(r.read())
+		self.assertNotIn('error',r)
+		self.assertIn('my',r)
+		self.assertIn('href',r['my'])
 		
 class TestSession(WebApiTest):
 	def test_notLoggedIn(self):
