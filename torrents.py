@@ -2,7 +2,8 @@ import hashlib
 import bencode
 import base64
 import cPickle as pickle
-psycopg2 = import_psycopg2()
+import fairywren
+psycopg2 = fairywren.import_psycopg2()
 import os
 import os.path
 import fairywren

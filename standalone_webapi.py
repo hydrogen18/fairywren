@@ -9,7 +9,8 @@ from torrents import TorrentStore
 from users import Users
 from stats import TrackerStatsSubscriber
 import vanilla
-import psycopg2
+import fairywren
+psycopg2 = fairywren.import_psycopg2()
 import sys
 import json
 import logging.config

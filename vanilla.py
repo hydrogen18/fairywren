@@ -56,8 +56,16 @@ def buildConnectionPool(dbModule,**dbKwArgs):
 	dbKwArgs['max_age'] = 1200
 	dbKwArgs['connect_timeout']=3
 	dbKwArgs['max_size']=4
-
-	return eventlet.db_pool.ConnectionPool(dbModule,**dbKwArgs)
+	
+	#Scrub unicode strings
+	#from args since psycopg2cffi doesn't like them
+	scrubbed = {}
+	for k,v in dbKwArgs.iteritems():
+		if type(v) == unicode:
+			scrubbed[str(k)] = str(v)
+		else:
+			scrubbed[str(k)] = v
+	return eventlet.db_pool.ConnectionPool(dbModule,**scrubbed)
 	
 def sanitizeForContentDispositionHeaderFilename(originalFileName):
 	result = str(originalFileName).replace(' ','_')
