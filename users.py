@@ -1,5 +1,5 @@
 import eventlet
-
+import fairywren
 
 class Users(object):
 
