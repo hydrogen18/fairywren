@@ -3,7 +3,8 @@ import eventlet.db_pool
 import base64
 import hashlib
 import os
-from psycopg2 import IntegrityError
+import fairywren
+psycopg2 = fairywren.import_psycopg2()
 import logging
 
 
@@ -71,7 +72,7 @@ class Auth(object):
 					(username,
 					saltedPw,
 					base64.urlsafe_b64encode(secretKey.digest()).replace('=',''),) ) 
-			except IntegrityError as e:
+			except psycopg2.DatabaseError as e:
 				self.log.error(e)
 				conn.rollback()
 				cur.close()

@@ -8,7 +8,8 @@ from auth import *
 from peers import *
 
 import vanilla
-import psycopg2
+import fairywren
+psycopg2 = fairywren.import_psycopg2()
 import sys
 import json
 import logging.config
