@@ -118,6 +118,26 @@ class Webapi(restInterface):
 		response = { 'href' : resourceForNewUser } 
 		return vanilla.sendJsonWsgiResponse(env,start_response,response)
 		
+	def searchTorrents(self,env,start_response,session,query):
+		
+		tokens = query.get('token')
+		if tokens == None:
+			return vanilla.http_error(400,env,start_response,'search must have at least one instance of token parameter')
+			
+		if len(tokens) > 5:
+			return vanilla.http_error(400,env,start_response,'search may not have more than 5 tokens')
+			
+		listOfTorrents = []
+		for torrent in self.torrents.searchTorrents(tokens):
+			seeds, leeches = self.torrentStats.getCount(torrent['infoHash'])
+			torrent.pop('infoHash')
+			torrent['seeds'] = seeds
+			torrent['leeches'] = leeches
+			listOfTorrents.append(torrent)
+			
+		return vanilla.sendJsonWsgiResponse(env,start_response,
+		{'torrents': listOfTorrents})
+		
 	@resource(True,'GET','torrents')
 	def listTorrents(self,env,start_response,session):
 		
@@ -125,6 +145,9 @@ class Webapi(restInterface):
 			query = {}
 		else:
 			query = urlparse.parse_qs(env['QUERY_STRING'])
+			
+		if 'search' in query:
+			return self.searchTorrents(env,start_response,session,query)
 		
 		#Use the first occurence of the supplied parameter
 		#With a default 
@@ -143,7 +166,6 @@ class Webapi(restInterface):
 			subset = int(subset)
 		except ValueError:
 			return vanilla.http_error(400,env,start_response,'subset must be integer')
-		
 
 		listOfTorrents = []
 		

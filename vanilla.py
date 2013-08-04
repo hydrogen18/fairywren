@@ -33,7 +33,7 @@ def http_error(num,env,start_response,msg=None):
 	response += '</title></head>'
 	response += '<body><h4>' 
 	response += errmsg
-	response += '</h4><hr><p>'
+	response += '</h4><hr><p id="msg">'
 	if msg:
 		response += msg
 	response += '</p></body></html>'

@@ -47,6 +47,10 @@ class MockTorrents(object):
 		self._getNumTorrents = 0
 		self._getTorrentForDownload = None
 		self._getAnnounceUrlForUser = None
+		self._searchTorrents  = []
+		
+	def searchTorrents(self,tokens):
+		return self._searchTorrents
 	
 	def addTorrent(self,torrent,title,creator):
 		return self._addTorrent
@@ -92,6 +96,49 @@ class AuthenticatedWebApiTest(WebApiTest):
 	
 		self.urlopen = urllib2.build_opener(wsgi_intercept.urllib2_intercept.wsgi_urllib2.WSGI_HTTPHandler(),urllib2.HTTPCookieProcessor(cookies),MultipartPostHandler.MultipartPostHandler).open		
 
+class TestTorrentSearch(AuthenticatedWebApiTest):
+	def test_noTokens(self):
+		try:
+			r  = self.urlopen('http://webapi/torrents?' + urllib.urlencode({"search": 1 }))
+		except urllib2.HTTPError as e:
+			self.assertEqual(e.code,400)
+			r = e.read()
+			
+			self.assertIn('one instance',r)
+			return
+			
+		self.assertTrue(False)
+		
+	def test_tooManyTokens(self):
+		try:
+			r  = self.urlopen('http://webapi/torrents?' + urllib.urlencode({"search": 1 , "token":range(0,10)},doseq=True))
+		except urllib2.HTTPError as e:
+			self.assertEqual(e.code,400)
+			r = e.read()
+			self.assertIn('more than',r)
+			self.assertIn('tokens',r)
+			return
+			
+		self.assertTrue(False)
+			
+	def test_ok(self):
+		NUM_TORRENTS = 100
+			
+		for numTokens in range(1,5):
+			self.torrents._searchTorrents = [  {'infoHash':str(i).zfill(20)} for i in range(0,NUM_TORRENTS) ]
+			r  = self.urlopen('http://webapi/torrents?' + urllib.urlencode({"search": 1 , "token":range(0,numTokens)},doseq=True))
+			self.assertEqual(r.code,200)
+			r = json.loads(r.read())
+			self.assertIn('torrents',r)
+			self.assertEqual(len(r['torrents']),NUM_TORRENTS)
+			for torrent in r['torrents']:
+				self.assertIn('leeches',torrent)
+				self.assertIsInstance(torrent['leeches'],int)
+				self.assertIn('seeds',torrent)
+				self.assertIsInstance(torrent['seeds'],int)
+				
+			
+			
 class TestSession(AuthenticatedWebApiTest):
 	def test_getSession(self):
 		r = self.urlopen('http://webapi/session')
@@ -383,9 +430,16 @@ class TestGetTorrents(AuthenticatedWebApiTest):
 		
 		for torrent in r['torrents']:
 			self.assertIn('seeds',torrent)
-			self.assertEqual(2,torrent['seeds'])
 			self.assertIn('leeches',torrent)
+			
+			self.assertIsInstance(torrent['leeches'],int)
+			self.assertIsInstance(torrent['seeds'],int)
+			
+			self.assertEqual(2,torrent['seeds'])
 			self.assertEqual(3,torrent['leeches'])
+			
+			
+			
 		
 	def test_badResultSize(self):
 		try:

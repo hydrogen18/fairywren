@@ -276,6 +276,39 @@ class TorrentStore(object):
 			cur.close()
 			conn.rollback()
 		return numTorrents
+		
+	def searchTorrents(self,tokens):
+		
+		sql = "Select torrents.infoHash,torrents.id,torrents.title,torrents.creationdate,\
+		users.id, users.name, torrents.lengthInBytes \
+		from torrents \
+		left join users on torrents.creator = users.id \
+		order by creationdate desc where torrents.title like '%%'||%s||'%%'"
+		
+		sql+= " and torrents.title like '%%'||%s||'%%'"*(len(tokens)-1)
+		sql+= ';'
+		
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			cur.execute(sql,tokens)
+			
+			for record in cur:
+				infoHash,torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes = r
+				infoHash = base64.urlsafe_b64decode(infoHash + '==')
+				yield {
+					'infoHash' : infoHash ,
+					'metainfo' : { 'href' : self.getResourceForTorrent(torrentId) },
+					'info' : {'href' : self.getInfoResourceForTorrent(torrentId) },
+					'title' : torrentTitle,
+					'creationDate' : torrentsCreationDate,
+					'lengthInBytes' : lengthInBytes,
+					'creator': {
+						'href' : fairywren.USER_FMT % userId,
+						'name' : userName
+						}
+					}
+			cur.close()
+			conn.rollback()
 	
 	def getTorrents(self,limit,subset):
 		"""
@@ -299,7 +332,7 @@ class TorrentStore(object):
 			while True:
 				r = cur.fetchone()
 				if r!=None:
-					infoHash,torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes =r
+					infoHash,torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes = r
 					infoHash = base64.urlsafe_b64decode(infoHash + '==')
 					yield {
 					'infoHash' : infoHash ,
