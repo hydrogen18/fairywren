@@ -203,7 +203,7 @@ class TorrentStore(object):
 			users.id, users.name, torrents.lengthInBytes \
 			from torrents \
 			left join users on torrents.creator = users.id \
-			where torrents.id = %s");
+			where torrents.id = %s",(uid,));
 			
 			result = cur.fetchone()
 			cur.close()
@@ -214,7 +214,7 @@ class TorrentStore(object):
 		infoHash,torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes = result
 		infoHash = base64.urlsafe_b64decode(infoHash + '==')
 		return {
-			'infoHash' : infoHash ,
+			#'infoHash' : str(infoHash) ,
 			'metainfo' : { 'href' : self.getResourceForTorrent(torrentId) },
 			'title' : torrentTitle,
 			'creationDate' : torrentsCreationDate,

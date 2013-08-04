@@ -55,6 +55,11 @@ border-width:1px;
 font-size:1.09em;
 }
 
+span.torrentLink:hover
+{
+text-decoration:underline;
+}
+
 div.warning
 {
 text-align: left;

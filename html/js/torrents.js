@@ -2,6 +2,7 @@
 
 Fairywren.account = null;
 
+Fairywren.torrents = {}
 
 $(document).ready(function(){
 	jQuery.ajaxSettings.traditional = true;
@@ -45,11 +46,87 @@ $(document).ready(function(){
 		});
 	
 	
-	$("#main").tabs();
-	$("#torrentBrowseBar").hide();
+	Fairywren.torrents.tabs = $("#main");
+	Fairywren.torrents.tabs.tabs();
 	
 	
 });
+
+Fairywren.torrentTab = {};
+Fairywren.torrentTab.init = function()
+{
+	
+}
+Fairywren.torrentTab.tabs = {};
+Fairywren.torrentTab.nextIndex = 4;
+Fairywren.torrentTab.display = function(href)
+{
+	if(href in Fairywren.torrentTab.tabs)
+	{
+		Fairywren.torrents.tabs.tabs({'active':Fairywren.torrentTab.tabs[href]});
+		return;
+	}
+	
+	jQuery.get(href).
+	done(function(data)
+		{
+			if('error' in data)
+			{
+				Fairywren.errorHandler(data);
+			}
+			else
+			{
+				var newLi = $("<li />");
+				var anchor = $("<a />");
+				anchor.attr('href','#' + href);
+				anchor.text(data.title);
+				newLi.append(anchor);
+				
+				$("#tabs").append(newLi)
+				var newDiv = $("<div />");
+				newDiv.attr('id',href);
+				
+				var contentDiv = $("<div />");
+				contentDiv.attr('class','contentBox ui-corner-all');
+				
+				var header = $("<div />");
+				header.attr('class','contentBoxHeader ui-corner-all');
+				header.text(data.title);
+				
+				contentDiv.append(header);
+				
+				contentDiv.append( '<a href="' + data.metainfo.href + '">Download</a>');
+				contentDiv.append($("<br />"));
+				
+				contentDiv.append($("<span />").text("Created on: " + Fairywren.trimIsoFormatDate(data.creationDate)));
+				contentDiv.append($("<br />"));
+				
+				
+				contentDiv.append($("<span />").text("Uploaded by: " + data.creator.name));
+				contentDiv.append($("<br />"));
+				
+				contentDiv.append($("<span />").text("Size: " + Fairywren.bytesToPrettyPrint(data.lengthInBytes) ));
+				contentDiv.append($("<br />"));
+				
+				newDiv.append(contentDiv);
+				
+				Fairywren.torrentTab.tabs[href] = Fairywren.torrentTab.nextIndex;
+				
+				if('extended' in data && data.extended !== null)
+				{
+					for(extension in data.extended)
+					{
+						
+					}
+				}
+				Fairywren.torrents.tabs.append(newDiv);
+				Fairywren.torrents.tabs.tabs('refresh');
+				Fairywren.torrents.tabs.tabs({'active': Fairywren.torrentTab.nextIndex++ } );
+				
+			}
+		}
+	);
+}
 
 Fairywren.search = {};
 Fairywren.search.init = function()
@@ -109,6 +186,7 @@ Fairywren.search.search = function()
 Fairywren.torrents = {};
 Fairywren.torrents.init = function()
 {
+	$("#torrentBrowseBar").hide();
 	Fairywren.torrents.pageSize = 20;
 	Fairywren.torrents.page = 0;
 	Fairywren.torrents.pages = null;
@@ -193,6 +271,37 @@ Fairywren.loadTorrentsForPage = function(clearCache)
 			
 }
 
+Fairywren.trimIsoFormatDate = function(dateStr)
+{
+	return dateStr.substr(0,19);
+}
+
+Fairywren.bytesToPrettyPrint = function(lengthInBytes)
+{
+	var adjustedLength = lengthInBytes;
+	var adjustedUnits = 'bytes';
+	
+	var ADJUSTMENTS = ['kilobytes','megabytes','gigabytes'];
+	var SCALE = 1024;
+	for(var i = 0;i < ADJUSTMENTS.length; ++i)
+	{
+		if(SCALE > adjustedLength )
+		{
+			break;
+		}
+		var adjustment = Math.pow(SCALE,i+1);
+		adjustedLength = lengthInBytes / adjustment;
+		adjustedUnits = ADJUSTMENTS[i];
+	}
+	
+	var displayLengthFixed = parseInt(adjustedLength) !== adjustedLength;
+	if(displayLengthFixed)
+	{
+		adjustedLength = adjustedLength.toFixed(2);
+	}
+	return adjustedLength + ' ' + adjustedUnits;
+}
+
 Fairywren.clearAndRenderTorrents = function(torrentTable,pageset)
 {
 	torrentTable.find('tr:gt(0)').remove();
@@ -200,43 +309,38 @@ Fairywren.clearAndRenderTorrents = function(torrentTable,pageset)
 	for(i in pageset)
 	{
 		var title = pageset[i].title;
-		var uploadTime = pageset[i].creationDate.substr(0,19);
+		var uploadTime = Fairywren.trimIsoFormatDate(pageset[i].creationDate);
 		var uploader = pageset[i].creator.name;
 		var downloadUrl = pageset[i].metainfo.href;
 		var lengthInBytes = pageset[i].lengthInBytes;
 		var seeds = pageset[i].seeds;
 		var leeches = pageset[i].leeches;
 		
-		var adjustedLength = lengthInBytes;
-		var adjustedUnits = 'bytes';
+		var adjustedLength = Fairywren.bytesToPrettyPrint(lengthInBytes);
 		
-		var ADJUSTMENTS = ['kilobytes','megabytes','gigabytes'];
-		var SCALE = 1024;
-		for(var i = 0;i < ADJUSTMENTS.length; ++i)
-		{
-			if(SCALE > adjustedLength )
-			{
-				break;
-			}
-			var adjustment = Math.pow(SCALE,i+1);
-			adjustedLength = lengthInBytes / adjustment;
-			adjustedUnits = ADJUSTMENTS[i];
-		}
+		var titleSpan = $("<span />");
+		titleSpan.attr('class','torrentLink');
+		var infoHref = pageset[i].info.href;
+		titleSpan.click(infoHref,function(event){
+			Fairywren.torrentTab.display(event.data);
+		});
+		titleSpan.text(title);
 		
+		var row = $("<tr />");
+		var titleData = $("<td />");
+		titleData.append(titleSpan);
 		
-		var displayLengthFixed = parseInt(adjustedLength) !== adjustedLength;
-		if(displayLengthFixed)
-		{
-			adjustedLength = adjustedLength.toFixed(2);
-		}
+		titleData.append('&nbsp;<a style="float:right;" class="downloadLink" href="' + downloadUrl + '">Download</a>\
+		<span style="float:right;" >'+ '&uarr;' + seeds  + '&nbsp;&darr;' + leeches + '</span>');
 		
-		var row = '<tr><td>' + title + 
-		'&nbsp;<a style="float:right;" class="downloadLink" href="' + downloadUrl + '">Download</a>\
-		<span style="float:right;" >'+ '&uarr;' + seeds  + '&nbsp;&darr;' + leeches + '</span></td>\
-		<td>' + adjustedLength + ' ' + adjustedUnits + '</td>\
+		row.append(titleData);
+		
+		row.append('<td>' + adjustedLength + '</td>\
 		<td>' + uploadTime + "</td>\
-		<td>" + uploader + "</td></tr>";
+		<td>" + uploader + "</td>");
+		
 		torrentTable.find("tr:last").after(row);
+		
 		
 	}
 	
