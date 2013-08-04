@@ -1,6 +1,23 @@
 
 
-function login()
+$(document).ready(function(){
+
+	jQuery.get("api/session").
+	done(
+		function(data)
+		{
+			if(! ( "error" in data ))
+			{
+				window.location = 'torrents.html' ;
+			}	
+		}
+		).fail(function(jqXhr,textStatus,errorThrown)
+		{
+			Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,$("#message"));
+		});
+	});
+
+Fairywren.login = function()
 {
 	var username = $("#username").val();
 	var password = $("#password").val();
