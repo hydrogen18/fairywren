@@ -34,6 +34,7 @@ Torrents
 <li><a href="#torrents">Torrents</a></li>
 <li><a href="#account" onclick="Fairywren.loadAccount()">Account</a></li>
 <li><a href="#upload" onclick="Fairywren.loadUpload()">Upload</a></li>
+<li><a href="#torrentSearch" >Search</a></li>
 </ul>
 
 <div id="upload">
@@ -86,7 +87,7 @@ Torrents
 		<div style="margin-top:5px;" id="pageIndicator"> <span id="pageNumbers" >999/999</span></div>
 	</div>
 
-	<div >
+	<div>
 		<table id="torrentTable" width=90%>
 
 		<tr>
@@ -97,12 +98,43 @@ Torrents
 		<th width=15%>Upload Time</th>
 
 		<th width=15%>Uploader</th>
+		</tr>
+		</table>
 	</div>
-</tr>
 
-</table>
+
+
 </div>
 
+
+<div id="torrentSearch">
+	<div id="torrentSearchBar">
+		<div class="contentBox ui-corner-all">
+			<div class="contentBoxHeader ui-corner-all">Search</div>
+			<p>Search for torrents using terms separated by spaces.</p>
+			<form onsubmit="Fairywren.search.search(); return false;">
+			<label for="searchTokens">Search Terms</label><input type="text" id="searchTokens" name="searchTokens" size="96">
+			<span class="clickable" onclick="Fairywren.search.search()" >Search</span>
+			</form>
+		</div>
+	</div>
+	
+	<div>
+		<table id="torrentTable" width=90%>
+
+		<tr>
+		<th>Title</th>
+
+		<th width=15%>Size</th>
+
+		<th width=15%>Upload Time</th>
+
+		<th width=15%>Uploader</th>
+		</tr>
+		</table>
+	</div>
+
+</div>
 
 </div>
 

@@ -4,7 +4,7 @@ Fairywren.account = null;
 
 
 $(document).ready(function(){
-	
+	jQuery.ajaxSettings.traditional = true;
 	$("#torrentUpload").ajaxForm();
 
 	jQuery.get("api/session").
@@ -40,7 +40,51 @@ $(document).ready(function(){
 	$("#main").tabs();
 	$("#torrentBrowseBar").hide();
 	Fairywren.loadTorrentsForPage();
+	Fairywren.search.init();
 });
+
+Fairywren.search = {};
+Fairywren.search.init = function()
+{
+	Fairywren.search.torrentTable = $("#torrentSearch").find("#torrentTable");
+	Fairywren.search.torrentTable.hide();
+	Fairywren.search.searchbox = $("#torrentSearch").find("#searchTokens");
+	
+}
+
+Fairywren.search.extractTokens = function()
+{
+	var tokens = Fairywren.search.searchbox.val().split(' ');
+	
+	for(var i = tokens.length-1; i >= 0 ; --i)
+	{
+		tokens[i] = jQuery.trim(tokens[i]);
+		if(tokens[i] === "")
+		{
+			tokens.splice(i,1);
+		}
+	}
+	
+	return tokens;
+}
+
+Fairywren.search.search = function()
+{
+	var tokens = Fairywren.search.extractTokens();
+	
+	if (tokens.length === 0)
+	{
+		return;
+	}
+	jQuery.get('api/torrents',{ search:1 , "token" : tokens }).done(
+		function(data)
+		{
+			
+			Fairywren.clearAndRenderTorrents(Fairywren.search.torrentTable,data.torrents);
+		}
+		);
+	Fairywren.search.torrentTable.show();
+}
 
 Fairywren.torrents = {};
 Fairywren.torrents.pageSize = 20;
@@ -124,14 +168,10 @@ Fairywren.loadTorrentsForPage = function(clearCache)
 			
 }
 
-Fairywren.showTorrents = function()
+Fairywren.clearAndRenderTorrents = function(torrentTable,pageset)
 {
-	var torrentTable = $("#torrentTable");
 	torrentTable.find('tr:gt(0)').remove();
-	var page = Fairywren.torrents.page;
-	$("#pageNumbers").text((page +1 )+ ' / ' + Fairywren.torrents.numPages);
 	
-	var pageset = Fairywren.torrents.pages[page];
 	for(i in pageset)
 	{
 		var title = pageset[i].title;
@@ -171,8 +211,24 @@ Fairywren.showTorrents = function()
 		<td>' + adjustedLength + ' ' + adjustedUnits + '</td>\
 		<td>' + uploadTime + "</td>\
 		<td>" + uploader + "</td></tr>";
-		$("#torrentTable tr:last").after(row);
+		torrentTable.find("tr:last").after(row);
+		//$("#torrentTable tr:last").after(row);
 	}
+	
+
+}
+
+Fairywren.showTorrents = function()
+{
+	
+	var torrentTable = $("#torrents").find("#torrentTable");
+	
+	var page = Fairywren.torrents.page;
+	$("#pageNumbers").text((page +1 )+ ' / ' + Fairywren.torrents.numPages);
+	
+	var pageset = Fairywren.torrents.pages[page];
+	Fairywren.clearAndRenderTorrents(torrentTable,pageset);
+	
 	$("#torrentBrowseBar").show();
 
 }

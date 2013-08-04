@@ -279,13 +279,14 @@ class TorrentStore(object):
 		
 	def searchTorrents(self,tokens):
 		
-		sql = "Select torrents.infoHash,torrents.id,torrents.title,torrents.creationdate,\
+		sql = "Select torrents.infoHash,torrents.id,torrents.title, torrents.creationdate,\
 		users.id, users.name, torrents.lengthInBytes \
 		from torrents \
 		left join users on torrents.creator = users.id \
-		order by creationdate desc where torrents.title like '%%'||%s||'%%'"
+		where lower(title) like '%%'||lower(%s)||'%%'"
 		
-		sql+= " and torrents.title like '%%'||%s||'%%'"*(len(tokens)-1)
+		sql+= " and lower(title) like '%%'||lower(%s)||'%%'"*(len(tokens)-1)
+		sql+= " order by creationdate desc"
 		sql+= ';'
 		
 		with self.connPool.item() as conn:
@@ -293,7 +294,7 @@ class TorrentStore(object):
 			cur.execute(sql,tokens)
 			
 			for record in cur:
-				infoHash,torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes = r
+				infoHash,torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes = record
 				infoHash = base64.urlsafe_b64decode(infoHash + '==')
 				yield {
 					'infoHash' : infoHash ,
