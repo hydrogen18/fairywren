@@ -13,6 +13,7 @@ import cookielib
 import hashlib
 import base64
 import types
+import xml.dom.minidom
 
 def mktorrent(target,announce,pieceLength,private):
 	cmd = ['/usr/bin/mktorrent']
@@ -32,6 +33,51 @@ def mktorrent(target,announce,pieceLength,private):
 		raise EnvironmentError("mktorrent failed")
 		
 	return outfile
+	
+def mediainfo(*files):
+	cmd = ['/usr/bin/mediainfo','--output=XML']
+	cmd += files
+	
+	proc = subprocess.Popen(cmd,stdout=subprocess.PIPE)
+	#Read all the output
+	stdout, _ = proc.communicate()
+	
+	#Check for failure
+	if 0!=proc.returncode:
+		raise EnvironmentError('mediainfo failed')
+	retval = {}
+	
+	#Parse the output
+	doc = xml.dom.minidom.parseString(stdout)
+	#Ignore anything not in the first Mediainfo tag
+	doc = doc.getElementsByTagName('Mediainfo')[0]
+	#Extract the mediainfo version
+	retval['version'] = str(doc.getAttribute('version'))
+	retval['files'] = {}
+	#For each file, extract the information about the tracks
+	for f in doc.getElementsByTagName('File'):
+		f_ = {}
+		f_['tracks'] = []
+		name = None
+		for track in f.getElementsByTagName('track'):
+			t = {}
+			t['type'] = str(track.getAttribute('type'))
+			for tag in track.childNodes:
+				if len(tag.childNodes)==1 and 'text' in tag.childNodes[0].nodeName:
+					key = str(tag.tagName)
+					value = str(tag.childNodes[0].nodeValue)
+					#Mediainfo shows the name of the file in the
+					#General track
+					if t['type'] == 'General' and 'name' in key.lower():
+						name = value
+					else:
+						t[key] = value
+			f_['tracks'].append(t)
+			
+		retval['files'][name] = f_
+		
+	return retval
+		
 	
 def buildOpener(url,username,password):
 
@@ -89,14 +135,25 @@ if __name__ == "__main__":
 		pieceLength -= 1
 	else:
 		pieceLength += 1
-	
-	
+
+	filesPath = rtorrentLocal.d.get_base_path(infoHash)
 	#Create a new torrent
-	newTorrentPath = mktorrent(rtorrentLocal.d.get_base_path(infoHash),announceUrl,pieceLength,True)
+	newTorrentPath = mktorrent(filesPath,announceUrl,pieceLength,True)
+	
+	try:
+		files = os.listdir(filesPath)
+	except OSError as e:
+		if e.errno!=20:
+			raise e
+			
+		files = [filesPath]
+	
+	files = [os.path.join(filesPath,f) for f in files]
+	
+	minfo = medainfo(*files)
 	
 	#Upload the torrent to fairywren
-	
-	fairywren.open('%s/api/torrents' % fwurl ,data={"title":str(sourceTorrent['info']['name']),"torrent":open(newTorrentPath,'rb')})
+	fairywren.open('%s/api/torrents' % fwurl ,data={"extended": { "mediainfo" : minfo } , "title":str(sourceTorrent['info']['name']),"torrent":open(newTorrentPath,'rb')})
 	
 	#Add the new torrent to the local rtorrent instance
 	rtorrentLocal.load.start('',newTorrentPath)
