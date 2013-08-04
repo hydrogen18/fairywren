@@ -229,8 +229,15 @@ class Webapi(restInterface):
 		return [torrent.raw()]
 
 	@resource(True,'GET','torrents',UID_FMT + '.json')
-	def torrentInfo(self,env,start_response):
-		return vanilla.http_error(501,env,start_response)
+	def torrentInfo(self,env,start_response,session,uid):
+		uid = int(uid,16)
+		response = self.torrents.getInfo(uid)
+		
+		if response == None:
+			return vanilla.http_error(404,env,start_response,msg='no such torrent')
+		
+		response['extended'] = self.torrents.getExtendedInfo(uid)
+		return vanilla.sendJsonWsgiResponse(env,start_response,response)
 		
 
 

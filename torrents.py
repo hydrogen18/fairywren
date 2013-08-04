@@ -6,6 +6,7 @@ import psycopg2
 import os
 import os.path
 import fairywren
+import gdbm
 
 class Torrent(object):
 	def __init__(self):
@@ -185,6 +186,49 @@ class TorrentStore(object):
 		containingFolder = os.path.join(self.torrentPath,*subpath[:3])
 		
 		return containingFolder, path
+		
+	def _buildKeys(self,torrentId):
+		if torrentId < 0 or torrentId > (2**32 -1):
+			return ValueError("torrentId out of range")
+			
+		metainfoKey = '%.8x' % torrentId
+		infoKey = metainfoKey  + '_info'
+		return metainfoKey, infoKey
+	
+	def getInfo(self,uid):
+		with self.connPool.item() as conn:
+			cur = conn.cursor();
+			
+			cur.execute("Select torrents.infoHash,torrents.id,torrents.title, torrents.creationdate,\
+			users.id, users.name, torrents.lengthInBytes \
+			from torrents \
+			left join users on torrents.creator = users.id \
+			where torrents.id = %s");
+			
+			result = cur.fetchone()
+			cur.close()
+			conn.rollback()
+			
+		if result == None:
+			return None
+		infoHash,torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes = result
+		infoHash = base64.urlsafe_b64decode(infoHash + '==')
+		return {
+			'infoHash' : infoHash ,
+			'metainfo' : { 'href' : self.getResourceForTorrent(torrentId) },
+			'title' : torrentTitle,
+			'creationDate' : torrentsCreationDate,
+			'lengthInBytes' : lengthInBytes,
+			'creator': {
+				'href' : fairywren.USER_FMT % userId,
+				'name' : userName
+				}
+			}
+			
+	def getExtendedInfo(self,uid):
+		return {}
+		
+		
 	
 	def _storeTorrent(self,torrent,torrentId):
 		containingFolder, path = self._buildPathFromId(torrentId)

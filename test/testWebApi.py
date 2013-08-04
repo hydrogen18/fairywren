@@ -48,6 +48,14 @@ class MockTorrents(object):
 		self._getTorrentForDownload = None
 		self._getAnnounceUrlForUser = None
 		self._searchTorrents  = []
+		self._getInfo = None
+		self._getExtendedInfo = None
+		
+	def getInfo(self,uid):
+		return self._getInfo
+		
+	def getExtendedInfo(self,uid):
+		return self._getExtendedInfo 
 		
 	def searchTorrents(self,tokens):
 		return self._searchTorrents
@@ -95,6 +103,37 @@ class AuthenticatedWebApiTest(WebApiTest):
 		cookies.extract_cookies(response,request)
 	
 		self.urlopen = urllib2.build_opener(wsgi_intercept.urllib2_intercept.wsgi_urllib2.WSGI_HTTPHandler(),urllib2.HTTPCookieProcessor(cookies),MultipartPostHandler.MultipartPostHandler).open		
+
+class TestTorrentInfo(AuthenticatedWebApiTest):
+	def test_badTorrentId(self):
+		try:
+			r = self.urlopen('http://webapi/torrents/0000000G.json')
+		except urllib2.HTTPError as e:
+			self.assertEqual(404,e.code)
+			return
+		self.assertTrue(False)
+	def test_missingTorrent(self):
+		try:
+			r = self.urlopen('http://webapi/torrents/00000000.json')
+		except urllib2.HTTPError as e:
+			self.assertEqual(404,e.code)
+			r = e.read()
+			self.assertIn('no such torrent',r)
+			return
+		self.assertTrue(False)
+		
+	def test_ok(self):
+		
+		self.torrents._getInfo = {'test':'foo'}
+		self.torrents._getExtendedInfo = {'test': 'bar'}
+		r = self.urlopen('http://webapi/torrents/00000000.json')
+		self.assertEqual(r.code,200)
+		r = json.loads(r.read())
+		self.assertIn('test',r)
+		self.assertEqual(self.torrents._getInfo['test'],r['test'])
+		
+		self.assertIn('extended',r)
+		self.assertEqual(self.torrents._getExtendedInfo,r['extended'])
 
 class TestTorrentSearch(AuthenticatedWebApiTest):
 	def test_noTokens(self):
