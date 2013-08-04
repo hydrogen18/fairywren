@@ -5,6 +5,10 @@ Fairywren.account = null;
 
 $(document).ready(function(){
 	jQuery.ajaxSettings.traditional = true;
+	
+	Fairywren.search.init();
+	Fairywren.torrents.init();
+	
 	$("#torrentUpload").ajaxForm();
 
 	jQuery.get("api/session").
@@ -29,18 +33,22 @@ $(document).ready(function(){
 						else
 						{
 							Fairywren.account = data;
+							Fairywren.loadTorrentsForPage();
 						}
 					}
 				);
 			}
 		}
-		);
+		).fail(function(jqXhr,textStatus,errorThrown)
+		{
+			Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,$("#message"));
+		});
 	
 	
 	$("#main").tabs();
 	$("#torrentBrowseBar").hide();
-	Fairywren.loadTorrentsForPage();
-	Fairywren.search.init();
+	
+	
 });
 
 Fairywren.search = {};
@@ -49,6 +57,7 @@ Fairywren.search.init = function()
 	Fairywren.search.torrentTable = $("#torrentSearch").find("#torrentTable");
 	Fairywren.search.torrentTable.hide();
 	Fairywren.search.searchbox = $("#torrentSearch").find("#searchTokens");
+	Fairywren.search.msg = $("#torrentSearch").find("#msg");
 	
 }
 
@@ -70,6 +79,7 @@ Fairywren.search.extractTokens = function()
 
 Fairywren.search.search = function()
 {
+	Fairywren.search.msg.text("");
 	var tokens = Fairywren.search.extractTokens();
 	
 	if (tokens.length === 0)
@@ -79,18 +89,32 @@ Fairywren.search.search = function()
 	jQuery.get('api/torrents',{ search:1 , "token" : tokens }).done(
 		function(data)
 		{
-			
-			Fairywren.clearAndRenderTorrents(Fairywren.search.torrentTable,data.torrents);
+			if('error' in data)
+			{
+				Fairywren.errorHandler(data);
+			}
+			else
+			{
+				Fairywren.search.torrentTable.show();
+				Fairywren.clearAndRenderTorrents(Fairywren.search.torrentTable,data.torrents);
+			}
 		}
-		);
-	Fairywren.search.torrentTable.show();
+		).fail( function (jqXhr,textStatus,errorThrown )
+		{
+			Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,Fairywren.search.msg);
+		});
+	
 }
 
 Fairywren.torrents = {};
-Fairywren.torrents.pageSize = 20;
-Fairywren.torrents.page = 0;
-Fairywren.torrents.pages = null;
-Fairywren.torrents.numPages = null;
+Fairywren.torrents.init = function()
+{
+	Fairywren.torrents.pageSize = 20;
+	Fairywren.torrents.page = 0;
+	Fairywren.torrents.pages = null;
+	Fairywren.torrents.numPages = null;
+	Fairywren.torrents.msg = $("#torrents").find("#msg");
+}
 
 Fairywren.flipPage = function(dist)
 {
@@ -129,7 +153,7 @@ Fairywren.loadTorrentsForPage = function(clearCache)
 				{
 					if("error" in data)
 					{
-						$("#message").text(data.error);
+						Fairywren.errorHandler(data);
 					}
 					else
 					{
@@ -154,9 +178,10 @@ Fairywren.loadTorrentsForPage = function(clearCache)
 					}
 				}).
 			fail(
-				function()
+				function(jqXhr,textStatus,errorThrown)
 				{
-					$("#message").text("Server error");
+					Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,Fairywren.torrents.msg);
+					
 				}
 			);;
 	}
@@ -212,7 +237,7 @@ Fairywren.clearAndRenderTorrents = function(torrentTable,pageset)
 		<td>' + uploadTime + "</td>\
 		<td>" + uploader + "</td></tr>";
 		torrentTable.find("tr:last").after(row);
-		//$("#torrentTable tr:last").after(row);
+		
 	}
 	
 
@@ -250,9 +275,11 @@ Fairywren.uploadTorrent = function()
 			showOnSuccess.show();
 		},
 		
-		error : function()
+		error : 
+		function(jqXhr,textStatus,errorThrown)
 		{
 			showOnFailure.show();
+			Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,$("#upload").find("#msg"));
 		},
 		clearForm : true,
 		
@@ -311,7 +338,7 @@ Fairywren.changePassword = function()
 		function(data){
 			if("error" in data)
 			{
-				$("#message").text(data.error);
+				Fairywren.errorHandler(data);
 			}
 			else
 			{
@@ -321,11 +348,9 @@ Fairywren.changePassword = function()
 			}
 		}
 	).
-	fail(
-		function()
+	fail(function(jqXhr,textStatus,errorThrown)
 		{
-			$("#message").text("Server error");
-		})
-		;
+			Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,errDisplay);
+		});
 	
 }

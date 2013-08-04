@@ -2,11 +2,39 @@ Fairywren = {};
 
 Fairywren.MIN_PASSWORD_LENGTH = 12;
 
+Fairywren.serverErrorHandler = function(jqXhr,textStatus,errorThrown,element)
+{
+	var data = jqXhr.responseText;
+	
+	if(textStatus === "error")
+	{
+		var statusCode = jqXhr.statusCode().status;
+		if(statusCode > 499)
+		{
+			element.text("Server error");
+		}
+		
+		else
+		{
+			data = jQuery.parseJSON(data);
+			if ( 'msg' in data )
+			{
+				element.text(data.msg);
+			}
+		}
+	}
+	else if ( textStatus === "timeout" )
+	{
+		element.text("Requested timed out");
+	}
+	
+}
 
 Fairywren.errorHandler = function(data)
 {
 	if ( ! 'error' in data )
 	{
+		console.log("Error handler called with object without 'error' attr");
 		return;
 	}
 	

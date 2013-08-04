@@ -24,7 +24,7 @@ Torrents
 
 <div id="main" align="center">
 
-<div id="message">
+<div class="message" id="message">
 
 </div>
 
@@ -48,6 +48,7 @@ Torrents
 	
 	<div class="contentBox ui-corner-all">
 		<div class="contentBoxHeader ui-corner-all">Upload New Torrent</div>
+		<div id="msg" class="message"></div>
 		<form id="torrentUpload" action="api/torrents" method="POST" enctype="multipart/form-data" encoding="multipart/form-data">
 <label for="title">Title</label> <input type="text" name="title"><br>
 <label for="file">Torrent File</label> <input type="file" name="torrent"><br>
@@ -78,6 +79,7 @@ Torrents
 </div>
 
 <div id="torrents">
+	<div class="message" id="msg"></div>
 	<div id="torrentBrowseBar">
 		<div id="browseButtons">
 			<span onclick="Fairywren.flipPage(-1)" class="clickable" style="text-align:center;font-size:2em;" >&larr;&nbsp;</span>
@@ -112,6 +114,7 @@ Torrents
 		<div class="contentBox ui-corner-all">
 			<div class="contentBoxHeader ui-corner-all">Search</div>
 			<p>Search for torrents using terms separated by spaces.</p>
+			<div class="message" id="msg"></div>
 			<form onsubmit="Fairywren.search.search(); return false;">
 			<label for="searchTokens">Search Terms</label><input type="text" id="searchTokens" name="searchTokens" size="96">
 			<span class="clickable" onclick="Fairywren.search.search()" >Search</span>

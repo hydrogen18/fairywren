@@ -24,7 +24,7 @@ text-align:left;
 padding: 3px;
 }
 
-div#message
+div.message
 {
 color:red;
 }

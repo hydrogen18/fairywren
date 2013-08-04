@@ -27,16 +27,19 @@ def http_error(num,env,start_response,msg=None):
 	
 	start_response(str(num),[('Content-Type','text/html')])
 	
-	errmsg = 'Error - ' +str(num)
-	response = '<html><head><title>'
-	response += errmsg
-	response += '</title></head>'
-	response += '<body><h4>' 
-	response += errmsg
-	response += '</h4><hr><p id="msg">'
-	if msg:
-		response += msg
-	response += '</p></body></html>'
+	if env.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+		response = json.dumps({'msg': msg})
+	else:
+		errmsg = 'Error - ' +str(num)
+		response = '<html><head><title>'
+		response += errmsg
+		response += '</title></head>'
+		response += '<body><h4>' 
+		response += errmsg
+		response += '</h4><hr><p id="msg">'
+		if msg:
+			response += msg
+		response += '</p></body></html>'
 	
 	return [response]
 	
