@@ -18,7 +18,7 @@ def sendJsonWsgiResponse(env,start_response,response,additionalHeaders=None):
 			else:
 				return super(DateTimeJSONEncoder, self).default(obj)
 				
-	yield DateTimeJSONEncoder().encode(response)
+	return [DateTimeJSONEncoder().encode(response)]
 
 
 def http_error(num,env,start_response,msg=None):
