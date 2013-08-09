@@ -52,7 +52,7 @@ def mediainfo(*files):
 	#Ignore anything not in the first Mediainfo tag
 	doc = doc.getElementsByTagName('Mediainfo')[0]
 	#Extract the mediainfo version
-	retval['version'] = str(doc.getAttribute('version'))
+	retval['version'] = doc.getAttribute('version').strip()
 	retval['files'] = {}
 	#For each file, extract the information about the tracks
 	for f in doc.getElementsByTagName('File'):
@@ -64,8 +64,8 @@ def mediainfo(*files):
 			t['type'] = str(track.getAttribute('type'))
 			for tag in track.childNodes:
 				if len(tag.childNodes)==1 and 'text' in tag.childNodes[0].nodeName:
-					key = str(tag.tagName)
-					value = str(tag.childNodes[0].nodeValue)
+					key = tag.tagName.strip()
+					value = tag.childNodes[0].nodeValue.strip()
 					#Mediainfo shows the name of the file in the
 					#General track
 					if t['type'] == 'General' and 'name' in key.lower():
@@ -73,7 +73,9 @@ def mediainfo(*files):
 					else:
 						t[key] = value
 			f_['tracks'].append(t)
-			
+
+
+		name = name.strip().split(os.sep)[-1]			
 		retval['files'][name] = f_
 		
 	return retval
@@ -150,10 +152,10 @@ if __name__ == "__main__":
 	
 	files = [os.path.join(filesPath,f) for f in files]
 	
-	minfo = medainfo(*files)
+	minfo = mediainfo(*files)
 	
 	#Upload the torrent to fairywren
-	fairywren.open('%s/api/torrents' % fwurl ,data={"extended": { "mediainfo" : minfo } , "title":str(sourceTorrent['info']['name']),"torrent":open(newTorrentPath,'rb')})
+	fairywren.open('%s/api/torrents' % fwurl ,data={"extended": json.dumps({ "mediainfo" : minfo }) , "title":str(sourceTorrent['info']['name']),"torrent":open(newTorrentPath,'rb')})
 	
 	#Add the new torrent to the local rtorrent instance
 	rtorrentLocal.load.start('',newTorrentPath)
