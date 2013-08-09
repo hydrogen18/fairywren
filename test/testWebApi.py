@@ -60,7 +60,7 @@ class MockTorrents(object):
 	def searchTorrents(self,tokens):
 		return self._searchTorrents
 	
-	def addTorrent(self,torrent,title,creator):
+	def addTorrent(self,torrent,title,creator,extended=None):
 		return self._addTorrent
 	def getTorrentForDownload(self,torrentId,uid):
 		return self._getTorrentForDownload
@@ -295,6 +295,56 @@ class TestCreateTorrent(AuthenticatedWebApiTest):
 			self.assertIn('href',r['metainfo'])
 			self.assertIn('info',r)
 			self.assertIn('href',r['info'])
+			
+	def test_okWithExtendedData(self):
+		self.torrents._getAnnounceUrlForUser = 'http://foobar'
+		with tempfile.TemporaryFile() as tmpfile:
+			torrent = {'info': {'length': 65535, 'pieces': '\xc7\xbc\x832]\x80\xfc\xe0\x94\xdf\xf0%\xeds\x1c\xa5\xcb\x02&v', 'piece length': 262144, 'private': 1, 'name': 'tmpRBmSP2'}, 'announce': self.torrents._getAnnounceUrlForUser}
+
+			tmpfile.write(bencode.bencode(torrent))
+			tmpfile.flush()
+			r = self.urlopen('http://webapi/torrents',data={'title':'42','torrent':tmpfile , 'extended':json.dumps({'foo':'bar'})})
+			self.assertEqual(200,r.code)
+			r = json.loads(r.read())
+			self.assertIn('redownload',r)
+			self.assertEqual(False,r['redownload'])
+			self.assertIn('metainfo',r)
+			self.assertIn('href',r['metainfo'])
+			self.assertIn('info',r)
+			self.assertIn('href',r['info'])		
+			
+	def test_badExtendedData(self):
+		self.torrents._getAnnounceUrlForUser = 'http://foobar'
+		with tempfile.TemporaryFile() as tmpfile:
+			torrent = {'info': {'length': 65535, 'pieces': '\xc7\xbc\x832]\x80\xfc\xe0\x94\xdf\xf0%\xeds\x1c\xa5\xcb\x02&v', 'piece length': 262144, 'private': 1, 'name': 'tmpRBmSP2'}, 'announce': self.torrents._getAnnounceUrlForUser}
+
+			tmpfile.write(bencode.bencode(torrent))
+			tmpfile.flush()
+			try:
+				r = self.urlopen('http://webapi/torrents',data={'title':'42','torrent':tmpfile , 'extended':'sadfasdfdsf'})
+			except urllib2.HTTPError as e:
+				self.assertEqual(400,e.code)
+				r = e.read()
+				self.assertIn('bad extended',r)
+				return
+			self.assertTrue(False)
+
+	def test_extendedDataNotDict(self):
+		self.torrents._getAnnounceUrlForUser = 'http://foobar'
+		with tempfile.TemporaryFile() as tmpfile:
+			torrent = {'info': {'length': 65535, 'pieces': '\xc7\xbc\x832]\x80\xfc\xe0\x94\xdf\xf0%\xeds\x1c\xa5\xcb\x02&v', 'piece length': 262144, 'private': 1, 'name': 'tmpRBmSP2'}, 'announce': self.torrents._getAnnounceUrlForUser}
+
+			tmpfile.write(bencode.bencode(torrent))
+			tmpfile.flush()
+			try:
+				r = self.urlopen('http://webapi/torrents',data={'title':'42','torrent':tmpfile , 'extended':'5'})
+			except urllib2.HTTPError as e:
+				self.assertEqual(400,e.code)
+				r = e.read()
+				self.assertIn('must be dict',r)
+				return
+			self.assertTrue(False)
+
 			
 	def test_bencodedTorrentButMissing(self):
 		with tempfile.TemporaryFile() as tmpfile:

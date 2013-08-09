@@ -132,21 +132,22 @@ class Torrent(object):
 		return self.dict['info']['name']
 
 class TorrentStore(object):
-	
-	def __init__(self,torrentPath,trackerUrl):
-		self.torrentPath = torrentPath
+	EXTENDED_SUFFIX = 'ext'
+	def __init__(self,torrentDbPath,trackerUrl):
+		self.backingStore = gdbm.open(torrentDbPath,'cf',0600)
 		self.trackerUrl = str(trackerUrl)
 		
 		
 	def setConnectionPool(self,pool):
 		self.connPool = pool
 		
-	def addTorrent(self,torrent,title,creator):
+	def addTorrent(self,torrent,title,creator,extended=None):
 		"""Add a torrent.
 		
 		torrent -- the Torrent object to add
 		title -- the title of the torrent
 		creator -- the id of the user creating the torrent
+		extended -- dictionary of extended information to store with the torrent. Must be picklable
 		
 		"""
 		with self.connPool.item() as conn:
@@ -171,28 +172,16 @@ class TorrentStore(object):
 			finally:
 				cur.close()
 			
-		self._storeTorrent(torrent,result)
+		self._storeTorrent(torrent,result,extended)
 		return self.getResourceForTorrent(result),self.getInfoResourceForTorrent(result)
-		
-	
-	def _buildPathFromId(self,torrentId):
-		if torrentId < 0 or torrentId > (2**32 -1):
-			return ValueError("torrentId out of range")
-			
-		subpath = '%.8x' % torrentId
-		subpath =  [subpath[i:i+2] for i in xrange(0,8,2)]
-		path = os.path.join(self.torrentPath,*subpath)
-		
-		containingFolder = os.path.join(self.torrentPath,*subpath[:3])
-		
-		return containingFolder, path
-		
+
+
 	def _buildKeys(self,torrentId):
 		if torrentId < 0 or torrentId > (2**32 -1):
 			return ValueError("torrentId out of range")
 			
 		metainfoKey = '%.8x' % torrentId
-		infoKey = metainfoKey  + '_info'
+		infoKey = metainfoKey  + TorrentStore.EXTENDED_SUFFIX
 		return metainfoKey, infoKey
 	
 	def getInfo(self,uid):
@@ -225,29 +214,30 @@ class TorrentStore(object):
 				}
 			}
 			
-	def getExtendedInfo(self,uid):
-		return {}
-		
-		
+	def getExtendedInfo(self,torrentId):
+		_, metainfoK = self._buildKeys(torrentId)
+		try:
+			d = self.backingStore[metainfoK]
+		except KeyError:
+			return None
+		return pickle.loads(d)
 	
-	def _storeTorrent(self,torrent,torrentId):
-		containingFolder, path = self._buildPathFromId(torrentId)
+	def _storeTorrent(self,torrent,torrentId,extended=None):
+		metainfoK, infoK = self._buildKeys(torrentId)
+		self.backingStore[metainfoK] = pickle.dumps(torrent.dict,-1)
 		
-		if not os.path.exists(containingFolder):
-			os.makedirs(containingFolder)
-			
-		with open(path,'w') as fout:
-			pickle.dump(torrent.dict,fout,-1)
+		if extended == None:
+			extended = {}
+		
+		self.backingStore[infoK] = pickle.dumps(extended,-1)
+		self.backingStore.sync()
 		
 	def _retrieveTorrent(self,torrentId):		
-		_, path = self._buildPathFromId(torrentId)
-		
-		if not os.path.exists(path):
+		infoK, _ = self._buildKeys(torrentId)
+		try:
+			torrentDict = pickle.loads(self.backingStore[infoK])
+		except KeyError:
 			return None
-			
-		with open(path,'r') as fin:
-			torrentDict = pickle.load(fin)
-			
 		return Torrent.fromDict(torrentDict)
 	
 	def getAnnounceUrlForUser(self,user):

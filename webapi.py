@@ -195,6 +195,14 @@ class Webapi(restInterface):
 		if 'torrent' not in files or 'title' not in forms:
 			return vanilla.http_error(400,env,start_response,'missing torrent or title')
 		
+		try:
+			extended = json.loads(forms.get('extended','{}'))
+		except ValueError:
+			return vanilla.http_error(400,env,start_response,'bad extended info')
+			
+		if not isinstance(extended,dict):
+			return vanilla.http_error(400,env,start_response,'extended info must be dict')
+		
 		data = files['torrent'].raw
 		try:
 			newTorrent = torrents.Torrent.fromBencodedData(data)
@@ -205,7 +213,7 @@ class Webapi(restInterface):
 		response['redownload'] = newTorrent.scrub()
 		response['redownload'] |= self.torrents.getAnnounceUrlForUser(session.getId())!=newTorrent.getAnnounceUrl()
 			
-		url,infoUrl = self.torrents.addTorrent(newTorrent,forms['title'],session.getId())
+		url,infoUrl = self.torrents.addTorrent(newTorrent,forms['title'],session.getId(),extended)
 		response['metainfo'] = { 'href' : url }
 		response['info'] = { 'href' : infoUrl }
 			
