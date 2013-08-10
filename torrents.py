@@ -140,7 +140,6 @@ class TorrentStore(object):
 		self.trackerUrl = str(trackerUrl)
 		self.log.info('Created')
 		
-		
 	def setConnectionPool(self,pool):
 		self.connPool = pool
 		
