@@ -68,7 +68,7 @@ def mediainfo(*files):
 					value = tag.childNodes[0].nodeValue.strip()
 					#Mediainfo shows the name of the file in the
 					#General track
-					if t['type'] == 'General' and 'name' in key.lower():
+					if t['type'] == 'General' and 'Complete_name' == key:
 						name = value
 					else:
 						t[key] = value
