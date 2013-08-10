@@ -97,6 +97,12 @@ Fairywren.search.search = function()
 			}
 			else
 			{
+				if(data.torrents.length == 0)
+				{
+					Fairywren.search.msg.text("Sorry, no results were found");
+					Fairywren.search.torrentTable.hide();
+					return;
+				}
 				Fairywren.search.torrentTable.show();
 				Fairywren.clearAndRenderTorrents(Fairywren.search.torrentTable,data.torrents);
 			}
