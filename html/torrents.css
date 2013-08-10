@@ -39,9 +39,9 @@ a.tabCloseButton
 float:right;
 }
 
-
 div.contentBox
 {
+border-radius:0.25em;
 text-align: left;
 align:left;
 border-style: solid;
@@ -52,6 +52,7 @@ padding-left:3px;
 
 div.contentBoxHeader
 {
+border-radius:0.25em;
 background-color:#00CCFF;
 max-width: 50%;
 text-align: left;
