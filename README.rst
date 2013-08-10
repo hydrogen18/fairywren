@@ -5,8 +5,17 @@ Fairywren
 Introduction
 =======
 
-Fairywren is a private bittorrent tracker written around postgresql and
-eventlet . At this stage it is still very simple.
+Fairywren is a private BitTorrent tracker written around Postgresql and
+Eventlet.
+
+Features
+=======
+
+- Upload torrents through web interface
+- Search for torrents by title
+- View number of seeders and leechers in real time
+- HTML5 & Javascript interface presents a single page application
+- Backend of web interface is entirely RESTful
 
 Software Dependencies
 =======
@@ -26,7 +35,7 @@ To run fairywren you'll need the following
 - Multipart_
 - ZeroMq_
 - pyzmq_ 
-- GDBM
+- GDBM_
 - Postgresql
 - A web server that supports proxying. I use lighttpd.
 
@@ -51,11 +60,37 @@ web interface is best served by a traditional web server.
 Each instance is ran behind a HTTPS server(lighttpd in my case) which
 proxies requests to them. 
 
+IPC
+---
+
+In order to display the seeders and leechers count on each torrent, the 
+web interface needs to get those counts from the tracker. This is done
+by having the tracker listen on a ZeroMQ PubSub connection. The web interface
+connects to this as a subscriber. Each time the peer count changes on 
+a torrent, the tracker publishes an update to the web interface. The web
+interface maintains a list of counts in memory in order to serve them
+with each request for torrent listings.
+
 SQL
 ----
-The PostgreSQL server is used by both instances. The tracker uses it
-to authorize specific torrents and users. Peers are stored only in memory.
+The PostgreSQL server is used by both server instances. 
+
+The tracker uses the database to authorize specific torrents and users.
+There is no writing to the database by the tracker. Peers are stored only in memory.
+At first this seems silly, but given that there is rarely a reason to restart
+the tracker it works well. If the tracker is restarted, it only takes
+until all peers have announce'd to rebuild the complete list of peers. If
+someone comes up with a use case where the tracker is consuming too
+much memory, the intent will be to move the peer lists into a Redis
+instance. 
+
 The web server uses it to allow users to login and upload new torrents.
+Torrents themselves are not completely stored in the database, just the info hash
+and some other information is stored in the torrents table. The actual
+uploaded BitTorrent files are pickled and stored in the gdbm databse. Any
+extended information for a torrent is stored at a separate key in the 
+same database. For now this is an appropriate solution. If scalability becomes
+an issue, I will move to implementing a LRU type cache in the application.
 
 The tables needed are specified in fairywren.sql. The roles needed
 are in roles.sql. The permissions for the roles are granted in permissions.sql.
@@ -65,11 +100,6 @@ and a read-write user for the webapi. The example roles and permissions
 are shown in roles.sql and permissions.sql. Obviously, a single user
 with global permissions could be substituted.
 
-Object Store
-----
-The uploaded BitTorrent files are pickled and stored in a gdbm database.
-For the moment, it seems to be an appropriate solution. If you have performance problems,
-feel free to let me know.
 
 Configuration
 =======
@@ -129,9 +159,12 @@ secure
     
 Adding users
 ====
-Presently, users cannot be added via the web interface. The script
-adduser.py takes a single argument which is the same JSON configuration
+The script adduser.py takes a single argument which is the same JSON configuration
 file as used by the HTTP servers. It prompts for the username
 and password to add. All users have the same permissions presently.
+
+Presently, users cannot be added via the web interface. The actual
+REST interface for it exists, but I haven't had time to write the 
+javascript to do it.
     
 
