@@ -34,7 +34,7 @@ class Torrent(object):
 		of a bit torrent file"""
 		result = Torrent()
 		
-		result.dict = torrentDict
+		result.dict = dict(torrentDict)
 		
 		if 'info' not in result.dict:
 			raise ValueError('missing info')
@@ -176,6 +176,10 @@ class TorrentStore(object):
 				#to primary key violations
 				if e.pgcode == '23505':
 					raise ValueError('Torrent already exists with that infohash')
+				# 'foreign_key_violation' - violation of 'creator' foreign key
+				# i.e. user with uid doesn't exist
+				elif e.pgcode == '23503':
+					raise ValueError('User does not exist with that uid')
 				raise e
 			except psycopg2.DatabaseError as e:
 				self.log.exception('Error adding torrent',exc_info=True)
@@ -215,7 +219,7 @@ class TorrentStore(object):
 			conn.rollback()
 			
 		if result == None:
-			return None
+			raise ValueError('Torrent does not exist for specified uid')
 		infoHash,torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes = result
 		infoHash = base64.urlsafe_b64decode(infoHash + '==')
 		return {
@@ -236,7 +240,7 @@ class TorrentStore(object):
 			d = self.backingStore[metainfoK]
 		except KeyError as e:
 			self.log.exception('Request for extended info on non existent torrent',exc_info=True)
-			raise e
+			raise ValueError('Specified torrent does not exist')
 		return pickle.loads(d)
 	
 	def _storeTorrent(self,torrent,torrentId,extended=None):
@@ -254,7 +258,8 @@ class TorrentStore(object):
 		try:
 			torrentDict = pickle.loads(self.backingStore[infoK])
 		except KeyError:
-			return None
+			self.log.exception('Request for non existent torrent',exc_info=True)
+			raise ValueError('specified torrent does not exist')
 		return Torrent.fromDict(torrentDict)
 	
 	def getAnnounceUrlForUser(self,user):
@@ -280,7 +285,7 @@ class TorrentStore(object):
 			cur.close()
 			
 		if None == result:
-			return None
+			raise ValueError('Specified user id does not exist')
 		result, = result
 		return '%s/%s/announce' % (self.trackerUrl,result,)
 			
@@ -295,13 +300,7 @@ class TorrentStore(object):
 		
 		torrent = self._retrieveTorrent(torrentId)
 		
-		if torrent == None:
-			return None
-		
 		announceUrl = self.getAnnounceUrlForUser(forUser)
-		
-		if None == announceUrl:
-			return None
 			
 		torrent.setAnnounce(announceUrl)
 		
@@ -334,7 +333,7 @@ class TorrentStore(object):
 		return numTorrents
 		
 	def searchTorrents(self,tokens):
-		
+
 		if len(tokens) == 0:
 			raise ValueError('search token list length must be > 0')
 		

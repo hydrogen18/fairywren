@@ -28,6 +28,9 @@ def pg_ctl(directory,action,options=None):
 	
 	if action == 'start':
 		cmd.insert(2,'-w')
+	elif action == 'stop':
+		cmd.insert(2,'fast')
+		cmd.insert(2,'-m')
 		
 	if options!=None:
 		cmd.append('-o')
@@ -36,7 +39,7 @@ def pg_ctl(directory,action,options=None):
 	proc = subprocess.Popen(cmd)
 	
 	if proc.wait()!=0:
-		raise SystemError('Failed to pg_ctl')
+		raise SystemError('Failed to %s' % ' '.join(cmd))
 	
 
 #
@@ -54,9 +57,15 @@ sleep(2)
 dbnum = 0	
 
 import atexit
-atexit.register( pg_ctl, tempdir, 'stop') #pg_ctl(self.tempdir,'stop')
 
-atexit.register(shutil.rmtree, tempdir) #shutil.rmtree(self.tempdir)
+def cleanup():
+	pg_ctl(tempdir,'stop')
+	shutil.rmtree(tempdir)
+atexit.register(cleanup)
+
+#atexit.register( pg_ctl, tempdir, 'stop') #pg_ctl(self.tempdir,'stop')
+
+#atexit.register(shutil.rmtree, tempdir) #shutil.rmtree(self.tempdir)
 
 def loadSqlFromFile(conn,filename):
 	cur = conn.cursor()
