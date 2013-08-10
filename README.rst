@@ -19,12 +19,14 @@ To run fairywren you'll need the following
 .. _Multipart: https://github.com/hydrogen18/multipart
 .. _ZeroMq: http://www.zeromq.org/area%3Adownload
 .. _pyzmq: http://www.zeromq.org/bindings%3Apython
+.. _GDBM: http://www.gnu.org.ua/software/gdbm/
 - Stackless_
 - Eventlet_
 - Psycopg2_
 - Multipart_
 - ZeroMq_
 - pyzmq_ 
+- GDBM
 - Postgresql
 - A web server that supports proxying. I use lighttpd.
 
@@ -43,7 +45,8 @@ HTTP
 Two seperate Python instances are launched. Each hosts a single HTTP
 server. One instance is the tracker, which is used by BitTorrent clients
 to exchange peers. The second is the web interface, which is a RESTful API
-for interacting with the private tracker. 
+for interacting with the private tracker. The HTML5 & JavaScript
+web interface is best served by a traditional web server.
 
 Each instance is ran behind a HTTPS server(lighttpd in my case) which
 proxies requests to them. 
@@ -64,9 +67,9 @@ with global permissions could be substituted.
 
 Object Store
 ----
-Presently, the uploaded BitTorrent files are stored on disk. At some point
-I would like to transition this to something more robust. But at this 
-stage development efforts are focused elsewhere.
+The uploaded BitTorrent files are pickled and stored in a gdbm database.
+For the moment, it seems to be an appropriate solution. If you have performance problems,
+feel free to let me know.
 
 Configuration
 =======
@@ -116,9 +119,9 @@ postgresql
     psycopg2.connect verbatim
 
 torrentPath
-    A string pointing to the path where fairywren stores uploaded
-    BitTorrent files. This can be an empty folder. All needed
-    folders and files are created as needed.
+    A string which is the path GDBM file. Fairywren stores uploaded
+    BitTorrent files in this database. If the file does not exist it will be
+    created.
 
 secure
     A boolean indicating if sesssion cookies issued should be flagged
@@ -131,6 +134,4 @@ adduser.py takes a single argument which is the same JSON configuration
 file as used by the HTTP servers. It prompts for the username
 and password to add. All users have the same permissions presently.
     
-Tracker in a Box
-====
-Coming soon as a virtual machine!
+
