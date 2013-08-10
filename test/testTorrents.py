@@ -1,5 +1,7 @@
 import unittest
 import torrents
+import users
+import auth
 import tempfile
 from TestPostgres import TestPostgres
 import psycopg2
@@ -11,10 +13,11 @@ class TestTorrent(TestPostgres):
 		self.gdbmFile = tempfile.NamedTemporaryFile()
 		self.torrents = torrents.TorrentStore(self.gdbmFile.name,'http://tracker/')
 		self.torrents.setConnectionPool(self.getConnectionPool())
-		
+	
 	def __del__(self):
 		self.gdbmFile.close()
-		
+
+class TestEmptyDatabase(TestTorrent):
 	def test_getNumTorrents(self):
 		self.assertEqual(0,self.torrents.getNumTorrents())
 	
