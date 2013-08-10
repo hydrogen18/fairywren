@@ -29,6 +29,13 @@ Fairywren.torrentTab.display = function(href)
 				anchor.text(data.title);
 				newLi.append(anchor);
 				
+				var closeButton = $("<a />")
+				closeButton.text('\u2a2f');
+				closeButton.addClass('tabCloseButton');
+
+				newLi.append(closeButton);
+				
+				
 				$("#tabs").append(newLi)
 				var newDiv = $("<div />");
 				newDiv.attr('id',href);
@@ -81,6 +88,25 @@ Fairywren.torrentTab.display = function(href)
 					}
 				}
 				Fairywren.torrents.tabs.append(newDiv);
+				
+				closeButton.click(function()
+				{
+					newDiv.remove();
+					newLi.remove();
+					var index = Fairywren.torrentTab.tabs[href];
+					delete Fairywren.torrentTab.tabs[href];
+					for( t in Fairywren.torrentTab.tabs)
+					{
+						if(Fairywren.torrentTab.tabs[t] > index)
+						{
+							Fairywren.torrentTab.tabs[t]--;
+						}
+					}
+					Fairywren.torrentTab.nextIndex--;
+					Fairywren.torrents.tabs.tabs('refresh');
+					Fairywren.torrents.tabs.tabs({active:0});
+				})
+				
 				Fairywren.torrents.tabs.tabs('refresh');
 				Fairywren.torrents.tabs.tabs({'active': Fairywren.torrentTab.nextIndex++ } );
 				
