@@ -2,9 +2,6 @@
 Fairywren
 =====
 
-Introduction
-=======
-
 Fairywren is a private BitTorrent tracker written around Postgresql and
 Eventlet.
 
