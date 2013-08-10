@@ -7,6 +7,7 @@ import os
 import os.path
 import fairywren
 import gdbm
+import logging
 
 class Torrent(object):
 	def __init__(self):
@@ -134,8 +135,10 @@ class Torrent(object):
 class TorrentStore(object):
 	EXTENDED_SUFFIX = 'ext'
 	def __init__(self,torrentDbPath,trackerUrl):
+		self.log = logging.getLogger('fairywren.torrentstore')
 		self.backingStore = gdbm.open(torrentDbPath,'cf',0600)
 		self.trackerUrl = str(trackerUrl)
+		self.log.info('Created')
 		
 		
 	def setConnectionPool(self,pool):
@@ -175,7 +178,7 @@ class TorrentStore(object):
 					raise ValueError('Torrent already exists with that infohash')
 				raise e
 			except psycopg2.DatabaseError as e:
-				#TODO Log error
+				self.log.exception('Error adding torrent',exc_info=True)
 				conn.rollback()
 				raise e
 			finally:
@@ -196,12 +199,16 @@ class TorrentStore(object):
 	def getInfo(self,uid):
 		with self.connPool.item() as conn:
 			cur = conn.cursor();
-			
-			cur.execute("Select torrents.infoHash,torrents.id,torrents.title, torrents.creationdate,\
-			users.id, users.name, torrents.lengthInBytes \
-			from torrents \
-			left join users on torrents.creator = users.id \
-			where torrents.id = %s",(uid,));
+			try:
+				cur.execute("Select torrents.infoHash,torrents.id,torrents.title, torrents.creationdate,\
+				users.id, users.name, torrents.lengthInBytes \
+				from torrents \
+				left join users on torrents.creator = users.id \
+				where torrents.id = %s",(uid,));
+			except psycopg2.DatabaseError as e:
+				self.log.exception('Error retrieving info for torrent',exc_info=True)
+				conn.rollback()
+				raise e
 			
 			result = cur.fetchone()
 			cur.close()
@@ -227,8 +234,9 @@ class TorrentStore(object):
 		_, metainfoK = self._buildKeys(torrentId)
 		try:
 			d = self.backingStore[metainfoK]
-		except KeyError:
-			return None
+		except KeyError as e:
+			self.log.exception('Request for extended info on non existent torrent',exc_info=True)
+			raise e
 		return pickle.loads(d)
 	
 	def _storeTorrent(self,torrent,torrentId,extended=None):
@@ -258,9 +266,14 @@ class TorrentStore(object):
 		"""
 		with self.connPool.item() as conn:
 			cur = conn.cursor()
-			cur.execute(
-			"Select secretkey from users where id=%s;",
-			(user,))
+			try:
+				cur.execute(
+				"Select secretkey from users where id=%s;",
+				(user,))
+			except psycopg2.DatabaseError as e:
+				self.log.exception('Error retrieving announce url for user',exc_info=True)
+				conn.rollback()
+				raise e
 			
 			result = cur.fetchone()
 			conn.rollback()
@@ -322,6 +335,9 @@ class TorrentStore(object):
 		
 	def searchTorrents(self,tokens):
 		
+		if len(tokens) == 0:
+			raise ValueError('search token list length must be > 0')
+		
 		sql = "Select torrents.infoHash,torrents.id,torrents.title, torrents.creationdate,\
 		users.id, users.name, torrents.lengthInBytes \
 		from torrents \
@@ -334,7 +350,13 @@ class TorrentStore(object):
 		
 		with self.connPool.item() as conn:
 			cur = conn.cursor()
-			cur.execute(sql,tokens)
+			
+			try:
+				cur.execute(sql,tokens)
+			except psycopg2.DatabaseError as e:
+				self.log.exception('Error searching for torrents',exc_info=True)
+				conn.rollback()
+				raise e
 			
 			for record in cur:
 				infoHash,torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes = record
@@ -365,13 +387,18 @@ class TorrentStore(object):
 		"""
 		with self.connPool.item() as conn:
 			cur = conn.cursor()
-			cur.execute(
-			"Select torrents.infoHash,torrents.id,torrents.title,torrents.creationdate, \
-			users.id,users.name,torrents.lengthInBytes \
-			from torrents \
-			left join users on torrents.creator = users.id \
-			order by creationdate desc limit %s offset %s;",
-			(limit,subset*limit, ))
+			try:
+				cur.execute(
+				"Select torrents.infoHash,torrents.id,torrents.title,torrents.creationdate, \
+				users.id,users.name,torrents.lengthInBytes \
+				from torrents \
+				left join users on torrents.creator = users.id \
+				order by creationdate desc limit %s offset %s;",
+				(limit,subset*limit, ))
+			except psycopg2.DatabaseError as e:
+				self.log.exception('Error retrieving torrent listing',exc_info=True)
+				conn.rollback()
+				raise e	
 			
 			while True:
 				r = cur.fetchone()
