@@ -36,48 +36,65 @@ def pg_ctl(directory,action,options=None):
 	proc = subprocess.Popen(cmd)
 	
 	if proc.wait()!=0:
-		raise SystemError('Failed to initdb')
+		raise SystemError('Failed to pg_ctl')
+	
+
+#
+tempdir = tempfile.mkdtemp()
+initdb('trust',tempdir)
+
+sockdir = os.path.join(tempdir,'socket')
+os.mkdir(sockdir)
+
+pg_ctl(tempdir,'start',"-k %s -h ''" % sockdir)
+while 0==len(os.listdir(sockdir)):
+	pass
+sleep(2)
+
+dbnum = 0	
+
+import atexit
+atexit.register( pg_ctl, tempdir, 'stop') #pg_ctl(self.tempdir,'stop')
+
+atexit.register(shutil.rmtree, tempdir) #shutil.rmtree(self.tempdir)
+
+def loadSqlFromFile(conn,filename):
+	cur = conn.cursor()
+	cur.execute(open(os.path.join(os.environ['PYTHONPATH'],filename)).read())	
+	cur.close()
+	conn.commit()
+
+with psycopg2.connect(host=sockdir,database='postgres',user=getpass.getuser()) as conn:
+		loadSqlFromFile(conn,'roles.sql')
+		
+
 	
 class TestPostgres(unittest.TestCase):
 	def setUp(self):
-		self.tempdir = tempfile.mkdtemp()
-		initdb('trust',self.tempdir)
-		
-		self.sockdir = os.path.join(self.tempdir,'socket')
-		os.mkdir(self.sockdir)
-		
-		pg_ctl(self.tempdir,'start',"-k %s -h ''" % self.sockdir)
-		while 0==len(os.listdir(self.sockdir)):
-			pass
-		sleep(2)
-		
-		with psycopg2.connect(host=self.sockdir, database='postgres',user=getpass.getuser()) as conn:
+		global dbnum
+		self.dbname = 'nihitorrent%d' % dbnum
+		dbnum += 1
+		with psycopg2.connect(host=sockdir, database='postgres',user=getpass.getuser()) as conn:
 			conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
 			cur = conn.cursor()
-			cur.execute('CREATE DATABASE nihitorrent;')
+			#Don't use the built in escaping here. It makes no sense
+			#because it quotes the database name
+			cur.execute('CREATE DATABASE %s;' % self.dbname)
+			dbnum += 1
 			cur.close()
 			
 		
-		self.connpool = eventlet.db_pool.ConnectionPool(psycopg2,host=self.sockdir, database='nihitorrent',user=getpass.getuser())
-		self.loadSqlFromFile('roles.sql')
-		self.loadSqlFromFile('fairywren.sql')
-		self.loadSqlFromFile('permissions.sql')	
-		
-	def loadSqlFromFile(self,filename):
+		self.connpool = eventlet.db_pool.ConnectionPool(psycopg2,host=sockdir, database=self.dbname,user=getpass.getuser())
 		with self.getConnectionPool().item() as conn:
-			cur = conn.cursor()
-			cur.execute(open(os.path.join(os.environ['PYTHONPATH'],filename)).read())	
-			cur.close()
-			conn.commit()
+			loadSqlFromFile(conn,'fairywren.sql')
+			loadSqlFromFile(conn,'permissions.sql')	
 		
 	def __del__(self):
 
 		self.getConnectionPool().clear()
 		self.connpool = None
 		
-		pg_ctl(self.tempdir,'stop')
 
-		shutil.rmtree(self.tempdir)
 	
 	def getConnectionPool(self):
 		return self.connpool

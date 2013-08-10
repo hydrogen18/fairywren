@@ -1,7 +1,7 @@
 import unittest
 import torrents
 import tempfile
-from TestPostgres import *
+from TestPostgres import TestPostgres
 class TestTorrent(TestPostgres):
 	TORRENT = {'info': {'length': 65535, 'pieces': '\xc7\xbc\x832]\x80\xfc\xe0\x94\xdf\xf0%\xeds\x1c\xa5\xcb\x02&v', 'piece length': 262144, 'private': 1, 'name': 'tmpRBmSP2'}, 'announce': 'http://127.0.0.1/announce'}
 	
@@ -9,7 +9,7 @@ class TestTorrent(TestPostgres):
 		TestPostgres.setUp(self)
 		self.gdbmFile = tempfile.NamedTemporaryFile()
 		self.torrents = torrents.TorrentStore(self.gdbmFile.name,'http://tracker/')
-		self.torrents.setConnectionPool(self.connpool)
+		self.torrents.setConnectionPool(self.getConnectionPool())
 		
 	def test_getNumTorrents(self):
 		self.assertEqual(0,self.torrents.getNumTorrents())
