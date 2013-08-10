@@ -7,6 +7,7 @@ import urlparse
 import uuid
 import Cookie
 
+'''Decorator'''
 class resource(object):
 	def __init__(self,requireAuth,method,*path):
 		self.method = method
@@ -14,31 +15,104 @@ class resource(object):
 		self.requireAuth = requireAuth
 		
 	def __call__(self,func):
-		func.method = self.method
-		func.path = self.path
-		func.requireAuthentication = self.requireAuth
-		func.index = False
-		return func
+
+		return Resource(func,self.requireAuth,self.method,self.path)
+
+
+class Resource(object):
+	def __init__(self,wrap,requireAuthentication,method,path):
+		self.wrap = wrap
+		
+		self.method = method
+		self.path = [re.compile(i) for i in path]
+		
+		self.requireAuthentication = requireAuthentication
+		
+		self.requireAuthorization = False
+		self.allowedRoles = []
+		self.allowSelf = False
+		self.getOwnerId = None
+		
+		#Populated by parameter decorator
+		self.parameters = []
+		
+	def wants(self,pathComponents):
+		if len(pathComponents) != len(self.path):
+			return None
+				
+		
+		kwargs = {}	
+		#Compare each path component individually. If any of them
+		#do not match then go to the next immediately.
+		for candidate, requested in itertools.izip(self.path,pathComponents):
+			matches = candidate.match(requested)
+			if matches == None:
+				return None				
+			kwargs.update(matches.groupdict())
+			#self.logger.debug('%s matches %s', candidate, requested)
+			
+		return kwargs
+	
+	def __call__(self,*args,**kwargs):
+		try:
+			kwargs.update(self._extractParams(args[1]))
+		except ValueError as e:
+			return vanilla.http_error(400,args[1],args[2],e.message)
+		return self.wrap(*args,**kwargs)
+		
+	def _extractParams(self,env):
+		
+		#If the function doesn't request parameters,
+		#then don't read from env['wsgi.input']. It is possible
+		#the function handles what it needs on its own
+		if len(self.parameters) == 0:
+			return {}
+			
+		requestMethod = env['REQUEST_METHOD']
+		retval = {}
+		
+		if requestMethod == 'POST':
+			cl = vanilla.getContentLength(env)
+			if cl == None:
+				raise ValueError('Missing content length header')
+		
+			query = urlparse.parse_qs(env['wsgi.input'].read(cl))
+			for parameter,converter in self.parameters:
+				if parameter not in query:
+					raise ValueError('Missing parameter %s' % parameter)
+					
+				retval[parameter] = query[parameter][0]
+				
+				if converter:
+					result = converter(retval[parameter])
+					if result == None:
+						raise ValueError('Bad value "%s" for parameter %s' % (retval[parameter], parameter,))
+						
+					retval[parameter] = result
+					
+			return retval
+		else:
+			raise NotImplementedError("Cannot handle %s requests with parameters" % requestMethod)
+		
+	def getName(self):
+		return self.wrap.__name__
 
 class parameter(object):
 	def __init__(self,name,conversionFunc=None):
 		self.name = name
 		self.conversionFunc = conversionFunc
 		
-	def __call__(self,func):
-		if not hasattr(func,'parameters'):
-			func.parameters = []
-			
-		func.parameters.append((self.name,self.conversionFunc))
-		return func
+	def __call__(self,obj):			
+		obj.parameters.append((self.name,self.conversionFunc))
+		return obj
 
 class authorizeSelf(object):
 	def __init__(self,getOwnerId):		
 		self.getOwnerId = getOwnerId
 	
 	def __call__(self,func):
-		if not hasattr(func,'allowedRoles'):
-			raise ValueError( func.__name__ + ' is requested to authorize self, but without authentication enforced')
+		if not func.requireAuthentication:
+			raise ValueError( func.getName() + ' is requested to authorize self, but without authentication enforced')
 		func.allowSelf = True
 		func.getOwnerId = self.getOwnerId
 		return func
@@ -48,11 +122,11 @@ class requireAuthorization(object):
 		self.allowedRoles = allowedRoles
 		
 	def __call__(self,func):
-		if not hasattr(func, 'requireAuthentication') or func.requireAuthentication != True:
-			raise ValueError(func.__name__ + ' is requested to have authorization enforced, without authentication')
-		func.allowedRoles = [func.__name__]
+		if func.requireAuthentication != True:
+			raise ValueError(func.getName() + ' is requested to have authorization enforced, without authentication')
+		func.allowedRoles.append(func.getName())
 		func.allowedRoles += list(self.allowedRoles)
-		func.allowSelf = False
+		self.requireAuthorization = True
 		return func
 
 					
@@ -135,36 +209,6 @@ class SessionManager(object):
 		return self.sessions[cookie[SessionManager.cookieName].value]
 
 
-def extractParams(func,env):
-	if not hasattr(func,'parameters'):
-		return {}
-		
-	requestMethod = env['REQUEST_METHOD']
-	
-	retval = {}
-	
-	if requestMethod == 'POST':
-		cl = vanilla.getContentLength(env)
-		if cl == None:
-			return None
-			return vanilla.http_error(411,env,start_response,'missing Content-Length header')
-	
-		query = urlparse.parse_qs(env['wsgi.input'].read(cl))
-		for parameter,converter in func.parameters:
-			if parameter not in query:
-				return None
-				
-			retval[parameter] = query[parameter][0]
-			if converter:
-				retval[parameter] = converter(retval[parameter])
-				if retval[parameter] == None:
-					return None
-				
-		return retval
-	elif requestMethod == 'GET':
-		raise NotImplementedError
-	else:
-		return None
 
 		
 class restInterface(object):
@@ -173,14 +217,13 @@ class restInterface(object):
 	
 	def __init__(self,pathDepth,authenticateUser, authorizeUser,secure):		
 		
-		#Inspect each member of this object. If it has a member 
-		#and path it has been decorated by the resource decorator
-		#and should be added to the list of resources
+		#Inspect each member of this object. If it is an instance of
+		#resource then add it to the list
 		self.resources = []
 		for attr in (i for i in dir(self) if not i.startswith('__')):
 			member = getattr(self,attr)
 			
-			if hasattr(member,'path') and hasattr(member,'method'):
+			if isinstance(member,Resource): 
 				self.resources.append(member)
 
 				
@@ -209,7 +252,8 @@ class restInterface(object):
 		if cl == None:
 			return vanilla.http_error(411,env,start_response,'missing Content-Length header')
 		
-		query = urlparse.parse_qs(env['wsgi.input'].read(cl))
+		content = env['wsgi.input'].read(cl)
+		query = urlparse.parse_qs(content)
 		
 		if 'username' not in query:
 			return vanilla.http_error(400,env,start_response,msg='missing username')
@@ -247,61 +291,37 @@ class restInterface(object):
 		#The default is request not found
 		errorCode = 404
 		
-		kwargs = {}
-		
 		#Find a resource with a patch matching the requested one
-		for resource in self.resources:
-			#If the requested path and the number of components in the 
-			#path don't match, this can't be a match
-			if len(resource.path) != len(pathComponents):
+		for resource in self.resources:	
+			kwargs = resource.wants(pathComponents)
+
+			if kwargs == None:
 				continue
+
+			#If the method does not agree with the resource, the
+			#code is method not supported
+			if requestMethod != resource.method:
+				errorCode = 405	
+				continue							
 			
-			#Compare each path component individually. If any of them
-			#do not match then go to the next immediately.
-			for candidate, requested in itertools.izip(resource.path,pathComponents):
-				matches = re.compile(candidate).match(requested)
-				if matches == None:
-					break				
-				kwargs.update(matches.groupdict())
-				self.logger.debug('%s matches %s', candidate, requested)
-			#Loop ran to exhaustion, this is a match
+			self.logger.debug('%s:%s handled by %s',requestMethod,pathInfo,resource.getName())
+			if resource.requireAuthentication:
+				session = self.sm.getSession(env)
+
+				if session == None:
+					return vanilla.sendJsonWsgiResponse(env,start_response,restInterface.NOT_AUTHENTICATED)
+					
+				#Check to see if the resource requires authorization
+				if resource.requireAuthorization:
+					authorized = resource.allowSelf and resource.getOwnerId(*pathComponents)==session.getId()
+					authorized |= self.authorizeUser(session,resource.allowedRoles)
+					if not authorized:
+						self.logger.debug('%s:%s not authorized for %s',requestMethod,pathInfo,session.getUsername())
+						return vanilla.sendJsonWsgiResponse(env,start_response,restInterface.NOT_AUTHORIZED)
+
+				return resource(self,env,start_response,session,**kwargs)
 			else:
-				#If the method does not agree with the resource, the
-				#code is method not supported
-				if requestMethod != resource.method:
-					errorCode = 405					
-				elif resource.requireAuthentication:
-					self.logger.debug('%s:%s handled by %s',requestMethod,pathInfo,resource)
-					session = self.sm.getSession(env)
-
-					if session == None:
-						return vanilla.sendJsonWsgiResponse(env,start_response,restInterface.NOT_AUTHENTICATED)
-						
-					#Check to see if the resource requires authorization
-					if hasattr(resource,'allowedRoles'):	
-						authorized = resource.allowSelf and resource.getOwnerId(*pathComponents)==session.getId()
-						authorized |= self.authorizeUser(session,resource.allowedRoles)
-						if not authorized:
-							self.logger.debug('%s:%s not authorized for %s',requestMethod,pathInfo,session.getUsername())
-							return vanilla.sendJsonWsgiResponse(env,start_response,restInterface.NOT_AUTHORIZED)
-						
-					extractedParams = extractParams(resource,env)
-					
-					if extractedParams == None:
-						return vanilla.http_error(400,env,start_response,'missing one or more parameters')
-					
-					kwargs.update(extractedParams)
-					
-					
-					
-					return resource(env,start_response,session,**kwargs)
-				else:
-					self.logger.debug('%s:%s handled by %s',requestMethod,pathInfo,resource)
-					kwargs = extractParams(resource,env)
-
-					if kwargs == None:
-						return vanilla.http_error(400,env,start_response,'missing one or more parameters')
-
-					return resource(env,start_response,**kwargs)
+				return resource(self,env,start_response,**kwargs)
+				
 		self.logger.info('%s:%s not handled, %d', requestMethod,pathInfo,errorCode)
 		return vanilla.http_error(errorCode,env,start_response)

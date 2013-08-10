@@ -79,8 +79,8 @@ class Webapi(restInterface):
 
 	@authorizeSelf(extractUserId)
 	@requireAuthorization('Administrator')
-	@resource(True,'POST','users',UID_FMT,'password')
 	@parameter('password',decodePassword)
+	@resource(True,'POST','users',UID_FMT,'password')
 	def changePassword(self,env,start_response,session,uid,password):
 		uid = int(uid,16)
 		
@@ -105,9 +105,9 @@ class Webapi(restInterface):
 		return vanilla.sendJsonWsgiResponse(env,start_response,response)
 		
 	@requireAuthorization()
-	@resource(True,'POST','users')
 	@parameter('password',decodePassword)
 	@parameter('username',validateUsername)
+	@resource(True,'POST','users')
 	def addUser(self,env,start_response,session,password,username):
 		
 		resourceForNewUser = self.authmgr.addUser(username,password)
