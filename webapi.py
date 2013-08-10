@@ -212,8 +212,12 @@ class Webapi(restInterface):
 		response = {}
 		response['redownload'] = newTorrent.scrub()
 		response['redownload'] |= self.torrents.getAnnounceUrlForUser(session.getId())!=newTorrent.getAnnounceUrl()
+		
+		try:	
+			url,infoUrl = self.torrents.addTorrent(newTorrent,forms['title'],session.getId(),extended)
+		except ValueError as e: #Thrown when a torrent already exists with this info hash
+			return vanilla.http_error(400,env,start_response,e.message)
 			
-		url,infoUrl = self.torrents.addTorrent(newTorrent,forms['title'],session.getId(),extended)
 		response['metainfo'] = { 'href' : url }
 		response['info'] = { 'href' : infoUrl }
 			

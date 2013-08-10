@@ -166,9 +166,18 @@ class TorrentStore(object):
 				result = cur.fetchone();
 				result, = result
 				conn.commit();
-			except psycopg2.DatabaseError:
+			except psycopg2.IntegrityError as e:
+				conn.rollback()
+				#This string is specified in the postgre documentation appendix
+				# 'PostgreSQL Error Codes' as 'unique_violation' and corresponds
+				#to primary key violations
+				if e.pgcode == '23505':
+					raise ValueError('Torrent already exists with that infohash')
+				raise e
+			except psycopg2.DatabaseError as e:
 				#TODO Log error
-				return None
+				conn.rollback()
+				raise e
 			finally:
 				cur.close()
 			
