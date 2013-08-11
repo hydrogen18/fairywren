@@ -1,0 +1,40 @@
+
+<html>
+
+<head>
+<title>
+Invite
+</title>
+</head>
+
+<body>
+
+<script src="js/sha.js"></script>
+<script src="js/jquery.js"></script>
+
+<script src="js/fairywren.js"></script>
+<script src="js/invite.js"></script>
+
+<link rel="stylesheet" type="text/css" href="torrents.css">
+
+<div id="main" align="center">
+
+<div id="message" style="color:red;">
+
+</div>
+
+<div class="contentBox" style="text-align:center; align:center;width:26em;min-width:23em;">
+	<div class="contentBoxHeader" style="align:center;">Register</div>
+	<form>
+	<label for="username">Username:</label> <input id="username" type="text"  size="24"/><br />
+	<label for="password">Password:</label> <input id="password0" type="password"  size="24"/> <br />
+	<label for="password">Confirm Password:</label> <input id="password1" type="password"  size="24"/> <br />
+	<input id="register" type="submit" value="Register" onclick="Fairywren.register(); return false;"/>
+	</form>
+</div>
+
+</div>
+
+</body>
+
+</html>

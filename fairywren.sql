@@ -16,6 +16,16 @@ CREATE TABLE torrents(
 	PRIMARY KEY(id,infoHash)
 );
 
+CREATE TABLE invites(
+    id SERIAL UNIQUE,
+    secret char(43) UNIQUE,
+    inviter INTEGER REFERENCES users(id) NOT NULL,
+    creationDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    invitee INTEGER REFERENCES users(id) NULL,
+    accepted TIMESTAMP WITHOUT TIME ZONE NULL,
+    PRIMARY KEY(id)
+);
+
 CREATE TABLE roles(
 	id SERIAL UNIQUE,
 	name varchar NOT NULL UNIQUE,

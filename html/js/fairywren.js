@@ -1,6 +1,7 @@
 Fairywren = {};
 
 Fairywren.MIN_PASSWORD_LENGTH = 12;
+Fairywren.MIN_USERNAME_LENGTH = 4;
 
 Fairywren.serverErrorHandler = function(jqXhr,textStatus,errorThrown,element)
 {
@@ -77,13 +78,21 @@ Fairywren.validateUsername = function(username)
 	for(var i = 0 ; i < username.length;++i){
 		if ( -1 === ACCEPTED.indexOf(username[i]))
 		{
-			rejected.push(username[i]);
+			if(rejected.indexOf(username[i])===-1)
+			{
+				rejected.push(username[i]);
+			}
 		}
 	}
 	
 	if(rejected.length !==0)
 	{
-		return 'The following characters are not allowed in usernames: ' + rejected.join('');
+		return 'The following characters are not allowed in usernames: "' + rejected.join('') + '"';
+	}
+	
+	if(username.length < Fairywren.MIN_USERNAME_LENGTH)
+	{
+		return 'Username too short';
 	}
 	
 	return null;

@@ -22,13 +22,17 @@ class MockStats(object):
 class MockUsers(object):
 	def __init__(self):
 		self._getInfo = {'numberOfTorrents' : 0, 'name':'aTestUser', 'password' : fairywren.USER_PASSWORD_FMT % 1}
+		self._addUser = None
 	def getInfo(self,idNumber):
 		return self._getInfo
+		
+	def addUser(self,username,password):
+		return self._addUser		
 
 class MockAuth(object):
 	def __init__(self):
 		self._authenticateUser = 1
-		self._addUser = None
+		
 		self._isUserMemberOfRole = False
 	
 	def isUserMemberOfRole(self,userId,roles):
@@ -37,8 +41,7 @@ class MockAuth(object):
 	def authenticateUser(self,username,password):
 		return self._authenticateUser
 		
-	def addUser(self,username,password):
-		return self._addUser
+
 
 class MockTorrents(object):
 	def __init__(self):
@@ -458,7 +461,7 @@ class TestGetUserInfo(AuthenticatedWebApiTest):
 
 class TestAddUser(AuthenticatedWebApiTest):
 	def test_userAlreadyExists(self):
-		self.auth._addUser = None
+		self.users._addUser = None
 		self.auth._isUserMemberOfRole = True
 		try:
 			self.urlopen('http://webapi/users', data= urllib.urlencode({'username':'foo','password':86*'0'}))
@@ -470,17 +473,17 @@ class TestAddUser(AuthenticatedWebApiTest):
 		self.assertTrue(False)
 		
 	def test_ok(self):
-		self.auth._addUser = 'FOO'
+		self.users._addUser = 'FOO'
 		self.auth._isUserMemberOfRole = True
 		
 		r = self.urlopen('http://webapi/users', data= urllib.urlencode({'username':'foo','password':86*'0'}))
 		self.assertEqual(200,r.code)
 		r = json.loads(r.read())
 		self.assertIn('href',r)
-		self.assertEqual(r['href'],self.auth._addUser)
+		self.assertEqual(r['href'],self.users._addUser)
 		
 	def test_badPassword(self):
-		self.auth._addUser = 'meow'
+		self.users._addUser = 'meow'
 		self.auth._isUserMemberOfRole = True
 		try:
 			self.urlopen('http://webapi/users', data= urllib.urlencode({'username':'foo','password':85*'0'}))
@@ -493,7 +496,7 @@ class TestAddUser(AuthenticatedWebApiTest):
 		self.assertTrue(False)	
 		
 	def test_missingPassword(self):
-		self.auth._addUser = 'meow'
+		self.users._addUser = 'meow'
 		self.auth._isUserMemberOfRole = True
 		try:
 			self.urlopen('http://webapi/users', data= urllib.urlencode({'username':'foo'}))

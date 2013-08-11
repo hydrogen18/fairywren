@@ -9,8 +9,7 @@ import logging
 
 
 class Auth(object):
-	def __init__(self,salt):
-		self.salt = salt
+	def __init__(self):
 		self.log = logging.getLogger('fairywren.auth')
 		self.log.info('Created')
 		
@@ -48,43 +47,7 @@ class Auth(object):
 				
 		return True
 
-	def _saltPwhash(self,pwHash):
-		storedHash = hashlib.sha512()
-		storedHash.update(self.salt)
-		storedHash.update(pwHash)
-		return base64.urlsafe_b64encode(storedHash.digest()).replace('=','')
 
-	def addUser(self,username,pwHash):
-		self.log.debug('Trying to add user %s',username)
-		secretKey = hashlib.sha512()
-		
-		randomValue = os.urandom(1024)
-		secretKey.update(randomValue)
-		
-		saltedPw = self._saltPwhash(pwHash)
-
-		with self.connPool.item() as conn:
-			cur = conn.cursor()
-			
-			try:
-				cur.execute("INSERT into users (name,password,secretKey) VALUES(%s,%s,%s) returning users.id;",
-					(username,
-					saltedPw,
-					base64.urlsafe_b64encode(secretKey.digest()).replace('=',''),) ) 
-			except IntegrityError as e:
-				self.log.error(e)
-				conn.rollback()
-				cur.close()
-				return None
-				
-			conn.commit()
-			
-			newId, = cur.fetchone()
-			cur.close()
-			conn.close()
-			self.log.debug('Added user, new id %.8x', newId)
-			return 'api/users/%.8x'  % newId
-			
 		
 	def authenticateSecretKey(self,key):
 		with self.connPool.item() as conn:

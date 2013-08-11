@@ -77,6 +77,11 @@ class Webapi(restInterface):
 	def getResponseForSession(self,session):
 		return {'my' : {'href':fairywren.USER_FMT % session.getId()} }
 
+	@requireAuthorization()
+	@resource(True,'POST','invites')
+	def createInvite(self,env,start_response,session):
+		return vanilla.sendJsonWsgiResponse(env,start_response,{'href':'foo'})
+
 	@authorizeSelf(extractUserId)
 	@requireAuthorization('Administrator')
 	@parameter('password',decodePassword)
@@ -110,7 +115,7 @@ class Webapi(restInterface):
 	@resource(True,'POST','users')
 	def addUser(self,env,start_response,session,password,username):
 		
-		resourceForNewUser = self.authmgr.addUser(username,password)
+		resourceForNewUser = self.users.addUser(username,password)
 		
 		if resourceForNewUser == None:
 			return vanilla.http_error(409,env,start_response,'user already exists')
@@ -119,7 +124,6 @@ class Webapi(restInterface):
 		return vanilla.sendJsonWsgiResponse(env,start_response,response)
 		
 	def searchTorrents(self,env,start_response,session,query):
-		
 		tokens = query.get('token')
 		if tokens == None:
 			return vanilla.http_error(400,env,start_response,'search must have at least one instance of token parameter')
