@@ -458,7 +458,6 @@ class TestGetUserInfo(AuthenticatedWebApiTest):
 
 class TestAddUser(AuthenticatedWebApiTest):
 	def test_userAlreadyExists(self):
-		
 		self.auth._addUser = None
 		self.auth._isUserMemberOfRole = True
 		try:
@@ -471,7 +470,6 @@ class TestAddUser(AuthenticatedWebApiTest):
 		self.assertTrue(False)
 		
 	def test_ok(self):
-		
 		self.auth._addUser = 'FOO'
 		self.auth._isUserMemberOfRole = True
 		
@@ -480,7 +478,32 @@ class TestAddUser(AuthenticatedWebApiTest):
 		r = json.loads(r.read())
 		self.assertIn('href',r)
 		self.assertEqual(r['href'],self.auth._addUser)
-			
+		
+	def test_badPassword(self):
+		self.auth._addUser = 'meow'
+		self.auth._isUserMemberOfRole = True
+		try:
+			self.urlopen('http://webapi/users', data= urllib.urlencode({'username':'foo','password':85*'0'}))
+		except urllib2.HTTPError,e:
+			self.assertEqual(400,e.code)
+			r = e.read()
+			self.assertIn('password',r)
+			self.assertIn('Bad value',r)
+			return
+		self.assertTrue(False)	
+		
+	def test_missingPassword(self):
+		self.auth._addUser = 'meow'
+		self.auth._isUserMemberOfRole = True
+		try:
+			self.urlopen('http://webapi/users', data= urllib.urlencode({'username':'foo'}))
+		except urllib2.HTTPError,e:
+			self.assertEqual(400,e.code)
+			r = e.read()
+			self.assertIn('password',r)
+			self.assertIn('Missing',r)
+			return
+		self.assertTrue(False)							
 			
 		
 		
