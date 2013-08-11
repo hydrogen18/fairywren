@@ -4,4 +4,5 @@ export PYTHONPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 set +e
 
 python test/testTorrents.py
+python test/testUsers.py
 killall postgres

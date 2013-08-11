@@ -18,17 +18,28 @@ class Users(object):
 		self.connPool = pool
 
 	def _saltPwhash(self,pwHash):
+		
+		if len(pwHash) != 64:
+			raise ValueError('password hash should be 64 bytes')
+		
 		storedHash = hashlib.sha512()
 		storedHash.update(self.salt)
 		storedHash.update(pwHash)
 		return base64.urlsafe_b64encode(storedHash.digest()).replace('=','')
-
-	def addUser(self,username,pwHash):
-		self.log.debug('Trying to add user %s',username)
-		secretKey = hashlib.sha512()
 		
+	def _genSecretKey(self):
+		secretKey = hashlib.sha512()
 		randomValue = os.urandom(1024)
 		secretKey.update(randomValue)
+		return base64.urlsafe_b64encode(secretKey.digest()).replace('=','')
+	
+	def addUser(self,username,pwHash):
+		'''
+		username - string, username of new user
+		pwHash - string, 64 byte password
+		'''
+		self.log.debug('Trying to add user %s',username)
+		secretKey = self._genSecretKey()
 		
 		saltedPw = self._saltPwhash(pwHash)
 
@@ -39,26 +50,123 @@ class Users(object):
 				cur.execute("INSERT into users (name,password,secretKey) VALUES(%s,%s,%s) returning users.id;",
 					(username,
 					saltedPw,
-					base64.urlsafe_b64encode(secretKey.digest()).replace('=',''),) ) 
-			except IntegrityError as e:
-				self.log.error(e)
-				conn.rollback()
+					secretKey,) ) 
+			except psycopg2.IntegrityError as e:
 				cur.close()
-				return None
+				conn.rollback()
+				#This string is specified in the postgre documentation appendix
+				# 'PostgreSQL Error Codes' as 'unique_violation' and corresponds
+				#to primary key violations
+				if e.pgcode == '23505':
+					raise ValueError('User with that username already exists')
+				self.log.exception('Failed adding new user',exc_info=True)
+				raise e
+			except psycopg2.DatabaseError as e:
+				cur.close()
+				conn.rollback()
+				self.log.exception('Failed adding new user',exc_info=True)
+				raise e
 				
 			conn.commit()
 			
 			newId, = cur.fetchone()
 			cur.close()
-			conn.close()
+
 			self.log.debug('Added user, new id %.8x', newId)
 			return 'api/users/%.8x'  % newId
 			
+	
+	def claimInvite(self,inviteSecret,username,pwHash):
+		'''
+		inviteSecret - string, 32 bytes
+		username - string, username of new user
+		pwHash - string, 64 byte password
+		'''
+		self.log.debug('Trying to claim invite and create user %s',username)
+		secretKey = self._genSecretKey()
+		saltedPw = self._saltPwhash(pwHash)
+		inviteSecret = base64.urlsafe_b64encode(inviteSecret).replace('=','')
+		
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			
+			try:
+				cur.execute('INSERT into users (name,password,secretkey) VALUES(%s,%s,%s) returning users.id;',
+				(username,saltedPw,secretKey,))
+				uid, = cur.fetchone()
+			except psycopg2.IntegrityError as e:
+				cur.close()
+				conn.rollback()
+				#This string is specified in the postgre documentation appendix
+				# 'PostgreSQL Error Codes' as 'unique_violation' and corresponds
+				#to primary key violations
+				if e.pgcode == '23505':
+					raise ValueError('User with that username already exists')
+				self.log.exception('Failed adding new user',exc_info=True)
+				raise e
+			except psycopg2.DatabaseError as e:
+				cur.close()
+				conn.rollback()
+				self.log.exception('Failed adding new user',exc_info=True)
+				raise e		
+			
+			try:
+				cur.execute("UPDATE INVITES set invitee = %s , accepted = timezone('UTC',CURRENT_TIMESTAMP) where secret = %s and invitee is null returning 1;",
+				(uid,
+				inviteSecret,))
+				success = cur.fetchone()
+			except psycopg2.DatabaseError as e:
+				cur.close()
+				conn.rollback()
+				self.log.exception('Failed accepting invite',exc_info = True)
+				raise e
+			
+			cur.close()
+			
+			if success==None:
+				conn.rollback()
+				raise ValueError('Invite does not exist or has already been claimed')
+			conn.commit()
+			
+		return  fairywren.USER_FMT % uid 
+				
+				
+				
+			
+			
+			
+	def getInviteState(self,inviteSecret):
+		'''
+		inviteSecret -- string, 32 bytes identifying the invite
+		
+		Returns True if claimed, False if not
+		'''
+		inviteSecret = base64.urlsafe_b64encode(inviteSecret).replace('=','')
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			
+			try: 
+				cur.execute("Select invitee from invites WHERE secret = %s;", (inviteSecret,))
+				row = cur.fetchone()
+			except psycopg2.DatabaseError as e:
+				self.log.exception('Failed creating invite',exc_info=True)
+				raise e
+			finally:
+				cur.close()
+				conn.rollback()
+				
+			if row == None:
+				raise ValueError('No invite exists with that secret')
+				
+		invitee, = row
+		
+		return None != invitee 
 		
 	def createInvite(self,creatorId):
 		h = hashlib.md5()
 		h.update(os.urandom(1024))
 		h.update(str(creatorId))
+		h.update(self.salt)
 		
 		secret = h.digest()
 		h.update(h.digest())
@@ -84,7 +192,7 @@ class Users(object):
 				raise e
 			conn.commit()
 			cur.close()
-		return secret
+		return fairywren.INVITE_FMT % secret
 		
 	def getInfo(self,idNumber):
 		with self.connPool.item() as conn:

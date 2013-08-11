@@ -41,7 +41,7 @@ def extractUserId(*pathComponents):
 	return int(pathComponents[1],16)
 
 class Webapi(restInterface):
-	UID_FMT = '(?P<uid>[abcdefABCDEF0123456789]{8})'
+	
 	MAX_TORRENTS_PER_RESULT = 50
 	def __init__(self,torrentStats,users,authmgr,torrents,httpPathDepth,secure):
 		self.torrentStats = torrentStats
@@ -85,7 +85,7 @@ class Webapi(restInterface):
 	@authorizeSelf(extractUserId)
 	@requireAuthorization('Administrator')
 	@parameter('password',decodePassword)
-	@resource(True,'POST','users',UID_FMT,'password')
+	@resource(True,'POST','users',fairywren.UID_RE,'password')
 	def changePassword(self,env,start_response,session,uid,password):
 		uid = int(uid,16)
 		
@@ -95,7 +95,7 @@ class Webapi(restInterface):
 		return vanilla.sendJsonWsgiResponse(env,start_response,{})
 		
 		
-	@resource(True,'GET','users',UID_FMT )
+	@resource(True,'GET','users',fairywren.UID_RE )
 	def userInfo(self,env,start_response,session,uid):
 		uid = int(uid,16)
 		
@@ -228,7 +228,7 @@ class Webapi(restInterface):
 		return vanilla.sendJsonWsgiResponse(env,start_response,response)
 
 	
-	@resource(True,'GET','torrents',UID_FMT + '.torrent')
+	@resource(True,'GET','torrents',fairywren.UID_RE + '.torrent')
 	def downloadTorrent(self,env,start_response,session,uid):
 		uid = int(uid,16)
 		torrent = self.torrents.getTorrentForDownload(uid,session.getId())
@@ -244,7 +244,7 @@ class Webapi(restInterface):
 		
 		return [torrent.raw()]
 
-	@resource(True,'GET','torrents',UID_FMT + '.json')
+	@resource(True,'GET','torrents',fairywren.UID_RE + '.json')
 	def torrentInfo(self,env,start_response,session,uid):
 		uid = int(uid,16)
 		response = self.torrents.getInfo(uid)
