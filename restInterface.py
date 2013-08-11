@@ -6,6 +6,8 @@ import itertools
 import urlparse
 import uuid
 import Cookie
+import functools
+import copy
 
 '''Decorator'''
 class resource(object):
@@ -15,12 +17,11 @@ class resource(object):
 		self.requireAuth = requireAuth
 		
 	def __call__(self,func):
-
 		return Resource(func,self.requireAuth,self.method,self.path)
-
 
 class Resource(object):
 	def __init__(self,wrap,requireAuthentication,method,path):
+		self.instance = None
 		self.wrap = wrap
 		
 		self.method = method
@@ -39,8 +40,7 @@ class Resource(object):
 	def wants(self,pathComponents):
 		if len(pathComponents) != len(self.path):
 			return None
-				
-		
+
 		kwargs = {}	
 		#Compare each path component individually. If any of them
 		#do not match then go to the next immediately.
@@ -55,10 +55,15 @@ class Resource(object):
 	
 	def __call__(self,*args,**kwargs):
 		try:
-			kwargs.update(self._extractParams(args[1]))
+			kwargs.update(self._extractParams(args[0]))
 		except ValueError as e:
-			return vanilla.http_error(400,args[1],args[2],e.message)
-		return self.wrap(*args,**kwargs)
+			return vanilla.http_error(400,args[0],args[1],e.message)
+		return self.wrap(self.instance,*args,**kwargs)
+		
+	def __get__(self,instance,clazz):
+		c = copy.copy(self)
+		c.instance = instance
+		return c
 		
 	def _extractParams(self,env):
 		
@@ -220,9 +225,9 @@ class restInterface(object):
 		#Inspect each member of this object. If it is an instance of
 		#resource then add it to the list
 		self.resources = []
-		for attr in (i for i in dir(self) if not i.startswith('__')):
+		for attr in (i for i in dir(self)):
 			member = getattr(self,attr)
-			
+
 			if isinstance(member,Resource): 
 				self.resources.append(member)
 
@@ -319,9 +324,9 @@ class restInterface(object):
 						self.logger.debug('%s:%s not authorized for %s',requestMethod,pathInfo,session.getUsername())
 						return vanilla.sendJsonWsgiResponse(env,start_response,restInterface.NOT_AUTHORIZED)
 
-				return resource(self,env,start_response,session,**kwargs)
+				return resource(env,start_response,session,**kwargs)
 			else:
-				return resource(self,env,start_response,**kwargs)
+				return resource(env,start_response,**kwargs)
 				
 		self.logger.info('%s:%s not handled, %d', requestMethod,pathInfo,errorCode)
 		return vanilla.http_error(errorCode,env,start_response)
