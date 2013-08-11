@@ -53,12 +53,12 @@ class Resource(object):
 			
 		return kwargs
 	
-	def __call__(self,*args,**kwargs):
+	def __call__(self,env,start_response,*args,**kwargs):
 		try:
-			kwargs.update(self._extractParams(args[0]))
+			kwargs.update(self._extractParams(env))
 		except ValueError as e:
-			return vanilla.http_error(400,args[0],args[1],e.message)
-		return self.wrap(self.instance,*args,**kwargs)
+			return vanilla.http_error(400,env,start_response,e.message)
+		return self.wrap(self.instance,env,start_response,*args,**kwargs)
 		
 	def __get__(self,instance,clazz):
 		c = copy.copy(self)
