@@ -127,13 +127,27 @@ class Users(object):
 				conn.rollback()
 				raise ValueError('Invite does not exist or has already been claimed')
 			conn.commit()
-			
+		self.log.info('Claimed invite for user %s (%.8x)',username,uid)
 		return  fairywren.USER_FMT % uid 
 				
-				
-				
+	def listInvitesByUser(self,userId):
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
 			
-			
+			try:
+				cur.execute('Select creationdate,secret FROM invites WHERE inviter = %s and invitee is null order by creationdate desc;',(userId,))
+			except psycopg2.DatabaseError as e:
+				self.log.exception('Failed listing invites for user %.8x',userId,exc_info=True)
+				raise e
+				
+			for row in iter(cur.fetchone,None):
+				created,secret = row
+				secret = base64.urlsafe_b64decode(secret + '=')
+				yield {'created' : created, 'href' : fairywren.INVITE_FMT % secret}
+				
+			cur.close()
+			conn.rollback()
+				
 			
 	def getInviteState(self,inviteSecret):
 		'''
@@ -192,6 +206,7 @@ class Users(object):
 				raise e
 			conn.commit()
 			cur.close()
+		self.log.info('Created invite for user %.8x',creatorId)
 		return fairywren.INVITE_FMT % secret
 		
 	def getInfo(self,idNumber):

@@ -9,7 +9,8 @@ import logging
 
 
 class Auth(object):
-	def __init__(self):
+	def __init__(self,salt):
+		self.salt = salt
 		self.log = logging.getLogger('fairywren.auth')
 		self.log.info('Created')
 		

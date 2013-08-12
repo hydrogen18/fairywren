@@ -10,6 +10,8 @@ from wsgi_intercept.urllib2_intercept import install_opener
 import tempfile
 import bencode
 import torrents
+import types
+import datetime
 
 import wsgi_intercept
 
@@ -23,11 +25,23 @@ class MockUsers(object):
 	def __init__(self):
 		self._getInfo = {'numberOfTorrents' : 0, 'name':'aTestUser', 'password' : fairywren.USER_PASSWORD_FMT % 1}
 		self._addUser = None
+		self._getInviteState = False
+		self._createInvite = None
+		self._listInvitesByUser  = []
+	def listInvitesByUser(self,uid):
+		return self._listInvitesByUser 	
+		
 	def getInfo(self,idNumber):
 		return self._getInfo
 		
 	def addUser(self,username,password):
 		return self._addUser		
+		
+	def getInviteState(self,secret):
+		return self._getInviteState
+		
+	def createInvite(self,uid):
+		return self._createInvite
 
 class MockAuth(object):
 	def __init__(self):
@@ -41,8 +55,6 @@ class MockAuth(object):
 	def authenticateUser(self,username,password):
 		return self._authenticateUser
 		
-
-
 class MockTorrents(object):
 	def __init__(self):
 		self._getTorrents = []
@@ -106,6 +118,72 @@ class AuthenticatedWebApiTest(WebApiTest):
 		cookies.extract_cookies(response,request)
 	
 		self.urlopen = urllib2.build_opener(wsgi_intercept.urllib2_intercept.wsgi_urllib2.WSGI_HTTPHandler(),urllib2.HTTPCookieProcessor(cookies),MultipartPostHandler.MultipartPostHandler).open		
+
+class TestGetNonExistentInvite(WebApiTest):
+	def test_getNonExistentInvite(self):
+		def failure(secret):
+			raise ValueError()
+		self.users.getInviteState = failure
+		try:
+			r = self.urlopen('http://webapi/invites/' + '0'*43)
+		except urllib2.HTTPError as e:
+			self.assertEqual(404,e.code)
+			r = e.read()
+			return
+		self.assertTrue(False)
+		
+class TestGetInvite(WebApiTest):
+	def test_getInviteClaimed(self):
+		self.users._getInviteState = True
+		r = self.urlopen('http://webapi/invites/' + '0'*43)
+		self.assertEqual(200,r.code)
+		r = json.loads(r.read())
+		self.assertIn('claimed',r)
+		self.assertEqual(True,r['claimed'])
+
+	def test_getInviteUnclaimed(self):
+		self.users._getInviteState = False
+		r = self.urlopen('http://webapi/invites/' + '0'*43)
+		self.assertEqual(200,r.code)
+		r = json.loads(r.read())
+		self.assertIn('claimed',r)
+		self.assertEqual(False,r['claimed'])
+		
+class TestGetListOfInvites(AuthenticatedWebApiTest):
+	def test_noAuth(self):
+		r = self.urlopen('http://webapi/users/000000FF/invites')	
+		self.assertEqual(200,r.code)
+		r = json.loads(r.read())
+		self.assertIn('authorized',r)
+		self.assertIn('error',r)
+		self.assertEqual(False,r['authorized'])
+		self.assertNotIn('invites',r)
+
+	def test_auth(self):
+		r = self.urlopen('http://webapi/users/00000001/invites')	
+		self.assertEqual(200,r.code)
+		r = json.loads(r.read())
+		self.assertNotIn('error',r)
+		self.assertIn('invites',r)
+		
+	def test_ok(self):
+		self.users._listInvitesByUser = [{'created':datetime.datetime.now(),'href':'foo'}]
+		r = self.urlopen('http://webapi/users/00000001/invites')
+		self.assertEqual(200,r.code)
+		r = json.loads(r.read())
+		self.assertNotIn('error',r)
+		self.assertIn('invites',r)		
+		self.assertEqual(len(r['invites']),1)
+		
+class TestCreateInvite(AuthenticatedWebApiTest):
+	def test_createInvite(self):
+		self.users._createInvite = 'FOO'
+		self.auth._isUserMemberOfRole = True
+		r = self.urlopen('http://webapi/invites',data='')
+		self.assertEqual(200,r.code)
+		r = json.loads(r.read())
+		self.assertIn('href',r)
+		self.assertIsInstance(r['href'],types.UnicodeType)		
 
 class TestTorrentInfo(AuthenticatedWebApiTest):
 	def test_badTorrentId(self):

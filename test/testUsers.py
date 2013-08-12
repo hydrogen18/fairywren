@@ -45,6 +45,9 @@ class TestUsersEmptyDatabase(TestPostgres):
 	def test_getInfo(self):
 		self.assertEqual(None,self.users.getInfo(0))
 		
+	def test_listInvitesByUser(self):
+		self.assertEqual(0,len(list(self.users.listInvitesByUser(0))))
+		
 class TestUsers(TestPostgres):
 	def setUp(self):
 		TestPostgres.setUp(self)
@@ -83,10 +86,8 @@ class TestUsers(TestPostgres):
 		self.assertEqual(self.users.getInviteState(secret),True)
 		
 		self.assertIsInstance(newUser,types.StringType)
-		
-		
-		newUid = self.validuid = int(re.compile('.*/' + fairywren.UID_RE).match(newUser).groupdict()['uid'],16)
-		
+				
+		newUid = int(re.compile('.*/' + fairywren.UID_RE).match(newUser).groupdict()['uid'],16)
 		
 		self.assertIsInstance(self.users.getInfo(newUid),types.DictType)
 		
@@ -101,14 +102,9 @@ class TestUsers(TestPostgres):
 		self.assertEqual(self.users.getInviteState(secret),True)		
 		
 		with self.assertRaisesRegexp(ValueError,'.*claimed.*') as cm:
-			self.users.claimInvite(secret,'fasdflkjdnasfkljna','\x00'*64)	
+			self.users.claimInvite(secret,'fasdfljdnasfkljna','\x00'*64)	
 		
-	def test_getInviteStateNotExist(self):
-		with self.assertRaisesRegexp(ValueError,'.*secret.*') as cm:
-			#technically this could fail, because test_createInvite could have
-			#ran and somehow this was the result of the random value hashing,
-			#but that is extremely unlikely
-			self.users.getInviteState('\x00'*32)
+
 			
 		
 if __name__ == '__main__':

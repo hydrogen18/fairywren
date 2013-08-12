@@ -38,7 +38,7 @@ if __name__ == '__main__':
 	httpListenPort = conf['webapi'].get('port',DEFAULT_LISTEN_PORT)
 	httpPathDepth = conf.get('pathDepth',DEFAULT_PATH_DEPTH)
 
-	users = Users()
+	users = Users(conf['salt'])
 	users.setConnectionPool(connPool)
 	
 	tssub = TrackerStatsSubscriber()

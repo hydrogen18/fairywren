@@ -77,10 +77,31 @@ class Webapi(restInterface):
 	def getResponseForSession(self,session):
 		return {'my' : {'href':fairywren.USER_FMT % session.getId()} }
 
+	@authorizeSelf(extractUserId)
+	@requireAuthorization()
+	@resource(True,'GET','users',fairywren.UID_RE,'invites')
+	def listInvites(self,env,start_response,session,uid):
+		#Potential pitfall in this implementation:
+		#If a user is authorized to perform a GET on this resource but
+		#user for the uid does not exist, this stil returns an empty list
+		response = { 'invites' : list(self.users.listInvitesByUser(uid)) }
+		return vanilla.sendJsonWsgiResponse(env,start_response,response)
+
+	@resource(False,'GET','invites','(?P<secret>[A-Z,a-z,0-9,_,-]{43})')
+	def inviteStatus(self,env,start_response,secret):
+		secret = base64.urlsafe_b64decode(secret + '=')
+		try:
+			claimed =self.users.getInviteState(secret)
+		except ValueError as e:
+			return vanilla.http_error(404,env,start_response,msg=e.message)
+		
+		return vanilla.sendJsonWsgiResponse(env,start_response,{'claimed':claimed})
+
 	@requireAuthorization()
 	@resource(True,'POST','invites')
 	def createInvite(self,env,start_response,session):
-		return vanilla.sendJsonWsgiResponse(env,start_response,{'href':'foo'})
+		pathOfNewInvite = self.users.createInvite(session.getId())
+		return vanilla.sendJsonWsgiResponse(env,start_response,{'href':pathOfNewInvite})
 
 	@authorizeSelf(extractUserId)
 	@requireAuthorization('Administrator')
