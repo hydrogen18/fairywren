@@ -131,7 +131,7 @@ class requireAuthorization(object):
 			raise ValueError(func.getName() + ' is requested to have authorization enforced, without authentication')
 		func.allowedRoles.append(func.getName())
 		func.allowedRoles += list(self.allowedRoles)
-		self.requireAuthorization = True
+		func.requireAuthorization = True
 		return func
 
 					
@@ -315,7 +315,7 @@ class restInterface(object):
 
 				if session == None:
 					return vanilla.sendJsonWsgiResponse(env,start_response,restInterface.NOT_AUTHENTICATED)
-					
+				
 				#Check to see if the resource requires authorization
 				if resource.requireAuthorization:
 					authorized = resource.allowSelf and resource.getOwnerId(*pathComponents)==session.getId()
