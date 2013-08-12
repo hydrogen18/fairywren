@@ -62,7 +62,7 @@ class TestUsers(TestPostgres):
 		return
 
 	def test_addUserThatExists(self):	
-		with self.assertRaisesRegexp(ValueError,'.*username.*exists.*') as cm:
+		with self.assertRaises(users.UserAlreadyExists) as cm:
 			self.users.addUser(self.validusername,'0'*64)
 			
 	def test_getInfo(self):
@@ -78,7 +78,7 @@ class TestUsers(TestPostgres):
 		
 		self.assertEqual(self.users.getInviteState(secret),False)
 		
-		with self.assertRaisesRegexp(ValueError,'.*[uU]{1}ser.*exists.*') as cm:
+		with self.assertRaises(users.UserAlreadyExists) as cm:
 			self.users.claimInvite(secret,self.validusername,'\x00'*64)
 		
 		newUser = self.users.claimInvite(secret,'fooo','\x00'*64)

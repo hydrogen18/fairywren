@@ -12,6 +12,7 @@ import string
 from restInterface import *
 import fairywren
 import math
+import users
 
 def decodePassword(password):
 	#Password comes across as 64 bytes of base64 encoded data
@@ -81,13 +82,14 @@ class Webapi(restInterface):
 	@requireAuthorization()
 	@resource(True,'GET','users',fairywren.UID_RE,'invites')
 	def listInvites(self,env,start_response,session,uid):
+		uid = int(uid,16)
 		#Potential pitfall in this implementation:
 		#If a user is authorized to perform a GET on this resource but
 		#user for the uid does not exist, this stil returns an empty list
 		response = { 'invites' : list(self.users.listInvitesByUser(uid)) }
 		return vanilla.sendJsonWsgiResponse(env,start_response,response)
 
-	@resource(False,'GET','invites','(?P<secret>[A-Z,a-z,0-9,_,-]{43})')
+	@resource(False,'GET','invites',fairywren.SECRET_RE)
 	def inviteStatus(self,env,start_response,secret):
 		secret = base64.urlsafe_b64decode(secret + '=')
 		try:
@@ -97,6 +99,21 @@ class Webapi(restInterface):
 		
 		return vanilla.sendJsonWsgiResponse(env,start_response,{'claimed':claimed})
 
+	@parameter('password',decodePassword)
+	@parameter('username')
+	@resource(False,'POST','invites',fairywren.SECRET_RE)
+	def claimInvite(self,env,start_response,secret,username,password):
+		secret = base64.urlsafe_b64decode(secret + '=')
+		
+		try:
+			newuser = self.users.claimInvite(secret,username,password)
+		except users.UserAlreadyExists:
+			return vanilla.http_error(409,env,start_response,msg='User with that name already exists')
+		except ValueError as e:
+			return vanilla.http_error(404,env,start_response,msg=e.message)
+		
+		return vanilla.sendJsonWsgiResponse(env,start_response,{'href' : newuser})
+		
 	@requireAuthorization()
 	@resource(True,'POST','invites')
 	def createInvite(self,env,start_response,session):
@@ -136,9 +153,9 @@ class Webapi(restInterface):
 	@resource(True,'POST','users')
 	def addUser(self,env,start_response,session,password,username):
 		
-		resourceForNewUser = self.users.addUser(username,password)
-		
-		if resourceForNewUser == None:
+		try:
+			resourceForNewUser = self.users.addUser(username,password)
+		except users.UserAlreadyExists:		
 			return vanilla.http_error(409,env,start_response,'user already exists')
 		
 		response = { 'href' : resourceForNewUser } 

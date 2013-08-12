@@ -58,13 +58,32 @@ Torrents
 </div>
 
 <div id="account">
-<div width=33% class="contentBox ui-corner-all">
-	<div class="contentBoxHeader ui-corner-all">Statistics</div>
+<div width="5em" class="contentBox">
+	<div class="contentBoxHeader">Statistics</div>
 	<dl id="accountInfo"></dl>
 </div>
 
-<div width=33% class="contentBox ui-corner-all" id="changePassword" >
-	<div class="contentBoxHeader ui-corner-all">Change Password</div>
+<div width="5em" class="contentBox" id="invites">
+	<div class="contentBoxHeader">Invites</div>
+	<div class="message"></div>
+	<p>
+	You currently have <span id="numInvites">999</span> unclaimed invites. Email the link of an invite to a friend to allow them to claim invites. Each invite may only be claimed once.
+	</p>
+	
+	<table style="min-width:3.5em">
+		<tr width="3.5em">
+			<th>Created</td>
+			<th>Link</td>
+		</tr>
+	</table>
+	
+	<form>
+	<input type="submit" value="Create Invite" onclick="Fairywren.createInvite(); return false" />
+	</form>
+</div>
+
+<div width="5em" class="contentBox" id="changePassword" >
+	<div class="contentBoxHeader">Change Password</div>
 	<div class="warning"></div>
 	
 <form>

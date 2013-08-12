@@ -3,26 +3,34 @@ $(document).ready(function(){
 	
 	var registerButton = $("input#register");
 	
+	
 	if(hash.length === 0)
 	{
 		//User got here on accident or something. Display error message
 		//and depart
 	}
 	
-	var inviteHref = hash.slice(1);
+	Fairywren.register.href = hash.slice(1);
+	Fairywren.register.err = $("#message");
 	
 	//Retrieve the invite, check to see if it is valid
-	jQuery.get(inviteHref).
+	jQuery.get(Fairywren.register.href).
 	done(
 		function(data)
 		{
 			//Check to see if it has been claimed
+			if(data.claimed)
+			{
+				Fairywren.register.err.text("This invite has already been claimed.");
+				return;
+			}
 			
+			registerButton.removeAttr('disabled');
 			
 		}
 		).fail(function(jqXhr,textStatus,errorThrown)
 		{
-			Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,$("#message"));
+			Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,Fairywren.register.err);
 			
 		});
 
@@ -58,6 +66,20 @@ Fairywren.register = function()
 		errDisplay.text("Password does not match");
 		return;
 	}
+	username = username.val();
+	password = Fairywren.hashPassword(password0.val());
+	
+	jQuery.post(Fairywren.register.href,{username:username,password:password}).
+	done(
+		function(data)
+		{
+			window.location = 'index.html';
+		}
+		).fail(function(jqXhr,textStatus,errorThrown)
+		{
+			Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,Fairywren.register.err);
+			
+		});
 
 }
 

@@ -20,7 +20,14 @@ Fairywren.serverErrorHandler = function(jqXhr,textStatus,errorThrown,element)
 			data = jQuery.parseJSON(data);
 			if ( 'msg' in data )
 			{
-				element.text(data.msg);
+				if(data.msg === undefined || data.msg === null)
+				{
+					element.text(statusCode);
+				}
+				else
+				{
+					element.text(data.msg);
+				}
 			}
 		}
 	}

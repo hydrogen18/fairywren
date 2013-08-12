@@ -12,8 +12,10 @@ import bencode
 import torrents
 import types
 import datetime
-
+import base64
+import itertools
 import wsgi_intercept
+import users
 
 class MockStats(object):
 	def __init__(self):
@@ -28,6 +30,7 @@ class MockUsers(object):
 		self._getInviteState = False
 		self._createInvite = None
 		self._listInvitesByUser  = []
+		self._claimInvite = None
 	def listInvitesByUser(self,uid):
 		return self._listInvitesByUser 	
 		
@@ -42,6 +45,9 @@ class MockUsers(object):
 		
 	def createInvite(self,uid):
 		return self._createInvite
+		
+	def claimInvite(self,secret,username,pw):
+		return self._claimInvite
 
 class MockAuth(object):
 	def __init__(self):
@@ -131,7 +137,43 @@ class TestGetNonExistentInvite(WebApiTest):
 			r = e.read()
 			return
 		self.assertTrue(False)
+
+class TestClaimInviteFail(WebApiTest):
+	def test_claimNonExistentInvite(self):
+		def failure(secret,username,pw):
+			raise ValueError()
+		self.users.claimInvite = failure
+		try:
+			r = self.urlopen('http://webapi/invites/' + '0'*43  ,data=urllib.urlencode({'password':'0'*86,'username':'foo'}))
+		except urllib2.HTTPError as e:
+			self.assertEqual(404,e.code)
+			r = e.read()
+			return
+		self.assertTrue(False)
 		
+	def test_claimInviteUserExists(self):
+		def failure(secret,username,pw):
+			raise users.UserAlreadyExists()
+		self.users.claimInvite = failure
+		try:
+			r = self.urlopen('http://webapi/invites/' + '0'*43  ,data=urllib.urlencode({'password':'0'*86,'username':'foo'}))
+		except urllib2.HTTPError as e:
+			self.assertEqual(409,e.code)
+			r = e.read()
+			return
+		self.assertTrue(False)		
+		
+class TestClaimInvite(WebApiTest):
+	def test_claimInvite(self):
+		self.users._claimInvite = 'FOO'
+		
+		r = self.urlopen('http://webapi/invites/' + '0'*43  ,data=urllib.urlencode({'password':'0'*86,'username':'foo'}))
+		
+		self.assertEqual(200,r.code)
+		r = json.loads(r.read())
+		self.assertIn('href',r)
+		self.assertNotIn('error',r)	
+
 class TestGetInvite(WebApiTest):
 	def test_getInviteClaimed(self):
 		self.users._getInviteState = True
@@ -148,6 +190,21 @@ class TestGetInvite(WebApiTest):
 		r = json.loads(r.read())
 		self.assertIn('claimed',r)
 		self.assertEqual(False,r['claimed'])
+		
+	def test_wholeKeyspace(self):
+		#this test is a good idea but takes too long to run
+		return 
+		keys = [chr(i) for i in range(0,255)]
+		keyspace = []
+		for _ in range(0,32):
+			keyspace.append(keys)
+		
+		for x in itertools.product(*keyspace):
+			r = self.urlopen('http://webapi/invites/' + base64.urlsafe_b64encode(''.join(x)).replace('=',''))
+			self.assertEqual(200,r.code)
+			r = json.loads(r.read())
+			self.assertIn('claimed',r)
+		
 		
 class TestGetListOfInvites(AuthenticatedWebApiTest):
 	def test_noAuth(self):
@@ -537,9 +594,11 @@ class TestGetUserInfo(AuthenticatedWebApiTest):
 		self.assertEqual(self.torrents._getAnnounceUrlForUser,r['announce']['href'])
 		self.assertEqual(r['numberOfTorrents'],self.users._getInfo['numberOfTorrents'])		
 
-class TestAddUser(AuthenticatedWebApiTest):
-	def test_userAlreadyExists(self):
-		self.users._addUser = None
+class TestUserAlreadyExists(AuthenticatedWebApiTest):
+	def test_test(self):
+		def mock(username,password):
+			raise users.UserAlreadyExists()
+		self.users.addUser = mock
 		self.auth._isUserMemberOfRole = True
 		try:
 			self.urlopen('http://webapi/users', data= urllib.urlencode({'username':'foo','password':86*'0'}))
@@ -549,7 +608,8 @@ class TestAddUser(AuthenticatedWebApiTest):
 			self.assertIn('user already exists',r)
 			return
 		self.assertTrue(False)
-		
+
+class TestAddUser(AuthenticatedWebApiTest):
 	def test_ok(self):
 		self.users._addUser = 'FOO'
 		self.auth._isUserMemberOfRole = True
@@ -585,9 +645,6 @@ class TestAddUser(AuthenticatedWebApiTest):
 			self.assertIn('Missing',r)
 			return
 		self.assertTrue(False)							
-			
-		
-		
 
 class TestGetTorrents(AuthenticatedWebApiTest):
 	def test_noparams(self):

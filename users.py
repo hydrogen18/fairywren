@@ -6,6 +6,9 @@ import logging
 import os
 import base64
 
+class UserAlreadyExists(BaseException):
+	pass
+
 class Users(object):
 
 	def __init__(self,salt):
@@ -58,7 +61,7 @@ class Users(object):
 				# 'PostgreSQL Error Codes' as 'unique_violation' and corresponds
 				#to primary key violations
 				if e.pgcode == '23505':
-					raise ValueError('User with that username already exists')
+					raise UserAlreadyExists('User with that username already exists')
 				self.log.exception('Failed adding new user',exc_info=True)
 				raise e
 			except psycopg2.DatabaseError as e:
@@ -101,7 +104,7 @@ class Users(object):
 				# 'PostgreSQL Error Codes' as 'unique_violation' and corresponds
 				#to primary key violations
 				if e.pgcode == '23505':
-					raise ValueError('User with that username already exists')
+					raise UserAlreadyExists('User with that username already exists')
 				self.log.exception('Failed adding new user',exc_info=True)
 				raise e
 			except psycopg2.DatabaseError as e:
@@ -140,7 +143,7 @@ class Users(object):
 				self.log.exception('Failed listing invites for user %.8x',userId,exc_info=True)
 				raise e
 				
-			for row in iter(cur.fetchone,None):
+			for row in cur:
 				created,secret = row
 				secret = base64.urlsafe_b64decode(secret + '=')
 				yield {'created' : created, 'href' : fairywren.INVITE_FMT % secret}
@@ -227,7 +230,10 @@ class Users(object):
 				return None
 			else:
 				name,numberOfTorrents = result
-				retval =  {'numberOfTorrents' : numberOfTorrents, 'name':name, 'password' : {'href' : fairywren.USER_PASSWORD_FMT % idNumber }}
+				retval =  {'numberOfTorrents' : numberOfTorrents, 
+				'name':name, 
+				'password' : {'href' : fairywren.USER_PASSWORD_FMT % idNumber },
+				'invites' : {'href' : fairywren.USER_INVITES_FMT % idNumber } }
 			
 			return retval
 			

@@ -336,6 +336,55 @@ Fairywren.loadAccount = function()
 	
 	list.append($("<dt/>").text("Number of torrents uploaded"));
 	list.append($("<dd/>").text(data.numberOfTorrents));
+	Fairywren.showInvites();
+}
+Fairywren.showInvites = function(){
+	var invitesDiv = $("div#invites");
+	
+	var msg = invitesDiv.find(".message");
+	
+	var invitesTable = invitesDiv.find("table");
+	invitesTable.find("tr:gt(0)").remove();
+	
+	jQuery.get(Fairywren.account.invites.href).done(function(data)
+		{
+			var invites = data.invites;
+			invitesDiv.find('#numInvites').text(data.invites.length);
+			for(var i = 0; i < data.invites.length;++i)
+			{
+				var invite = invites[i];
+				var row = $("<tr />");
+				var created = Fairywren.trimIsoFormatDate(invite.created);
+				var link = invite.href;
+				row.append($("<td>" + created + "</td>"));
+				var anchor = $("<a />");
+				anchor.attr('href','invite.html#' + link);
+				anchor.text(anchor.prop('href'));
+				row.append($('<td />').append(anchor));
+				
+				invitesTable.find('tr:last').after(row);
+			}
+		}
+	).fail(function(jqXhr,textStatus,errorThrown)
+		{
+			Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,msg);
+		});
+}
+
+Fairywren.createInvite = function()
+{
+	var msg = $("div#invites").find(".message");
+	jQuery.post('api/invites').done(function(data){
+		if("error" in data)
+		{
+			Fairywren.errorHandler(data);
+			return;
+		}
+		Fairywren.showInvites();
+	}).fail(function(jqXhr,textStatus,errorThrown)
+		{
+			Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,msg);
+		});
 }
 
 Fairywren.loadUpload = function()

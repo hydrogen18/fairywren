@@ -12,6 +12,8 @@ USERS_PATH = '%s/users' % API_PATH
 USER_FMT = USERS_PATH + '/%.8x' 
 USER_PASSWORD_FMT = USER_FMT + '/password'
 
+USER_INVITES_FMT = USER_FMT + '/invites'
+
 INVITES_PATH = '%s/invites' % API_PATH
 def _secretToPath(self,secret):
 	if len(secret)!=32:
@@ -22,6 +24,6 @@ def _secretToPath(self,secret):
 INVITE_FMT = type("",(),{'__mod__' : _secretToPath})()
 
 UID_RE = '(?P<uid>[abcdefABCDEF0123456789]{8})'
-
+SECRET_RE = '(?P<secret>[A-Z,a-z,0-9,_,-]{43})'
 
 
