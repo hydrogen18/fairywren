@@ -38,6 +38,7 @@ $(document).ready(function(){
 
 	});
 	
+	
 Fairywren.register = function()
 {
 	var errDisplay = $("#message");
@@ -75,7 +76,7 @@ Fairywren.register = function()
 	done(
 		function(data)
 		{
-			window.location = 'index.html';
+			Fairywren.register.showSuccess();
 		}
 		).fail(function(jqXhr,textStatus,errorThrown)
 		{
@@ -86,3 +87,12 @@ Fairywren.register = function()
 }
 
 
+Fairywren.register.showSuccess = function()
+{
+	$("div").hide();
+	var div = $("div#success");  
+	div.show();
+    div.css("position","absolute");
+    div.css("top", ( $(window).height() - div.height() ) / 2+$(window).scrollTop() + "px");
+    div.css("left", ( $(window).width() - div.width() ) / 2+$(window).scrollLeft() + "px");
+};
