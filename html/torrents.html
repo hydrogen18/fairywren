@@ -69,17 +69,19 @@ Torrents
 	<p>
 	You currently have <span id="numInvites">999</span> unclaimed invites. Email the link of an invite to a friend to allow them to claim invites. Each invite may only be claimed once.
 	</p>
-	
-	<table style="min-width:3.5em">
-		<tr width="3.5em">
-			<th>Created</td>
-			<th>Link</td>
-		</tr>
-	</table>
-	
-	<form>
-	<input type="submit" value="Create Invite" onclick="Fairywren.createInvite(); return false" />
-	</form>
+
+	<div style="margin-left:2em;">
+		<form>
+			<input type="submit" value="Create Invite" onclick="Fairywren.createInvite(); return false" />
+		</form>
+		<table style="min-width:5.5em;">
+			<tr>
+				<th>Created</td>
+				<th style="min-width:5.5em;">Link</td>
+			</tr>
+		</table>
+	</div>
+
 </div>
 
 <div width="5em" class="contentBox" id="changePassword" >
@@ -101,7 +103,7 @@ Torrents
 <div id="torrents">
 	<div class="message" id="msg"></div>
 	<div id="torrentBrowseBar">
-		<div id="browseButtons" style="margin:5px;">
+		<div id="browseButtons" style="margin:5px;white-space:nowrap;">
 			<span onclick="Fairywren.flipPage(-1)" class="clickable" style="text-align:center;font-size:2em;" >&larr;&nbsp;</span>
 			<span onclick="Fairywren.loadTorrentsForPage(true)" class="clickable" style="text-align:center;font-size:2em;" >&nbsp;&#x21bb;&nbsp;</span>
 			<span onclick="Fairywren.flipPage(1)" class="clickable" style="text-align:center;font-size:2em;" >&nbsp;&rarr;</span>
@@ -110,16 +112,16 @@ Torrents
 	</div>
 
 	<div>
-		<table id="torrentTable" width=90%>
+		<table id="torrentTable" style="margin-left:auto;margin-right:auto;min-width:21em;">
 
 		<tr>
-		<th>Title</th>
+		<th style="min-width:20em;" >Title</th>
 
-		<th width=15%>Size</th>
+		<th >Size</th>
 
-		<th width=15%>Upload Time</th>
+		<th >Upload Time</th>
 
-		<th width=15%>Uploader</th>
+		<th >Uploader</th>
 		</tr>
 		</table>
 	</div>
@@ -136,23 +138,23 @@ Torrents
 			<p>Search for torrents using terms separated by spaces.</p>
 			<div class="message" id="msg"></div>
 			<form onsubmit="Fairywren.search.search(); return false;">
-			<label for="searchTokens">Search Terms</label><input type="text" id="searchTokens" name="searchTokens" size="96">
+			<label for="searchTokens">Search Terms</label><input required type="text" id="searchTokens" name="searchTokens" size="64">
 			<span class="clickable" onclick="Fairywren.search.search()" >Search</span>
 			</form>
 		</div>
 	</div>
 	
 	<div>
-		<table id="torrentTable" width=90%>
+		<table id="torrentTable" style="margin-left:auto;margin-right:auto;min-width:21em;">
 
 		<tr>
-		<th>Title</th>
+		<th style="min-width:20em;" >Title</th>
 
-		<th width=15%>Size</th>
+		<th >Size</th>
 
-		<th width=15%>Upload Time</th>
+		<th >Upload Time</th>
 
-		<th width=15%>Uploader</th>
+		<th >Uploader</th>
 		</tr>
 		</table>
 	</div>

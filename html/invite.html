@@ -19,18 +19,25 @@ Invite
 
 <div id="main" align="center">
 
-<div id="message" style="color:red;">
-
-</div>
+<div id="message" style="color:red;" > </div>
 
 <div class="contentBox" style="text-align:center; align:center;width:26em;min-width:23em;">
 	<div class="contentBoxHeader" style="align:center;">Register</div>
 	<form>
-	<label for="username">Username:</label> <input id="username" type="text"  size="24"/><br />
-	<label for="password">Password:</label> <input id="password0" type="password"  size="24"/> <br />
-	<label for="password">Confirm Password:</label> <input id="password1" type="password"  size="24"/> <br />
-	<input disabled id="register" type="submit" value="Register" onclick="Fairywren.register(); return false;"/>
+		<table class="alignedForm">
+			<tr class="alignedForm">
+				<td class="alignedForm" ><label class="alignedForm" for="username">Username</label></td><td class="alignedForm"><input id="username" type="text" size="24"/></td>
+			</tr>
+			<tr  class="alignedForm">
+				<td class="alignedForm"><label class="alignedForm" for="password0">Password</label></td><td class="alignedForm"> <input id="password0" type="password" size="24"/> </td>
+			</tr>
+			<tr class="alignedForm">
+				<td class="alignedForm"><label class="alignedForm" for="password1">Confirm Password</label></td><td class="alignedForm"> <input id="password1" type="password"  size="24"/> </td>
+			</tr>
+		</table>
+			<input disabled id="register" type="submit" value="Register" onclick="Fairywren.register(); return false;"/>
 	</form>
+	
 </div>
 
 </div>

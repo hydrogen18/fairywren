@@ -3,16 +3,18 @@ $(document).ready(function(){
 	
 	var registerButton = $("input#register");
 	
+	Fairywren.register.err = $("#message");
 	
 	if(hash.length === 0)
 	{
 		//User got here on accident or something. Display error message
 		//and depart
+		Fairywren.register.err.text("You seem to have reached this page in error");
+		return;
 	}
 	
 	Fairywren.register.href = hash.slice(1);
-	Fairywren.register.err = $("#message");
-	
+
 	//Retrieve the invite, check to see if it is valid
 	jQuery.get(Fairywren.register.href).
 	done(

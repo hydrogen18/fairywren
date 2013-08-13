@@ -255,14 +255,15 @@ Fairywren.clearAndRenderTorrents = function(torrentTable,pageset)
 		titleSpan.click(infoHref,function(event){
 			Fairywren.torrentTab.display(event.data);
 		});
+		titleSpan.attr('style','white-space:nowrap;');
 		titleSpan.text(title);
 		
 		var row = $("<tr />");
 		var titleData = $("<td />");
 		titleData.append(titleSpan);
 		
-		titleData.append('&nbsp;<a style="float:right;" class="downloadLink" href="' + downloadUrl + '">Download</a>\
-		<span style="float:right;" >'+ '&uarr;' + seeds  + '&nbsp;&darr;' + leeches + '</span>');
+		titleData.append('<span style="float:right;">&nbsp;<span >'+ '&uarr;' + seeds  + '&nbsp;&darr;' + leeches + '</span><a class="downloadLink" href="' + downloadUrl + '">Download</a>\
+		</span>');
 		
 		row.append(titleData);
 		
