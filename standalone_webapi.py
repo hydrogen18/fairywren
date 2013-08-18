@@ -44,4 +44,7 @@ if __name__ == '__main__':
 	tssub = TrackerStatsSubscriber()
 	eventlet.spawn_n(tssub)
 	webapi = Webapi(tssub,users,authmgr,torrents,httpPathDepth,conf['webapi']['secure'])
+	
+	users.createRoles([ res.getName() for res in webapi.getResources() if res.requiresAuthorization()])
+	
 	wsgi.server(eventlet.listen((httpListenIp, httpListenPort)), webapi)

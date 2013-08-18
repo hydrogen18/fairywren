@@ -37,7 +37,6 @@ def validateUsername(username):
 	return username
 
 		
-		
 def extractUserId(*pathComponents):
 	return int(pathComponents[1],16)
 

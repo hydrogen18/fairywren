@@ -37,6 +37,9 @@ class Resource(object):
 		#Populated by parameter decorator
 		self.parameters = []
 		
+	def requiresAuthorization(self):
+		return self.requireAuthorization
+		
 	def wants(self,pathComponents):
 		if len(pathComponents) != len(self.path):
 			return None
@@ -101,6 +104,12 @@ class Resource(object):
 		
 	def getName(self):
 		return self.wrap.__name__
+		
+	def __str__(self):
+		return self.getName()
+		
+	def __repr__(self):
+		return '%s= %s @ %s' % (self.getName(), self.method, '/'.join([i.pattern for i in self.path]))
 
 class parameter(object):
 	def __init__(self,name,conversionFunc=None):
@@ -222,6 +231,7 @@ class restInterface(object):
 	
 	def __init__(self,pathDepth,authenticateUser, authorizeUser,secure):		
 		
+		self.logger = logging.getLogger('fairywren.restInterface')
 		#Inspect each member of this object. If it is an instance of
 		#resource then add it to the list
 		self.resources = []
@@ -230,16 +240,17 @@ class restInterface(object):
 
 			if isinstance(member,Resource): 
 				self.resources.append(member)
+				self.logger.info('Using resource:%s', repr(member))
 
-				
-		self.logger = logging.getLogger('fairywren.restInterface')
-		
 		self.pathDepth = pathDepth
 		
 		self.sm = SessionManager(secure)
 		
 		self.authenticateUser = authenticateUser
 		self.authorizeUser = authorizeUser
+
+	def getResources(self):
+		return self.resources
 
 	def getResponseForSession(self,session):
 		return {}

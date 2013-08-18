@@ -42,7 +42,7 @@ class Users(object):
 						self.log.exception('Failed creating role %s',role, exc_info=True)
 						raise e					
 					
-					self.log.info("Created role %s",(role,))
+					self.log.info("Created role %s",role)
 					numCreated += 1
 				
 			cur.close()		
