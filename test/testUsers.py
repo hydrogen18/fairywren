@@ -48,7 +48,21 @@ class TestUsersEmptyDatabase(TestPostgres):
 	def test_listInvitesByUser(self):
 		self.assertEqual(0,len(list(self.users.listInvitesByUser(0))))
 		
-class TestUsers(TestPostgres):
+class TestBootstrapRoles(TestPostgres):
+	def setUp(self):
+		TestPostgres.setUp(self)
+		self.users = users.Users('')
+		self.users.setConnectionPool(self.getConnectionPool())
+		
+	def test_createRoles(self):
+		testRoles = ['foo','bar','qux']
+		self.assertEqual(len(testRoles),self.users.createRoles(testRoles))
+		
+		testRoles.reverse()
+		#Calling a second time should result in nothing happening
+		self.assertEqual(0,self.users.createRoles(testRoles))
+		
+class TestWithValidUser(TestPostgres):		
 	def setUp(self):
 		TestPostgres.setUp(self)
 		self.users = users.Users('')
@@ -60,6 +74,44 @@ class TestUsers(TestPostgres):
 		
 		self.validuid = int(re.compile('.*/' + fairywren.UID_RE).match(userpath).groupdict()['uid'],16)
 		return
+		
+class TestUserRoles(TestWithValidUser):
+	
+	def setUp(self):
+		TestWithValidUser.setUp(self)
+
+		self.testRoles = ['dungeonmaster']
+		self.assertEqual(len(self.testRoles),self.users.createRoles(self.testRoles))
+	
+	def test_addRemoveUser(self):
+
+		self.users.addUserToRole(self.testRoles[0],self.validuid)
+		
+		#Calling a second time should result in nothing happening
+		self.users.addUserToRole(self.testRoles[0],self.validuid)
+		
+		self.users.removeUserFromRole(self.testRoles[0],self.validuid)
+		
+		#Calling a second time should result in nothing happening
+		self.users.removeUserFromRole(self.testRoles[0],self.validuid)
+		
+		
+	def test_addUserDoesNotExist(self):
+
+		with self.assertRaisesRegexp(ValueError,'.*[Uu]{1}ser.*exist.*') as cm:
+			self.users.addUserToRole(self.testRoles[0],self.validuid*999)
+			
+	def test_removeUserFromRole(self):
+		with self.assertRaisesRegexp(ValueError,'.*[Rr]{1}ole.*exist.*') as cm:
+			self.users.removeUserFromRole('fkjd;lasnf4auwnfaw', self.validuid)
+			
+	def test_roleDoesNotExist(self):
+		with self.assertRaisesRegexp(ValueError,'.*[Rr]{1}ole.*exist.*') as cm:
+			self.users.addUserToRole('daeslnf23kijrn',self.validuid)
+		
+		
+				
+class TestUsers(TestWithValidUser):
 
 	def test_addUserThatExists(self):	
 		with self.assertRaises(users.UserAlreadyExists) as cm:

@@ -17,6 +17,104 @@ class Users(object):
 		self.log = logging.getLogger('fairywren.users')
 		self.log.info('Created')
 		
+	def createRoles(self,roles):
+		numCreated = 0
+		with self.connPool.item() as conn:
+			for role in roles:
+				cur = conn.cursor()
+				
+				try:
+					cur.execute("Select id  from roles where name=%s;",(role,))
+				except psycopg2.DatabaseError as e:
+					cur.close()
+					conn.rollback()
+					self.log.exception('Failed checking for role %s',role, exc_info=True)
+					raise e
+				
+				result = cur.fetchone()
+				
+				if result == None:
+					try:
+						cur.execute("Insert into roles (name)  VALUES(%s);",(role,))
+					except psycopg2.DatabaseError as e:
+						cur.close()
+						conn.rollback()
+						self.log.exception('Failed creating role %s',role, exc_info=True)
+						raise e					
+					
+					self.log.info("Created role %s",(role,))
+					numCreated += 1
+				
+			cur.close()		
+			conn.commit()
+		return numCreated
+		
+	def addUserToRole(self,role,uid):
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			
+			try:
+				cur.execute("Insert into rolemember (roleid,userid) select roles.id, %s from roles where name = %s returning userid;",(uid,role))
+			except psycopg2.IntegrityError as e:
+				cur.close()
+				conn.rollback()
+				#The string '23505' is specified in the postgre documentation appendix
+				# 'PostgreSQL Error Codes' as 'unique_violation' and corresponds
+				#to primary key violations. If this occurs it just means
+				#the user is already a member of the role. So it can safely be ignored.
+				#The string '23503' indicates foreign_key_violation. This means the user
+				# does not exist and should not be ignored
+				if e.pgcode == '23505':
+					return
+				elif e.pgcode == '23503':
+					self.log.exception('Failed add uid:%x to role %s. User does not exist',uid,role,exc_info=True)
+					raise ValueError('User with uid:%x does not exist' % uid)
+				else:
+					self.log.exception('Failed adding uid:%x to role %s',uid,role,exc_info=True)
+					raise e
+			except psycopg2.DatabaseError as e:
+				cur.close()
+				conn.rollback()
+				self.log.exception('Failed adding uid:%x to role %s',uid,role,exc_info=True)
+				raise e			
+				
+			result = cur.fetchone()
+			cur.close()
+			conn.commit()
+			if result == None:
+				raise ValueError('Role %s does not exist' % role);
+
+			
+	def removeUserFromRole(self,role,uid):
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			
+			try:
+				cur.execute("Select id from roles where name = %s",(role,));
+			except psycopg2.DatabaseError as e:
+				cur.close()
+				conn.rollback()
+				self.log.exception('Failed selecting role %s',role,exc_info=True)
+				raise e		
+			
+			result = cur.fetchone()
+			if result == None:
+				raise ValueError('Role %s does not exist' % role)
+			roleid, = result
+				
+			
+			try:
+				cur.execute("Delete from rolemember where userid = %s and roleid = %s ;",(uid,roleid));
+			except psycopg2.DatabaseError as e:
+				cur.close()
+				conn.rollback()
+				self.log.exception('Failed removing uid:%x from role %s',uid,role,exc_info=True)
+				raise e		
+				
+			cur.close()
+			conn.commit()
+			
+		
 	def setConnectionPool(self,pool):
 		self.connPool = pool
 
