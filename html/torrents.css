@@ -129,18 +129,18 @@ background-color:#66FFFF;
 border-style:solid;
 }
 
-label.alignedForm{
+
+table.alignedForm label{
 	float:right;
 	white-space:nowrap;
 	padding-right:1px;
 }
 
-table.alignedForm{
+table.alignedForm, 
+table.alignedForm tr,
+table.alignedForm td
+{
 border:0px solid black;
 padding:0px;
 }
 
-td.alignedForm{
-border:0px solid black;
-padding:0px;
-}

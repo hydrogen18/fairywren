@@ -55,9 +55,16 @@ Torrents
 		<div class="contentBoxHeader ui-corner-all">Upload New Torrent</div>
 		<div id="msg" class="message"></div>
 		<form id="torrentUpload" action="api/torrents" method="POST" enctype="multipart/form-data" encoding="multipart/form-data">
-<label for="title">Title</label> <input type="text" name="title"><br>
-<label for="file">Torrent File</label> <input type="file" name="torrent"><br>
+			<table class="alignedForm" >
+				<tr>
+					<td><label for="title">Title</label></td><td> <input type="text" name="title"></td>
+				</tr>
+				<tr>
+					<td><label for="file">Torrent File</label></td><td> <input type="file" name="torrent"></td>
+				</tr>
+		</table>
 <input type="submit" value="Upload"  onClick="Fairywren.uploadTorrent(); return false;"><span class="success">&#x2713;</span><span class="failure"> &#x2718;</span>
+			
 	</div>
 </div>
 
@@ -74,7 +81,7 @@ Torrents
 	You currently have <span id="numInvites">999</span> unclaimed invites. Email the link of an invite to a friend to allow them to claim invites. Each invite may only be claimed once.
 	</p>
 
-	<div style="margin-left:2em;">
+	<div style="margin-left:0.5em;">
 		<form>
 			<input type="submit" value="Create Invite" onclick="Fairywren.createInvite(); return false" />
 		</form>
@@ -93,11 +100,17 @@ Torrents
 	<div class="warning"></div>
 	
 <form>
-<label for="password0">Password</label>
-<input type="password" name="password0"/><br />
-<label for="password1">Re-enter</label>
-<input type="password" name="password1"/><br />
-
+	<table class="alignedForm">
+		<tr>
+		<td><label for="password0">Password</label></td>
+		<td><input type="password" name="password0"/></td>
+		</tr>
+		
+		<tr>
+		<td><label for="password1">Re-enter</label></td>
+		<td><input type="password" name="password1"/></td>
+		</tr>
+	</table>
 <input type="submit" value="Change Password" onclick="Fairywren.changePassword(); return false;"/>
 <span class="success">&#x2713;</span>
 </form>
