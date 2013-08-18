@@ -77,6 +77,18 @@ class Webapi(restInterface):
 	def getResponseForSession(self,session):
 		return {'my' : {'href':fairywren.USER_FMT % session.getId()} }
 
+	def getRoles(self):
+		return [ res.getName() for res in self.getResources() if res.requiresAuthorization()]
+		
+
+	@resource(True,'GET','roles')
+	def listRoles(self,env,start_response,session):
+		return vanilla.sendJsonWsgiResponse(env,start_response,{'roles':self.getRoles()})
+		
+	@resource(True,'GET','users',fairywren.UID_RE,'roles')
+	def listRolesOfUser(self,env,start_response,session,uid):
+		
+		
 	@authorizeSelf(extractUserId)
 	@requireAuthorization()
 	@resource(True,'GET','users',fairywren.UID_RE,'invites')

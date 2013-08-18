@@ -720,6 +720,15 @@ class TestGetSession(AuthenticatedWebApiTest):
 		self.assertIn('my',r)
 		self.assertIn('href',r['my'])
 		
+class TestRoles(AuthenticatedWebApiTest):
+	def test_listRoles(self):
+		r = self.urlopen('http://webapi/roles')
+		self.assertEqual(r.code,200)
+		r = json.loads(r.read())
+		self.assertNotIn('error',r)
+		self.assertIn('roles',r)
+		self.assertNotEqual(0,len(r['roles']))
+		
 class TestSession(WebApiTest):
 	def test_notLoggedIn(self):
 		r = self.urlopen('http://webapi/session')
@@ -758,6 +767,8 @@ class TestAuthentication(WebApiTest):
 		r = json.loads(r.read())
 		self.assertIn('authenticated',r)
 		self.assertTrue ( not r['authenticated'])
+		
+
 		
 	
 		

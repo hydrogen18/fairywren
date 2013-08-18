@@ -45,6 +45,6 @@ if __name__ == '__main__':
 	eventlet.spawn_n(tssub)
 	webapi = Webapi(tssub,users,authmgr,torrents,httpPathDepth,conf['webapi']['secure'])
 	
-	users.createRoles([ res.getName() for res in webapi.getResources() if res.requiresAuthorization()])
+	users.createRoles(webapi.getRoles())
 	
 	wsgi.server(eventlet.listen((httpListenIp, httpListenPort)), webapi)
