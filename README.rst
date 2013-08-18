@@ -43,61 +43,6 @@ The unit tests also require
 
 - wsgi-intercept_
 
-Architecture
-=======
-
-HTTP
-------
-Two seperate Python instances are launched. Each hosts a single HTTP
-server. One instance is the tracker, which is used by BitTorrent clients
-to exchange peers. The second is the web interface, which is a RESTful API
-for interacting with the private tracker. The HTML5 & JavaScript
-web interface is best served by a traditional web server.
-
-Each instance is ran behind a HTTPS server(lighttpd in my case) which
-proxies requests to them. 
-
-IPC
----
-
-In order to display the seeders and leechers count on each torrent, the 
-web interface needs to get those counts from the tracker. This is done
-by having the tracker listen on a ZeroMQ PubSub connection. The web interface
-connects to this as a subscriber. Each time the peer count changes on 
-a torrent, the tracker publishes an update to the web interface. The web
-interface maintains a list of counts in memory in order to serve them
-with each request for torrent listings.
-
-SQL
-----
-The PostgreSQL server is used by both server instances. 
-
-The tracker uses the database to authorize specific torrents and users.
-There is no writing to the database by the tracker. Peers are stored only in memory.
-At first this seems silly, but given that there is rarely a reason to restart
-the tracker it works well. If the tracker is restarted, it only takes
-until all peers have announce'd to rebuild the complete list of peers. If
-someone comes up with a use case where the tracker is consuming too
-much memory, the intent will be to move the peer lists into a Redis
-instance. 
-
-The web server uses it to allow users to login and upload new torrents.
-Torrents themselves are not completely stored in the database, just the info hash
-and some other information is stored in the torrents table. The actual
-uploaded BitTorrent files are pickled and stored in the gdbm databse. Any
-extended information for a torrent is stored at a separate key in the 
-same database. For now this is an appropriate solution. If scalability becomes
-an issue, I will move to implementing a LRU type cache in the application.
-
-The tables needed are specified in fairywren.sql. The roles needed
-are in roles.sql. The permissions for the roles are granted in permissions.sql.
-
-Two users are used in my configuration, a read only user for the tracker
-and a read-write user for the webapi. The example roles and permissions
-are shown in roles.sql and permissions.sql. Obviously, a single user
-with global permissions could be substituted.
-
-
 Configuration
 =======
 
@@ -157,11 +102,73 @@ secure
 Adding users
 ====
 The script adduser.py takes a single argument which is the same JSON configuration
-file as used by the HTTP servers. It prompts for the username
-and password to add. All users have the same permissions presently.
+file as used by the HTTP servers. Please note you must run this script after
+you have have launched standalone_webapi.py at least once. There is a small
+amount of bootstrapping that has to on before users can be created.
 
-Presently, users cannot be added via the web interface. The actual
-REST interface for it exists, but I haven't had time to write the 
-javascript to do it.
+You are prompted for the username and password of the newly created user.
+Users created with this script have permission to
+create invites. Creating invites, which are one time user hyperlinks,
+and sending them to new users is the preferred method for adding
+new users after the first user is created. Eventually, I'll get around to
+creating a web interface to add and remove permissions from users.
+
+
+Architecture
+=======
+
+HTTP
+------
+Two seperate Python instances are launched. Each hosts a single HTTP
+server. One instance is the tracker, which is used by BitTorrent clients
+to exchange peers. The second is the web interface, which is a RESTful API
+for interacting with the private tracker. The HTML5 & JavaScript
+web interface is best served by a traditional web server.
+
+Each instance is ran behind a HTTPS server(lighttpd in my case) which
+proxies requests to them. 
+
+IPC
+---
+
+In order to display the seeders and leechers count on each torrent, the 
+web interface needs to get those counts from the tracker. This is done
+by having the tracker listen on a ZeroMQ PubSub connection. The web interface
+connects to this as a subscriber. Each time the peer count changes on 
+a torrent, the tracker publishes an update to the web interface. The web
+interface maintains a list of counts in memory in order to serve them
+with each request for torrent listings.
+
+SQL
+----
+The PostgreSQL server is used by both server instances. 
+
+The tracker uses the database to authorize specific torrents and users.
+There is no writing to the database by the tracker. Peers are stored only in memory.
+At first this seems silly, but given that there is rarely a reason to restart
+the tracker it works well. If the tracker is restarted, it only takes
+until all peers have announce'd to rebuild the complete list of peers. If
+someone comes up with a use case where the tracker is consuming too
+much memory, the intent will be to move the peer lists into a Redis
+instance. 
+
+The web server uses it to allow users to login and upload new torrents.
+Torrents themselves are not completely stored in the database, just the info hash
+and some other information is stored in the torrents table. The actual
+uploaded BitTorrent files are pickled and stored in the gdbm databse. Any
+extended information for a torrent is stored at a separate key in the 
+same database. For now this is an appropriate solution. If scalability becomes
+an issue, I will move to implementing a LRU type cache in the application.
+
+The tables needed are specified in fairywren.sql. The roles needed
+are in roles.sql. The permissions for the roles are granted in permissions.sql.
+
+Two users are used in my configuration, a read only user for the tracker
+and a read-write user for the webapi. The example roles and permissions
+are shown in roles.sql and permissions.sql. Obviously, a single user
+with global permissions could be substituted.
+
+
+
     
 
