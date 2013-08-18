@@ -19,7 +19,8 @@ Screenshots
 =====
 
 Browsing and creating torrents
----
+-------
+
 .. image :: screenshots/torrents.png
 
 .. image :: screenshots/upload.png
@@ -27,7 +28,8 @@ Browsing and creating torrents
 .. image :: screenshots/search.png
 
 Inviting new users
----
+-------
+
 .. image :: screenshots/invites.png
 
 .. image :: screenshots/register.png
