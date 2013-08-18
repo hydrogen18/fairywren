@@ -158,7 +158,7 @@ class TorrentStore(object):
 				cur.execute(
 				"Insert into torrents (title,creationdate, \
 				creator, infohash,lengthInBytes) VALUES \
-				(%s,NOW(),%s,%s,%s) \
+				(%s,timezone('UTC',CURRENT_TIMESTAMP),%s,%s,%s) \
 				returning torrents.id;",
 				(title,creator,
 				base64.urlsafe_b64encode(torrent.getInfoHash().digest()).replace('=',''),
