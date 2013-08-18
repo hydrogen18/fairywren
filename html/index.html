@@ -26,9 +26,26 @@ Login
 <div id="loginform" class="contentBox" style="text-align:center; align:center;width:17.5em;min-width:16em;">
 	<div class="contentBoxHeader" style="align:center;">Login</div>
 	<form>
-	<label for="username">Username:</label> <input id="username" type="text"  size="24"/><br />
-	<label for="password">Password:</label> <input id="password" type="password"  size="24"/> <br />
-	<input type="submit" value="Login" onclick="Fairywren.login(); return false;"/>
+		<table class="alignedForm">
+			<tr class="alignedForm">
+				<td class="alignedForm">
+					<label for="username">Username:</label> 
+				</td>
+				<td class="alignedForm">
+					<input id="username" type="text"  size="24"/>
+				</td>
+			</tr>
+			<tr class="alignedForm">
+				<td class="alignedForm">
+					<label for="password">Password:</label>
+				</td> 
+				<td class="alignedForm">
+					<input id="password" type="password"  size="24"/>
+				</td>
+			</tr>
+			
+		</table>	
+		<input type="submit" value="Login" onclick="Fairywren.login(); return false;"/>
 	</form>
 </div>
 
