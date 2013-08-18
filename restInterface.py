@@ -60,7 +60,7 @@ class Resource(object):
 		try:
 			kwargs.update(self._extractParams(env))
 		except ValueError as e:
-			return vanilla.http_error(400,env,start_response,e.message)
+			return vanilla.http_error(400,env,start_response,msg=e.message)
 		return self.wrap(self.instance,env,start_response,*args,**kwargs)
 		
 	def __get__(self,instance,clazz):
@@ -85,18 +85,23 @@ class Resource(object):
 				raise ValueError('Missing content length header')
 		
 			query = urlparse.parse_qs(env['wsgi.input'].read(cl))
-			for parameter,converter in self.parameters:
+			for parameter,converter,isArray in self.parameters:
 				if parameter not in query:
 					raise ValueError('Missing parameter %s' % parameter)
-					
-				retval[parameter] = query[parameter][0]
-				
-				if converter:
-					result = converter(retval[parameter])
-					if result == None:
-						raise ValueError('Bad value "%s" for parameter %s' % (retval[parameter], parameter,))
+
+				if isArray:
+					if converter:
+						raise NotImplementedError('Cannot handle array parameters with conversion')
+					retval[parameter] = query[parameter]
 						
-					retval[parameter] = result
+				else:
+					retval[parameter] = query[parameter][0]
+					if converter:
+						result = converter(retval[parameter])
+						if result == None:
+							raise ValueError('Bad value "%s" for parameter %s' % (retval[parameter], parameter,))
+							
+						retval[parameter] = result
 					
 			return retval
 		else:
@@ -112,12 +117,13 @@ class Resource(object):
 		return '%s= %s @ %s' % (self.getName(), self.method, '/'.join([i.pattern for i in self.path]))
 
 class parameter(object):
-	def __init__(self,name,conversionFunc=None):
+	def __init__(self,name,conversionFunc=None,array=False):
 		self.name = name
 		self.conversionFunc = conversionFunc
+		self.array = array
 		
 	def __call__(self,obj):			
-		obj.parameters.append((self.name,self.conversionFunc))
+		obj.parameters.append((self.name,self.conversionFunc,self.array))
 		return obj
 
 class authorizeSelf(object):

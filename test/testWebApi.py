@@ -16,6 +16,7 @@ import base64
 import itertools
 import wsgi_intercept
 import users
+import collections
 
 class MockStats(object):
 	def __init__(self):
@@ -23,7 +24,7 @@ class MockStats(object):
 	def getCount(self,info_hash):
 		return self._getCount
 		
-class MockUsers(object):
+class MockUsers(unittest.TestCase):
 	def __init__(self):
 		self._getInfo = {'numberOfTorrents' : 0, 'name':'aTestUser', 'password' : fairywren.USER_PASSWORD_FMT % 1}
 		self._addUser = None
@@ -32,26 +33,41 @@ class MockUsers(object):
 		self._listInvitesByUser  = []
 		self._claimInvite = None
 		self._getUserRoles = []
+		self._setUserRoles = (0,0)
+	
+	def setUserRoles(self,roles,uid):
+		self.assertIsInstance(roles,collections.Iterable)
+		self.assertIsInstance(uid,types.IntType)
+		return self._setUserRoles 
 	
 	def getUserRoles (self,uid):
+		self.assertIsInstance(uid,types.IntType)
 		return self._getUserRoles 
 		
 	def listInvitesByUser(self,uid):
+		self.assertIsInstance(uid,types.IntType)
 		return self._listInvitesByUser 	
 		
 	def getInfo(self,idNumber):
+		self.assertIsInstance(idNumber,types.IntType)
 		return self._getInfo
 		
 	def addUser(self,username,password):
+		self.assertIsInstance(username,types.StringType)
+		self.assertIsInstance(password,types.StringType)
 		return self._addUser		
 		
 	def getInviteState(self,secret):
+		self.assertIsInstance(secret,types.StringType)
 		return self._getInviteState
 		
 	def createInvite(self,uid):
+		self.assertIsInstance(uid,types.IntType)
 		return self._createInvite
 		
-	def claimInvite(self,secret,username,pw):
+	def claimInvite(self,secret,username,password):
+		self.assertIsInstance(username,types.StringType)
+		self.assertIsInstance(password,types.StringType)
 		return self._claimInvite
 
 class MockAuth(object):
@@ -742,6 +758,22 @@ class TestRoles(AuthenticatedWebApiTest):
 		self.assertNotIn('error',r)
 		self.assertIn('roles',r)
 		self.assertEqual(self.users._getUserRoles,r['roles'])
+		
+		
+	def test_changeRoles(self):
+		def mock(self,*args,**kwargs):
+			return True
+		self.auth.isUserMemberOfRole = mock
+		
+		self.users._getUserRoles = ['foo','bar','qux']
+		r = self.urlopen('http://webapi/users/%.8x/roles' % self.auth._authenticateUser, data= urllib.urlencode({'roles':self.users._getUserRoles}))
+		self.assertEqual(r.code,200)
+		r = json.loads(r.read())
+		self.assertNotIn('error',r)
+		self.assertIn('roles',r)
+		self.assertEqual(self.users._getUserRoles,r['roles'])
+		
+		
 		
 class TestSession(WebApiTest):
 	def test_notLoggedIn(self):

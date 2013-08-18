@@ -84,9 +84,21 @@ class Webapi(restInterface):
 	@resource(True,'GET','roles')
 	def listRoles(self,env,start_response,session):
 		return vanilla.sendJsonWsgiResponse(env,start_response,{'roles':self.getRoles()})
-		
+	
+	@requireAuthorization()
+	@parameter('roles',array=True)
+	@resource(True,'POST','users',fairywren.UID_RE,'roles')
+	def changeRolesOfUser(self,env,start_response,session,uid,roles):
+		uid = int(uid,16)
+		try:
+			self.users.setUserRoles(roles,uid)
+		except ValueError as e:
+			return vanilla.http_error(400,env,start_response,msg=e.message)
+		return vanilla.sendJsonWsgiResponse(env,start_response,{'roles':self.users.getUserRoles(uid)})
+	
 	@resource(True,'GET','users',fairywren.UID_RE,'roles')
 	def listRolesOfUser(self,env,start_response,session,uid):
+		uid = int(uid,16)
 		#Potential pitfall in this implementation:
 		#If the user for the uid does not exist, this stil returns an empty list
 		return vanilla.sendJsonWsgiResponse(env,start_response,{'roles':self.users.getUserRoles(uid)})
