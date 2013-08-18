@@ -49,6 +49,85 @@ class Users(object):
 			conn.commit()
 		return numCreated
 		
+	def setUserRoles(self,roles,uid):
+
+		roles = set(roles)
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			try:
+				cur.execute("Select roles.name from rolemember left join roles on rolemember.roleid = roles.id where rolemember.userid =  %s",(uid,))
+			except psycopg2.DatabaseError as e:
+				cur.close()
+				conn.rollback()
+				self.log.exception('Failed getting roles for user:%.x',uid)
+				raise e
+				
+			existingRoles = set()
+			
+			for row in cur:
+				role, = row
+				
+				existingRoles.add(role)
+			
+			addRoles = roles.difference(existingRoles)
+			removeRoles = existingRoles.difference(roles)
+			
+			for role in addRoles:
+				try:
+					cur.execute("Select id from roles where name = %s",(role,));
+				except psycopg2.DatabaseError as e:
+					cur.close()
+					conn.rollback()
+					self.log.exception('Failed selecting role %s',role,exc_info=True)
+					raise e		
+				
+				result = cur.fetchone()
+				if result == None:
+					raise ValueError('Role %s does not exist' % role)
+				roleid, = result				
+				
+				try:
+					cur.execute("Insert into rolemember(roleid,userid) VALUES(%s,%s)  returning userid;",(roleid,uid))
+				except psycopg2.IntegrityError as e:
+					cur.close()
+					conn.rollback()
+					#The string '23503' is specified in the postgre documentation appendix
+					#'PostgreSQL Error Codes'. It indicates foreign_key_violation.
+					#This means the user does not exist.
+					if e.pgcode == '23503':
+						self.log.exception('Failed add uid:%x to role %s. User does not exist',uid,role,exc_info=True)
+						raise ValueError('User with uid:%x does not exist' % uid)
+					else:
+						self.log.exception('Failed adding uid:%x to role %s',uid,role,exc_info=True)
+						raise e
+						
+			for role in removeRoles:
+				try:
+					cur.execute("Select id from roles where name = %s",(role,));
+				except psycopg2.DatabaseError as e:
+					cur.close()
+					conn.rollback()
+					self.log.exception('Failed selecting role %s',role,exc_info=True)
+					raise e		
+				
+				result = cur.fetchone()
+				if result == None:
+					raise ValueError('Role %s does not exist' % role)
+				roleid, = result
+					
+				try:
+					cur.execute("Delete from rolemember where userid = %s and roleid = %s ;",(uid,roleid));
+				except psycopg2.DatabaseError as e:
+					cur.close()
+					conn.rollback()
+					self.log.exception('Failed removing uid:%x from role %s',uid,role,exc_info=True)
+					raise e		
+					
+			cur.close()
+			conn.commit()
+			
+		return len(addRoles),len(removeRoles)
+		
 	def getUserRoles(self,uid):
 		with self.connPool.item() as conn:
 			cur = conn.cursor()

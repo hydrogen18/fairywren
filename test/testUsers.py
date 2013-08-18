@@ -74,6 +74,47 @@ class TestWithValidUser(TestPostgres):
 		
 		self.validuid = int(re.compile('.*/' + fairywren.UID_RE).match(userpath).groupdict()['uid'],16)
 		return
+
+
+class TestSetUserRoles(TestWithValidUser):
+	def setUp(self):
+		TestWithValidUser.setUp(self)
+
+		self.testRoles = ['dungeonmaster','foo','bar','qux','troll']
+		self.assertEqual(len(self.testRoles),self.users.createRoles(self.testRoles))
+
+	def test_putUserInNonExistentRole(self):
+		with self.assertRaisesRegexp(ValueError,'.*[Rr]{1}ole.*exist.*') as cm:
+			self.users.setUserRoles(['fadskjhfdkjsbfdzkljsf'],self.validuid)
+
+	def test_putNonExistentUserInRole(self):
+		with self.assertRaisesRegexp(ValueError,'.*[Uu]{1}ser.*exist.*') as cm:
+			self.users.setUserRoles(self.testRoles,self.validuid*999)			
+	
+	def test_it(self):
+		
+		numAdd, numRemove = self.users.setUserRoles(self.testRoles,self.validuid)
+		
+		self.assertEqual(len(self.testRoles),numAdd)
+		self.assertEqual(0,numRemove)
+		
+		self.assertEqual(set(self.testRoles), set(self.users.getUserRoles(self.validuid)))
+		
+		numAdd, numRemove = self.users.setUserRoles([],self.validuid)
+		
+		self.assertEqual(len(self.testRoles),numRemove)
+		self.assertEqual(0,numAdd)
+		
+		self.assertEqual(set(), set(self.users.getUserRoles(self.validuid)))
+		
+		#same code again should change nothing
+		numAdd, numRemove = self.users.setUserRoles([],self.validuid)
+		
+		self.assertEqual(0,numRemove)
+		self.assertEqual(0,numAdd)
+		
+		self.assertEqual(set(), set(self.users.getUserRoles(self.validuid)))
+		
 		
 class TestUserRoles(TestWithValidUser):
 	
