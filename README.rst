@@ -11,8 +11,21 @@ Features
 - Upload torrents through web interface
 - Search for torrents by title
 - View number of seeders and leechers in real time
+- Create one time invites to send to new users
 - HTML5 & Javascript interface presents a single page application
 - Backend of web interface is entirely RESTful
+
+Screenshots
+=====
+.. image :: screenshots/torrents.png
+
+.. image :: screenshots/upload.png
+
+.. image :: screenshots/search.png
+
+.. image :: screenshots/invites.png
+
+.. image :: screenshots/register.png
 
 Software Dependencies
 =======
