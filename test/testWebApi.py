@@ -31,6 +31,11 @@ class MockUsers(object):
 		self._createInvite = None
 		self._listInvitesByUser  = []
 		self._claimInvite = None
+		self._getUserRoles = []
+	
+	def getUserRoles (self,uid):
+		return self._getUserRoles 
+		
 	def listInvitesByUser(self,uid):
 		return self._listInvitesByUser 	
 		
@@ -728,6 +733,15 @@ class TestRoles(AuthenticatedWebApiTest):
 		self.assertNotIn('error',r)
 		self.assertIn('roles',r)
 		self.assertNotEqual(0,len(r['roles']))
+		
+	def test_listUserRoles(self):
+		self.users._getUserRoles = ['foo','bar','qux']
+		r = self.urlopen('http://webapi/users/%.8x/roles' % self.auth._authenticateUser)
+		self.assertEqual(r.code,200)
+		r = json.loads(r.read())
+		self.assertNotIn('error',r)
+		self.assertIn('roles',r)
+		self.assertEqual(self.users._getUserRoles,r['roles'])
 		
 class TestSession(WebApiTest):
 	def test_notLoggedIn(self):

@@ -87,7 +87,9 @@ class Webapi(restInterface):
 		
 	@resource(True,'GET','users',fairywren.UID_RE,'roles')
 	def listRolesOfUser(self,env,start_response,session,uid):
-		
+		#Potential pitfall in this implementation:
+		#If the user for the uid does not exist, this stil returns an empty list
+		return vanilla.sendJsonWsgiResponse(env,start_response,{'roles':self.users.getUserRoles(uid)})
 		
 	@authorizeSelf(extractUserId)
 	@requireAuthorization()
