@@ -1,5 +1,6 @@
 import json
 import eventlet
+import eventlet.db_pool
 import datetime
 
 def sendJsonWsgiResponse(env,start_response,response,additionalHeaders=None):
