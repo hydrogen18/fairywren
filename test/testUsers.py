@@ -87,13 +87,21 @@ class TestUserRoles(TestWithValidUser):
 
 		self.users.addUserToRole(self.testRoles[0],self.validuid)
 		
+		self.assertIn(self.testRoles[0], self.users.getUserRoles(self.validuid))
+		
 		#Calling a second time should result in nothing happening
 		self.users.addUserToRole(self.testRoles[0],self.validuid)
 		
+		self.assertIn(self.testRoles[0], self.users.getUserRoles(self.validuid))
+		
 		self.users.removeUserFromRole(self.testRoles[0],self.validuid)
+		
+		self.assertNotIn(self.testRoles[0], self.users.getUserRoles(self.validuid))
 		
 		#Calling a second time should result in nothing happening
 		self.users.removeUserFromRole(self.testRoles[0],self.validuid)
+		
+		self.assertNotIn(self.testRoles[0], self.users.getUserRoles(self.validuid))
 		
 		
 	def test_addUserDoesNotExist(self):

@@ -49,6 +49,28 @@ class Users(object):
 			conn.commit()
 		return numCreated
 		
+	def getUserRoles(self,uid):
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			
+			try:
+				cur.execute('Select roles.name from rolemember left join roles on roles.id = rolemember.roleid where userid = %s',(uid,));
+			except psycopg2.DatabaseError as e:
+				cur.close()
+				conn.rollback()
+				self.log.exception('Failed getting roles for user:%.x',uid)
+				raise e
+				
+			roles = []
+			for result in cur:
+				role, = result
+				roles.append(role)
+				
+			cur.close()
+			
+			conn.rollback()
+		return roles
+		
 	def addUserToRole(self,role,uid):
 		with self.connPool.item() as conn:
 			cur = conn.cursor()
