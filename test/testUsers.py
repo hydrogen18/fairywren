@@ -69,10 +69,9 @@ class TestWithValidUser(TestPostgres):
 		self.users.setConnectionPool(self.getConnectionPool())
 		
 		self.validusername = 'unittest'
-		userpath = self.users.addUser(self.validusername,'\xFF'*64)
+		userpath,self.validuid = self.users.addUser(self.validusername,'\xFF'*64)
 		self.assertIsInstance(userpath,types.StringType)
 		
-		self.validuid = int(re.compile('.*/' + fairywren.UID_RE).match(userpath).groupdict()['uid'],16)
 		return
 
 

@@ -179,7 +179,7 @@ class Webapi(restInterface):
 	def addUser(self,env,start_response,session,password,username):
 		
 		try:
-			resourceForNewUser = self.users.addUser(username,password)
+			resourceForNewUser,_ = self.users.addUser(username,password)
 		except users.UserAlreadyExists:		
 			return vanilla.http_error(409,env,start_response,'user already exists')
 		

@@ -275,7 +275,7 @@ class Users(object):
 			cur.close()
 
 			self.log.debug('Added user, new id %.8x', newId)
-			return 'api/users/%.8x'  % newId
+			return 'api/users/%.8x'  % newId,newId
 			
 	
 	def claimInvite(self,inviteSecret,username,pwHash):

@@ -23,9 +23,8 @@ if __name__ == "__main__":
 	h = hashlib.sha512()
 	h.update(password)
 	
-	u.addUser(username,h.digest())
-	
-	with connPool.item() as conn:
-		cur = conn.cursor()
+	_, uid = u.addUser(username,h.digest())
+		
+	u.setUserRoles(['createInvite','changeRolesOfUser'],uid)
 	
 	sys.exit(0)
