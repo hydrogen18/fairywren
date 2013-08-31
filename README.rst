@@ -45,14 +45,12 @@ To run fairywren you'll need the following
 .. _Multipart: https://github.com/hydrogen18/multipart
 .. _ZeroMq: http://www.zeromq.org/area%3Adownload
 .. _pyzmq: http://www.zeromq.org/bindings%3Apython
-.. _GDBM: http://www.gnu.org.ua/software/gdbm/
 - Stackless_
 - Eventlet_
 - Psycopg2_
 - Multipart_
 - ZeroMq_
 - pyzmq_ 
-- GDBM_
 - Postgresql
 - A web server that supports proxying. I use lighttpd.
 
@@ -109,11 +107,6 @@ webapi
 postgresql
     A dictionary of values. These are passed to the constructor of
     psycopg2.connect verbatim
-
-torrentPath
-    A string which is the path GDBM file. Fairywren stores uploaded
-    BitTorrent files in this database. If the file does not exist it will be
-    created.
 
 secure
     A boolean indicating if sesssion cookies issued should be flagged
@@ -173,11 +166,13 @@ much memory, the intent will be to move the peer lists into a Redis
 instance. 
 
 The web server uses it to allow users to login and upload new torrents.
-Torrents themselves are not completely stored in the database, just the info hash
-and some other information is stored in the torrents table. The actual
-uploaded BitTorrent files are pickled and stored in the gdbm databse. Any
-extended information for a torrent is stored at a separate key in the 
-same database. For now this is an appropriate solution. If scalability becomes
+Torrents themselves are completely stored in the database. The actual
+uploaded BitTorrent files are decoded from their bencoded form, then pickled and stored in the gdbm databse. Any
+extended information for a torrent is stored as a pickled object as well.
+Initially, I was lead to believe this is a bad idea. I learned that PostgreSQL
+implements TOAST which allows large entries to be stored outside of the row
+they are part of. This mitigates the performance impact if the entry is seldom
+accessed. For now this is an appropriate solution. If scalability becomes
 an issue, I will move to implementing a LRU type cache in the application.
 
 The tables needed are specified in fairywren.sql. The roles needed
