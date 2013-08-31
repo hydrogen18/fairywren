@@ -6,7 +6,6 @@ import psycopg2
 import os
 import os.path
 import fairywren
-import gdbm
 import logging
 
 class Torrent(object):
@@ -134,9 +133,9 @@ class Torrent(object):
 
 class TorrentStore(object):
 	EXTENDED_SUFFIX = 'ext'
-	def __init__(self,torrentDbPath,trackerUrl):
+	def __init__(self,trackerUrl):
 		self.log = logging.getLogger('fairywren.torrentstore')
-		self.backingStore = gdbm.open(torrentDbPath,'cf',0600)
+
 		self.trackerUrl = str(trackerUrl)
 		self.log.info('Created')
 		
@@ -152,17 +151,23 @@ class TorrentStore(object):
 		extended -- dictionary of extended information to store with the torrent. Must be picklable
 		
 		"""
+		
+		if extended == None:
+			extended = {}
+			
 		with self.connPool.item() as conn:
 			cur = conn.cursor()
 			try:
 				cur.execute(
 				"Insert into torrents (title,creationdate, \
-				creator, infohash,lengthInBytes) VALUES \
-				(%s,timezone('UTC',CURRENT_TIMESTAMP),%s,%s,%s) \
+				creator, infohash,lengthInBytes,metainfo,extendedinfo) VALUES \
+				(%s,timezone('UTC',CURRENT_TIMESTAMP),%s,%s,%s,%s,%s) \
 				returning torrents.id;",
 				(title,creator,
 				base64.urlsafe_b64encode(torrent.getInfoHash().digest()).replace('=',''),
-				torrent.getTotalSizeInBytes())
+				torrent.getTotalSizeInBytes(),
+				psycopg2.Binary(pickle.dumps(torrent.dict,-1)),
+				psycopg2.Binary(pickle.dumps(extended,-1)),)
 				)
 				
 				result = cur.fetchone();
@@ -187,7 +192,6 @@ class TorrentStore(object):
 			finally:
 				cur.close()
 			
-		self._storeTorrent(torrent,result,extended)
 		return self.getResourceForTorrent(result),self.getInfoResourceForTorrent(result)
 
 
@@ -234,32 +238,27 @@ class TorrentStore(object):
 			}
 			
 	def getExtendedInfo(self,torrentId):
-		_, metainfoK = self._buildKeys(torrentId)
-		try:
-			d = self.backingStore[metainfoK]
-		except KeyError as e:
-			self.log.exception('Request for extended info on non existent torrent',exc_info=True)
+
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			try:
+				cur.execute('Select extendedinfo from torrents where id=%s',(torrentId,))
+			except psycopg2.DatabaseError as e:
+				self.log.exception('Error retrieving extendedinfo for torrent %.8x', torrentId,exc_info=True)
+				cur.close()
+				conn.rollback()
+				raise e
+			
+			result = cur.fetchone()
+			cur.close()
+			conn.rollback()
+		if result == None:
+			self.log.debug('Request for extended info on non existent torrent %.8x',torrentId)
 			raise ValueError('Specified torrent does not exist')
-		return pickle.loads(d)
-	
-	def _storeTorrent(self,torrent,torrentId,extended=None):
-		metainfoK, infoK = self._buildKeys(torrentId)
-		self.backingStore[metainfoK] = pickle.dumps(torrent.dict,-1)
+
+		edict = pickle.loads(result)		
 		
-		if extended == None:
-			extended = {}
-		
-		self.backingStore[infoK] = pickle.dumps(extended,-1)
-		self.backingStore.sync()
-		
-	def _retrieveTorrent(self,torrentId):		
-		infoK, _ = self._buildKeys(torrentId)
-		try:
-			torrentDict = pickle.loads(self.backingStore[infoK])
-		except KeyError:
-			self.log.exception('Request for non existent torrent',exc_info=True)
-			raise ValueError('specified torrent does not exist')
-		return Torrent.fromDict(torrentDict)
+		return edict
 	
 	def getAnnounceUrlForUser(self,user):
 		"""
@@ -291,16 +290,33 @@ class TorrentStore(object):
 	
 	def getTorrentForDownload(self,torrentId,forUser):
 		"""
-		Return a bencoded string of a torrent
+		Return a torrent object
 		
 		torrentId -- the id number of the torrent being downloaded
 		forUser -- the id number of the user downloading the torrent
 		"""
-		
-		torrent = self._retrieveTorrent(torrentId)
-		
-		announceUrl = self.getAnnounceUrlForUser(forUser)
+
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			try:
+				cur.execute('Select metainfo from torrents where id=%s',(torrentId,))
+			except psycopg2.DatabaseError as e:
+				self.log.exception('Error retrieving metainfo for torrent %.8x', torrentId,exc_info=True)
+				cur.close()
+				conn.rollback()
+				raise e
 			
+			result = cur.fetchone()
+			cur.close()
+			conn.rollback()
+		if result == None:
+			raise ValueError('Torrent does not exist')
+
+		tdict = pickle.loads(result)
+
+		torrent = Torrent.fromDict(tdict)
+		
+		announceUrl = self.getAnnounceUrlForUser(forUser)	
 		torrent.setAnnounce(announceUrl)
 		
 		return torrent

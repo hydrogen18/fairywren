@@ -10,12 +10,9 @@ class TestTorrent(TestPostgres):
 	
 	def setUp(self):
 		TestPostgres.setUp(self)
-		self.gdbmFile = tempfile.NamedTemporaryFile()
-		self.torrents = torrents.TorrentStore(self.gdbmFile.name,'http://tracker/')
+		self.torrents = torrents.TorrentStore('http://tracker/')
 		self.torrents.setConnectionPool(self.getConnectionPool())
 	
-	def __del__(self):
-		self.gdbmFile.close()
 
 class TestEmptyDatabase(TestTorrent):
 	def test_getNumTorrents(self):
@@ -49,7 +46,7 @@ class TestEmptyDatabase(TestTorrent):
 			
 	def test_getTorrentForDownload(self):
 		#raises because specified torrent doesn't exist
-		with self.assertRaisesRegexp(ValueError,'.*torrent.*') as cm:
+		with self.assertRaisesRegexp(ValueError,'.*orrent.*exist.*') as cm:
 			self.torrents.getTorrentForDownload(0,0)
 			
 	def test_getTorrents(self):

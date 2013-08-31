@@ -13,6 +13,8 @@ CREATE TABLE torrents(
 	creator INTEGER REFERENCES users(id) NOT NULL,
 	creationDate TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 	lengthInbytes BIGINT NOT NULL,
+	metainfo bytea,
+	extendedinfo bytea,
 	PRIMARY KEY(id,infoHash)
 );
 

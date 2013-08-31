@@ -31,7 +31,7 @@ if __name__ == '__main__':
 	authmgr = Auth(conf['salt'])
 	authmgr.setConnectionPool(connPool)
 	
-	torrents = TorrentStore(conf['webapi']['torrentPath'],conf['trackerUrl'])
+	torrents = TorrentStore(conf['trackerUrl'])
 	torrents.setConnectionPool(connPool)
 		
 	httpListenIp = conf['webapi'].get('ip',DEFAULT_LISTEN_IP)

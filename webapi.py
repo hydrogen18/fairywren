@@ -294,10 +294,11 @@ class Webapi(restInterface):
 	@resource(True,'GET','torrents',fairywren.UID_RE + '.torrent')
 	def downloadTorrent(self,env,start_response,session,uid):
 		uid = int(uid,16)
-		torrent = self.torrents.getTorrentForDownload(uid,session.getId())
 		
-		if torrent == None:
-			return vanilla.http_error(404,env,start_response,msg='Torrent not found')
+		try:
+			torrent = self.torrents.getTorrentForDownload(uid,session.getId())
+		except ValueError as e:
+			return vanilla.http_error(404,env,start_response,msg=e.message)
 		
 		headers = [('Content-Type','application/x-bittorrent')]
 		headers.append(('Content-Disposition','attachment; filename="%s.torrent"' % vanilla.sanitizeForContentDispositionHeaderFilename(torrent.getTitle()) ))
