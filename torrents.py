@@ -2,6 +2,7 @@ import hashlib
 import bencode
 import base64
 import cPickle as pickle
+import cStringIO as StringIO
 import psycopg2
 import os
 import os.path
@@ -256,7 +257,9 @@ class TorrentStore(object):
 			self.log.debug('Request for extended info on non existent torrent %.8x',torrentId)
 			raise ValueError('Specified torrent does not exist')
 
-		edict = pickle.loads(result)		
+		result, = result
+		result = StringIO.StringIO(result)
+		edict = pickle.load(result)		
 		
 		return edict
 	
@@ -310,9 +313,12 @@ class TorrentStore(object):
 			cur.close()
 			conn.rollback()
 		if result == None:
+			self.log.debug('Request for metainfo on non existent torrent %.8x',torrentId)
 			raise ValueError('Torrent does not exist')
 
-		tdict = pickle.loads(result)
+		result, = result
+		result = StringIO.StringIO(result)
+		tdict = pickle.load(result)
 
 		torrent = Torrent.fromDict(tdict)
 		

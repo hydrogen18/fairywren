@@ -105,6 +105,8 @@ class MockTorrents(object):
 	def addTorrent(self,torrent,title,creator,extended=None):
 		return self._addTorrent
 	def getTorrentForDownload(self,torrentId,uid):
+		if self._getTorrentForDownload == None:
+			raise ValueError('Torrent does not exist')
 		return self._getTorrentForDownload
 		
 	def getTorrents(self,limit,subset):
@@ -367,7 +369,7 @@ class TestDownloadTorrent(AuthenticatedWebApiTest):
 		except urllib2.HTTPError, e:
 			self.assertEqual(404,e.code)
 			r = e.read()
-			self.assertNotIn('Torrent not found',r)
+			self.assertNotIn('orrent',r)
 			return
 		self.assertTrue(False)	
 		
@@ -377,7 +379,7 @@ class TestDownloadTorrent(AuthenticatedWebApiTest):
 		except urllib2.HTTPError, e:
 			self.assertEqual(404,e.code)
 			r = e.read()
-			self.assertNotIn('Torrent not found',r)
+			self.assertNotIn('orrent',r)
 			return
 		self.assertTrue(False)			
 		
@@ -387,11 +389,8 @@ class TestDownloadTorrent(AuthenticatedWebApiTest):
 			r = self.urlopen('http://webapi/torrents/00000000.torrent')
 		except urllib2.HTTPError, e:
 			self.assertEqual(404,e.code)
-			r = e.read()
-			self.assertIn('Torrent not found',r)
 			return
 		self.assertTrue(False)
-		
 		
 
 class TestCreateTorrent(AuthenticatedWebApiTest):
