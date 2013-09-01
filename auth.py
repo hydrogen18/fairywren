@@ -67,15 +67,17 @@ class Auth(object):
 	def authorizeInfoHash(self,info_hash):
 		with self.connPool.item() as conn:
 			cur = conn.cursor()
-			cur.execute("Select 1 from torrents where infoHash=%(infoHash)s",
+			cur.execute("Select id from torrents where infoHash=%(infoHash)s",
 			{'infoHash' : base64.urlsafe_b64encode(info_hash).replace('=','') })
 			
-			allowed = cur.fetchone() != None
-			
+			result = cur.fetchone()
 			cur.close()
 			conn.rollback()
 		
-			return allowed
+			if result!= None:
+				result, = result
+		
+			return result
 
 	def authenticateUser(self,username,password):
 		passwordHash = hashlib.sha512()

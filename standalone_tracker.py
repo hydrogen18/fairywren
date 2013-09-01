@@ -33,7 +33,7 @@ if __name__ == '__main__':
 	peerList = Peers(60*60)
 	tracker = Tracker(authmgr,peerList,httpPathDepth)
 	
-	trackerStats = TrackerStatsPublisher(tracker)
+	trackerStats = TrackerStatsPublisher(tracker.getStatsQueue())
 	
 	eventlet.spawn_n(trackerStats)
 	eventlet.spawn_n(peerList)

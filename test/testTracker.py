@@ -25,11 +25,13 @@ wsgi_intercept.make_environ = make_environ_wrapper
 import urllib2
 
 class MockAuth(object):
+	def __init__(self):
+		self._authorizeInfoHash = 1
 	def authenticateSecretKey(self,key):
 		return True
 		
 	def authorizeInfoHash(self,info_hash):
-		return True
+		return self._authorizeInfoHash
 
 class WSGITrackerTest(unittest.TestCase):
 	def createTracker(self):
@@ -67,7 +69,7 @@ class Unauthorized(WSGITrackerTest):
 		return key in self.keys
 	
 	def authorizeInfoHash(self,info_hash):
-		return info_hash in self.info_hashes
+		return 1 if info_hash in self.info_hashes else None
 	
 	def createTracker(self):
 

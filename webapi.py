@@ -196,8 +196,8 @@ class Webapi(restInterface):
 			
 		listOfTorrents = []
 		for torrent in self.torrents.searchTorrents(tokens):
-			seeds, leeches = self.torrentStats.getCount(torrent['infoHash'])
-			torrent.pop('infoHash')
+			torrentId = torrent.pop('id')
+			seeds, leeches = self.torrentStats.getCount(torrentId)
 			torrent['seeds'] = seeds
 			torrent['leeches'] = leeches
 			listOfTorrents.append(torrent)
@@ -237,8 +237,8 @@ class Webapi(restInterface):
 		listOfTorrents = []
 		
 		for torrent in self.torrents.getTorrents(resultSize,subset):
-			seeds, leeches = self.torrentStats.getCount(torrent['infoHash'])
-			torrent.pop('infoHash')
+			torrentId = torrent.pop('id')
+			seeds, leeches = self.torrentStats.getCount(torrentId)
 			torrent['seeds'] = seeds
 			torrent['leeches'] = leeches
 			listOfTorrents.append(torrent)

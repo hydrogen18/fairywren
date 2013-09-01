@@ -41,7 +41,7 @@ class Tracker(object):
 		
 		self.trackerLog.info('Created')
 		
-	def getQueue(self):
+	def getStatsQueue(self):
 		"""Return the queue that this object uses to push
 		events to other worker threads"""
 		return self.statsQueue
@@ -210,7 +210,8 @@ class Tracker(object):
 			
 			
 		#Make sure the info hash is allowed
-		if not self.auth.authorizeInfoHash(p['info_hash']):
+		torrentId = self.auth.authorizeInfoHash(p['info_hash'])
+		if torrentId == None:
 			response = {}
 			response['failure reason'] = 'unauthorized info hash'
 			return sendBencodedWsgiResponse(env,start_response,response)
@@ -267,7 +268,7 @@ class Tracker(object):
 		#dispatch an update message
 		if change:
 			self.trackerLog.debug('Dispatching stats update for: %s',p['info_hash'].encode('hex').upper())
-			self.statsQueue.put(p['info_hash'])
+			self.statsQueue.put( (torrentId, self.peers.getNumberOfSeeds(p['info_hash']), self.peers.getNumberOfLeeches(p['info_hash']) ))
 			
 		#Log the successful announce
 		self.announceLog.info('%s:%d %s,%s,%d',peerIpAsString,p['port'],p['info_hash'].encode('hex').upper(),p['event'],p['left'])

@@ -5,31 +5,28 @@ import fairywrenMocks
 class TestStats(unittest.TestCase):
 	
 	def setUp(self):
-		self.tracker = fairywrenMocks.Tracker()
-		self.pub = stats.TrackerStatsPublisher(self.tracker)
+		self.pub = stats.TrackerStatsPublisher(None)
 		self.sub = stats.TrackerStatsSubscriber()
 		
-	
 class TestEmpty(TestStats):
 	def test_it(self):
-		seeds,leeches = self.sub.getCount('0'*20)
+		seeds,leeches = self.sub.getCount(1)
 		self.assertEqual(seeds,0)
 		self.assertEqual(leeches,0)
 		
-		
 class TestMessages(TestStats):
 	def test_it(self):
-		info_hash = '0'*20
+		tid = 1
+		numSeeds = 5
+		numLeeches = 6
 		
-		self.tracker._getScrape = { "files" : { info_hash : { "complete" : 1, "incomplete" : 1 } } }
-		
-		msg = self.pub.produceMessage(info_hash)
+		msg = self.pub.produceMessage((tid,numSeeds,numLeeches))
 		self.sub.consumeMessage(msg)
 		
-		seeds,leeches = self.sub.getCount(info_hash)
+		seeds,leeches = self.sub.getCount(tid)
 		
-		self.assertEqual(seeds,1)
-		self.assertEqual(leeches,1)
+		self.assertEqual(seeds,numSeeds)
+		self.assertEqual(leeches,numLeeches)
 
 if __name__ == '__main__':
     unittest.main()
