@@ -12,7 +12,64 @@ class TestTorrent(TestPostgres):
 		TestPostgres.setUp(self)
 		self.torrents = torrents.TorrentStore('http://tracker/')
 		self.torrents.setConnectionPool(self.getConnectionPool())
+
+class TestWithTorrents(TestTorrent):
 	
+	def setUp(self):
+		TestTorrent.setUp(self)
+		u = users.Users('')
+		u.setConnectionPool(self.getConnectionPool())
+		
+		user = u.addUser('testuser', 64*'\0')
+		
+		_,self.validuid = user
+	
+	def test_add(self):
+		t = torrents.Torrent.fromDict(TestTorrent.TORRENT)
+		sourceT = t
+		
+		torrentTitle = 'foo'
+		
+		self.torrents.addTorrent(t, torrentTitle, self.validuid)
+		
+		torrentList = list(self.torrents.getTorrents(100,0))
+		self.assertEqual(1,len(torrentList))
+		
+		t = torrentList[0]
+		
+		self.assertIn('id',t)
+		self.assertIn('metainfo',t)
+		self.assertIn('info',t)
+		self.assertIn('title',t)
+		self.assertEqual(torrentTitle,t['title'])
+		self.assertIn('creationDate',t)
+		self.assertIn('lengthInBytes',t)
+		self.assertIn('creator',t)
+		
+		tid= t['id']
+		
+		t = self.torrents.getTorrentForDownload(tid,self.validuid)
+		self.assertIsInstance(t,torrents.Torrent)
+	
+		self.assertEqual(sourceT.getTotalSizeInBytes(),t.getTotalSizeInBytes())
+		self.assertEqual(sourceT.getInfoHash().digest(),t.getInfoHash().digest())
+		self.assertEqual(sourceT.getTitle(),t.getTitle())
+	
+		torrentList = list(self.torrents.searchTorrents([torrentTitle]))
+		
+		self.assertEqual(1,len(torrentList))
+		
+		t = torrentList[0]
+		
+		self.assertIn('id',t)
+		self.assertEqual(tid,t['id'])
+		self.assertIn('metainfo',t)
+		self.assertIn('info',t)
+		self.assertIn('title',t)
+		self.assertEqual(torrentTitle,t['title'])
+		self.assertIn('creationDate',t)
+		self.assertIn('lengthInBytes',t)
+		self.assertIn('creator',t)
 
 class TestEmptyDatabase(TestTorrent):
 	def test_getNumTorrents(self):
