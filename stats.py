@@ -13,17 +13,24 @@ class TrackerStatsPublisher(object):
 		self.log = logging.getLogger('fairywren.stats.pub')
 		self.log.info('Created')
 		
+	def produceMessage(self,info_hash):
+		#Get a tracker scrape for the info hash
+		scrape = self.tracker.getScrape([info_hash])
+		
+		#Pickle the scrape and send it with the leading type
+		#identifier
+		return [fairywren.MSG_SCRAPE,pickle.dumps(scrape,-1)]
+		
+		
 	def __call__(self):
 		self.log.info('Started')
 		while True:
 			#Only info hashes are pushed onto this queue
 			info_hash = self.queue.get()
-			#Get a tracker scrape for the info hash
-			scrape = self.tracker.getScrape([info_hash])
 			
 			#Pickle the scrape and send it with the leading type
 			#identifier
-			self.pub.send_multipart([fairywren.MSG_SCRAPE,pickle.dumps(scrape,-1)])
+			self.pub.send_multipart(self.produceMessage(info_hash))
 			
 			self.log.info('Sent scrape for:%s',info_hash.encode('hex').upper())
 
@@ -41,8 +48,13 @@ class TrackerStatsSubscriber(object):
 		self.log = logging.getLogger('fairywren.stats.sub')
 		self.log.info('Created')
 		
-	def __call__(self):
+	def consumeMessage(self,message):
+		#For each torrent present, update the counts object
+		for info_hash,stats in message['files'].iteritems():
+			self.counts[info_hash] = (stats['complete'],stats['incomplete'])
+			self.log.info('Recvd scrape for:%s;%d;%d',info_hash.encode('hex').upper(),stats['complete'],stats['incomplete'])
 		
+	def __call__(self):		
 		self.log.info('Started')
 		#Receive messages forever
 		while True:
@@ -52,11 +64,7 @@ class TrackerStatsSubscriber(object):
 			#to the structure defined by the tracker 'scrape'
 			#convention
 			recvdmsg = pickle.loads(recvdmsg[1])
-			
-			#For each torrent present, update the counts object
-			for info_hash,stats in recvdmsg['files'].iteritems():
-				self.counts[info_hash] = (stats['complete'],stats['incomplete'])
-				self.log.info('Recvd scrape for:%s;%d;%d',info_hash.encode('hex').upper(),stats['complete'],stats['incomplete'])
+			self.consumeMessage(recvdmsg)
 		
 	def getCount(self,info_hash):
 		"""Return the peer count as tuple. The first value is the number of 
