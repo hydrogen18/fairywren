@@ -29,7 +29,7 @@ class TrackerStatsPublisher(object):
 			# are pushed into this queue
 			
 			#Only info hashes are pushed onto this queue
-			msg = self.queue.get()
+			msg = self.localQueue.get()
 			
 			#Pickle the scrape and send it with the leading type
 			#identifier
@@ -37,7 +37,7 @@ class TrackerStatsPublisher(object):
 			
 			tid, _ , _ = msg
 			
-			self.log.info('Sent counts for torrent #:%i', tid)
+			self.log.info('Sent counts for torrent #%i', tid)
 
 class TrackerStatsSubscriber(object):
 	def __init__(self):
@@ -71,7 +71,7 @@ class TrackerStatsSubscriber(object):
 			recvdmsg = self.sub.recv_multipart()
 			tid = self.consumeMessage(recvdmsg)
 			
-			self.log.info('Received counts for torrent #:%i', tid)
+			self.log.info('Received counts for torrent #%i', tid)
 		
 	def getCount(self,torrentId):
 		"""Return the peer count as tuple. The first value is the number of 
