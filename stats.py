@@ -49,6 +49,10 @@ class TrackerStatsSubscriber(object):
 		self.log.info('Created')
 		
 	def consumeMessage(self,message):
+		#The second item in the message is a dictionary conforming
+		#to the structure defined by the tracker 'scrape'
+		#convention
+		message = pickle.loads(message[1])
 		#For each torrent present, update the counts object
 		for info_hash,stats in message['files'].iteritems():
 			self.counts[info_hash] = (stats['complete'],stats['incomplete'])
@@ -60,10 +64,7 @@ class TrackerStatsSubscriber(object):
 		while True:
 			recvdmsg = self.sub.recv_multipart()
 			
-			#The second item in the message is a dictionary conforming
-			#to the structure defined by the tracker 'scrape'
-			#convention
-			recvdmsg = pickle.loads(recvdmsg[1])
+
 			self.consumeMessage(recvdmsg)
 		
 	def getCount(self,info_hash):
