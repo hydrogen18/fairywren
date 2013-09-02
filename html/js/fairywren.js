@@ -77,40 +77,7 @@ Fairywren.makeNavbar = function()
 	return navbar;
 }
 
-Fairywren.serverErrorHandler = function(jqXhr,textStatus,errorThrown,element)
-{
-	var data = jqXhr.responseText;
-	
-	if(textStatus === "error")
-	{
-		var statusCode = jqXhr.statusCode().status;
-		if(statusCode > 499)
-		{
-			element.text("Server error");
-		}
-		
-		else
-		{
-			data = jQuery.parseJSON(data);
-			if ( 'msg' in data )
-			{
-				if(data.msg === undefined || data.msg === null)
-				{
-					element.text(statusCode);
-				}
-				else
-				{
-					element.text(data.msg);
-				}
-			}
-		}
-	}
-	else if ( textStatus === "timeout" )
-	{
-		element.text("Requested timed out");
-	}
-	
-}
+
 
 Fairywren.makeSuccessElement = function(msg)
 {
@@ -213,27 +180,6 @@ Fairywren.isError = function(data,errorHolder)
 		return true;
 	}
 }
-
-Fairywren.errorHandler = function(data)
-{
-	if ( ! 'error' in data )
-	{
-		console.log("Error handler called with object without 'error' attr");
-		return;
-	}
-	
-	if ( ! data.authenticated )
-	{
-		window.location = 'index.html';
-		return;
-	}
-	
-	if  ( ! data.authorized ) 
-	{
-		alert('You are not authorized to perform this function');
-	}
-}
-
 
 Fairywren.hashPassword = function(password)
 {
