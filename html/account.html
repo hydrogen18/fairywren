@@ -1,0 +1,76 @@
+
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Search</title>
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen" />
+		<link href="bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet" media="screen" />
+
+		<script src="js/jquery.js"></script>
+		<script src="js/sha.js"></script>
+		<script src="js/fairywren.js"></script>
+		<script src="bootstrap/js/bootstrap.min.js"></script>
+		<script src="js/account.js"></script>
+	</head>
+<body>
+
+</div>
+
+<div class="row">
+	<div class="span12" id="account">
+		<h3>Statistics</h3>
+		<dl id="stats"></dl>
+	</div>
+</div>
+
+
+<div class="row">
+	<div id="invites" class="span12">
+	<h3>Invites</h3>
+		<p>You currently have <span id="numInvites">999</span> unclaimed invites. Email the link of an invite to a friend to allow them to claim invites. Each invite may only be claimed once.</p>
+
+	
+		<form>
+			<input type="submit" value="Create Invite" onclick="Fairywren.createInvite(); return false" />
+		</form>
+		<table class="table table-bordered">
+			<thead>
+				<tr>
+					<th>Created</th>
+					<th>Link</th>
+				</tr>
+			</thead>
+		</table>
+	
+	</div>
+</div>
+
+<div class="row">
+	<div id="changePassword" class="span12">
+	<h3>Change Password</h3>
+	<p id="alert" ></p>
+	<form class="form-horizontal">
+		<div class="control-group">
+			<label class="control-label" for="password0">Password</label>
+			<div class="controls">
+				<input type="password" name="password0"/>
+			</div>
+		</div>
+		<div class="control-group">
+			<label class="control-label" for="password1">Re-enter</label>
+			<div class="controls">
+				<input type="password" name="password1"/>
+			</div>
+		</div>
+
+		<div class="control-group">
+			<input type="submit" value="Change Password" onclick="Fairywren.changePassword(); return false;"/>
+		</div>
+	</form>
+</div>	
+</body>
+
+</html>

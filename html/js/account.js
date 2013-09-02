@@ -1,47 +1,40 @@
 
 
 $(document).ready(function(){
-	
+	$("body").prepend(Fairywren.makeNavbar());
+
+	Fairywren.changePassword.alert = $("#changePassword").find("#alert");
 
 	jQuery.get("api/session").
 	done(
 		function(data)
 		{
-			if("error" in data)
-			{
-				Fairywren.errorHandler(data);
-			}
-			else
-			{
-				Fairywren.my = data.my;
-				jQuery.get(Fairywren.my.href).
+			if(! Fairywren.isError(data))
+			{				 
+				jQuery.get(data.my.href).
 				done(
 					function(data)
 					{
-						if("error" in data)
-						{
-							Fairywren.errorHandler(data);
-						}
-						else
+						if( ! Fairywren.isError(data) )
 						{
 							Fairywren.account = data;
-							Fairywren.loadTorrentsForPage();
+							Fairywren.showStatistics();
+							Fairywren.showInvites();
 						}
 					}
-				);
+				).fail(Fairywren.handleServerFailure($("#account")));
 			}
 		}
-		).fail(function(jqXhr,textStatus,errorThrown)
-		{
-			Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,$("#message"));
-		});
+		).fail(Fairywren.handleServerFailure($("#account")));
 	
 
 });
 
-Fairywren.loadAccount = function()
-{
-	var list = $("#accountInfo");
+Fairywren.account = {};
+
+Fairywren.showStatistics = function(){
+
+	var list = $("#stats");
 	
 	data = Fairywren.account;
 	list.empty();
@@ -50,7 +43,7 @@ Fairywren.loadAccount = function()
 	
 	list.append($("<dt/>").text("Number of torrents uploaded"));
 	list.append($("<dd/>").text(data.numberOfTorrents));
-	Fairywren.showInvites();
+
 }
 Fairywren.showInvites = function(){
 	var invitesDiv = $("div#invites");
@@ -107,43 +100,34 @@ Fairywren.changePassword = function()
 	var passwords = $("#changePassword").find("input");
 	var password0 = $(passwords[0]);
 	var password1 = $(passwords[1]);
-	
-	var errDisplay = $("#changePassword").find(".warning");
-	var showOnSuccess = $("#changePassword").find(".success");
-	showOnSuccess.hide();
-	errDisplay.text("");
+
+	Fairywren.changePassword.alert.find('div').remove();
 	
 	var validPassword = Fairywren.validatePassword(password0.val());
 	if( validPassword !== null)
 	{
-		errDisplay.text(validPassword);
+		Fairywren.changePassword.alert.append(Fairywren.makeErrorElement(validPassword));
 		return;
 	}
 	
 	if(password0.val() !== password1.val())
 	{
-		errDisplay.text("Password does not match");
+		Fairywren.changePassword.alert.append(Fairywren.makeErrorElement("Passwords do not match"));
 		return;
 	}
 	
 	jQuery.post(Fairywren.account.password.href, { "password" : Fairywren.hashPassword(password0.val()) }).
 	done(
 		function(data){
-			if("error" in data)
+			if(! Fairywren.isError(data))
 			{
-				Fairywren.errorHandler(data);
-			}
-			else
-			{
-				showOnSuccess.show();		
 				password0.val("");
 				password1.val("");
+				Fairywren.changePassword.alert.append(Fairywren.makeSuccessElement("Password changed!"));
 			}
 		}
 	).
-	fail(function(jqXhr,textStatus,errorThrown)
-		{
-			Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,errDisplay);
-		});
+	fail(Fairywren.handleServerFailure(Fairywren.changePassword.alert));
 	
+	return false;
 }

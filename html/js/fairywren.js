@@ -245,7 +245,7 @@ Fairywren.hashPassword = function(password)
 
 Fairywren.validatePassword = function(password)
 {
-	if(password < Fairywren.MIN_PASSWORD_LENGTH)
+	if(password.length < Fairywren.MIN_PASSWORD_LENGTH)
 	{
 		return "Password too short, must be at least " + Fairywren.MIN_PASSWORD_LENGTH + " characters";
 	}
