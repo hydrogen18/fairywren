@@ -14,6 +14,17 @@ class Auth(object):
 		self.log = logging.getLogger('fairywren.auth')
 		self.log.info('Created')
 		
+		
+	def _saltPwhash(self,pwHash):
+		
+		if len(pwHash) != 64:
+			raise ValueError('password hash should be 64 bytes')
+		
+		storedHash = hashlib.sha512()
+		storedHash.update(self.salt)
+		storedHash.update(pwHash)
+		return base64.urlsafe_b64encode(storedHash.digest()).replace('=','')
+				
 	def setConnectionPool(self,pool):
 		self.connPool = pool
 
