@@ -3,13 +3,13 @@ $(document).ready(function(){
 	
 	var registerButton = $("input#register");
 	
-	Fairywren.register.err = $("#message");
+	Fairywren.register.alert = $("#register").find("#alert");
 	
 	if(hash.length === 0)
 	{
 		//User got here on accident or something. Display error message
 		//and depart
-		Fairywren.register.err.text("You seem to have reached this page in error");
+		Fairywren.register.alert.append(Fairywren.makeErrorElement("You seem to have reached this page in error",true));
 		return;
 	}
 	
@@ -23,50 +23,43 @@ $(document).ready(function(){
 			//Check to see if it has been claimed
 			if(data.claimed)
 			{
-				Fairywren.register.err.text("This invite has already been claimed.");
+				Fairywren.register.alert.append(Fairywren.makeErrorElement("This invite has already been claimed.",true));
 				return;
 			}
-			
 			registerButton.removeAttr('disabled');
-			
 		}
-		).fail(function(jqXhr,textStatus,errorThrown)
-		{
-			Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,Fairywren.register.err);
-			
-		});
+		).fail(Fairywren.handleServerFailure(Fairywren.register.alert) );
 
-	});
+});
 	
 	
 Fairywren.register = function()
 {
-	var errDisplay = $("#message");
-	errDisplay.text('');
+	Fairywren.register.alert.find('div').remove();
+	
 	var username = $("input#username");
 	
 	var validUsername = Fairywren.validateUsername(username.val());
 	
 	if(validUsername !== null)
 	{
-		errDisplay.text(validUsername);
+		Fairywren.register.alert.append(Fairywren.makeErrorElement(validUsername));
 		return;
 	}
 	
 	var password0 = $("input#password0");
 	var password1 = $("input#password1");
 	
-
 	var validPassword = Fairywren.validatePassword(password0.val());
 	if( validPassword !== null)
 	{
-		errDisplay.text(validPassword);
+		Fairywren.register.alert.append(Fairywren.makeErrorElement(validPassword));
 		return;
 	}
 	
 	if(password0.val() !== password1.val())
 	{
-		errDisplay.text("Password does not match");
+		Fairywren.register.alert.append(Fairywren.makeErrorElement("Passwords does not match",true));
 		return;
 	}
 	username = username.val();
@@ -78,21 +71,12 @@ Fairywren.register = function()
 		{
 			Fairywren.register.showSuccess();
 		}
-		).fail(function(jqXhr,textStatus,errorThrown)
-		{
-			Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,Fairywren.register.err);
-			
-		});
-
+		).fail(Fairywren.handleServerFailure(Fairywren.register.alert) );
 }
 
 
 Fairywren.register.showSuccess = function()
 {
-	$("div").hide();
-	var div = $("div#success");  
-	div.show();
-    div.css("position","absolute");
-    div.css("top", ( $(window).height() - div.height() ) / 2+$(window).scrollTop() + "px");
-    div.css("left", ( $(window).width() - div.width() ) / 2+$(window).scrollLeft() + "px");
+	$("div#register").hide();
+	$("div#success").show();
 };

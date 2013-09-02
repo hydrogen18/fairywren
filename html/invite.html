@@ -1,53 +1,60 @@
-
+<!DOCTYPE html>
 <html>
+	<head>
+		<title>Register</title>
 
-<head>
-<title>
-Register
-</title>
-</head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen" />
+		<link href="bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet" media="screen" />
 
+		<script src="js/jquery.js"></script>
+		<script src="js/sha.js"></script>
+		<script src="js/fairywren.js"></script>
+		<script src="bootstrap/js/bootstrap.min.js"></script>
+		<script src="js/invite.js"></script>
+	</head>
 <body>
 
-<script src="js/sha.js"></script>
-<script src="js/jquery.js"></script>
 
-<script src="js/fairywren.js"></script>
-<script src="js/invite.js"></script>
-
-<link rel="stylesheet" type="text/css" href="torrents.css">
-
-
-<div class="contentBox" id="success" style="display:none;border:1px solid black;height:9em;width:14em;z-index:1;position:relative;" >
-<p style="text-align:center;">Congratulations, you're account has been created!</p>
-	
-<p style="text-align:center;"><a href="index.html" >Proceed to the login page</a></p>
-
+<div class="row" id="success" style="display: none;">
+	<div class="span12" >
+		<h3>Congratulations</h3>
+		<p>Your account has been created!</p>
+			
+		<p><a href="index.html" >Proceed to the login page</a></p>
+	</div>
 </div>
 
-<div id="main" align="center">
-
-<div id="message" style="color:red;" > </div>
-
-<div class="contentBox" style="text-align:center; align:center;width:26em;min-width:23em;">
-	<div class="contentBoxHeader" style="align:center;">Register</div>
+<div class="row">
+	<div class="span12" id="register">
+	<p id="alert"></p>
+	<h3>Register</h3>
+	<p>Welcome! Please enter the username and password you'd like to register with.</p>
 	<form>
-		<table class="alignedForm">
-			<tr >
-				<td  ><label for="username">Username</label></td><td ><input id="username" type="text" size="24"/></td>
-			</tr>
-			<tr >
-				<td ><label for="password0">Password</label></td><td > <input id="password0" type="password" size="24"/> </td>
-			</tr>
-			<tr >
-				<td ><label for="password1">Confirm Password</label></td><td> <input id="password1" type="password"  size="24"/> </td>
-			</tr>
-		</table>
+		<div class="control-group">
+			<label class="control-label" for="username">Username</label>
+			<div class="controls">
+			<input id="username" type="text" size="18"/>
+			</div>
+		</div>
+		<div class="control-group">
+			<label class="control-label" for="password0">Password</label>
+			<div class="controls">
+			<input id="password0" type="password" size="18"/> 
+			</div>
+		</div>
+		<div class="control-group">
+			<label class="control-label" for="password1">Confirm Password</label>
+			<div class="controls">
+			<input id="password1" type="password"  size="18"/>
+			</div>
+		</div>
+		<div class="controls">
 			<input disabled id="register" type="submit" value="Register" onclick="Fairywren.register(); return false;"/>
+		</div>
 	</form>
-	
-</div>
 
+	</div>
 </div>
 
 </body>
