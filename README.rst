@@ -12,7 +12,7 @@ Features
 - Search for torrents by title
 - View number of seeders and leechers in real time
 - Create one time invites to send to new users
-- HTML5 & Javascript interface presents a single page application
+- HTML5 & Javascript written using Bootstrap, displays well on phones and tablets
 - Backend of web interface is entirely RESTful
 
 Screenshots
