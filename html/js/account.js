@@ -1,4 +1,44 @@
 
+
+$(document).ready(function(){
+	
+
+	jQuery.get("api/session").
+	done(
+		function(data)
+		{
+			if("error" in data)
+			{
+				Fairywren.errorHandler(data);
+			}
+			else
+			{
+				Fairywren.my = data.my;
+				jQuery.get(Fairywren.my.href).
+				done(
+					function(data)
+					{
+						if("error" in data)
+						{
+							Fairywren.errorHandler(data);
+						}
+						else
+						{
+							Fairywren.account = data;
+							Fairywren.loadTorrentsForPage();
+						}
+					}
+				);
+			}
+		}
+		).fail(function(jqXhr,textStatus,errorThrown)
+		{
+			Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,$("#message"));
+		});
+	
+
+});
+
 Fairywren.loadAccount = function()
 {
 	var list = $("#accountInfo");

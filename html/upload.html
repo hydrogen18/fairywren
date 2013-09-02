@@ -1,0 +1,53 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Upload</title>
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen" />
+		<link href="bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet" media="screen" />
+
+		<script src="js/jquery.js"></script>
+		<script src="js/sha.js"></script>
+		<script src="js/fairywren.js"></script>
+		<script src="bootstrap/js/bootstrap.min.js"></script>
+		<script src="js/jquery.form.js"></script>
+		<script src="js/upload.js"></script>
+	</head>
+<body>
+
+<div class="row">
+	<div id="uploadInfo" class="span12">
+		<h3>Instructions</h3>
+		<p>When creating a torrent, you'll need to supply the correct announce URL. Your announce URL is specific to you and is used by the tracker to identify you. Never share your announce URL or any .torrent files downloaded from this site. You can copy the announce URL from below.</p>
+		<p class="text-center" ><pre class="text-center" id="announceUrl"></pre></p>
+		<p>Always select the option for 'Private torrent' when creating a torrent.</p>
+	</div>	
+</div>
+
+<div class="row">
+	<div id="upload" class="span12">
+		<h3>Upload</h3>
+		<p id="uploadAlert" ></p>
+		<form class="form-horizontal" id="torrentUpload" action="api/torrents" method="POST" enctype="multipart/form-data" encoding="multipart/form-data">
+
+			<div class="control-group">
+					<label class="control-label" for="title">Title</label>
+					<div class="controls">
+						<input type="text" name="title">
+					</div>
+			</div>
+			<div class="control-group">
+					<label for="file" class="control-label">Torrent File</label>
+					<div class="controls">
+						<input type="file" name="torrent">
+					</div>
+			</div>
+			
+			<div class="controls"><input type="submit" value="Upload"  onClick="Fairywren.upload(); return false;"></div>
+	</div>
+</div>	
+</body>
+
+</html>

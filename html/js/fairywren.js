@@ -3,6 +3,80 @@ Fairywren = {};
 Fairywren.MIN_PASSWORD_LENGTH = 12;
 Fairywren.MIN_USERNAME_LENGTH = 4;
 
+Fairywren.trimIsoFormatDate = function(dateStr)
+{
+	return dateStr.substr(0,19);
+}
+
+Fairywren.bytesToPrettyPrint = function(lengthInBytes)
+{
+	var adjustedLength = lengthInBytes;
+	var adjustedUnits = 'bytes';
+	
+	var ADJUSTMENTS = ['kilobytes','megabytes','gigabytes'];
+	var SCALE = 1024;
+	for(var i = 0;i < ADJUSTMENTS.length; ++i)
+	{
+		if(SCALE > adjustedLength )
+		{
+			break;
+		}
+		var adjustment = Math.pow(SCALE,i+1);
+		adjustedLength = lengthInBytes / adjustment;
+		adjustedUnits = ADJUSTMENTS[i];
+	}
+	
+	var displayLengthFixed = parseInt(adjustedLength) !== adjustedLength;
+	if(displayLengthFixed)
+	{
+		adjustedLength = adjustedLength.toFixed(2);
+	}
+	return adjustedLength + ' ' + adjustedUnits;
+}
+
+Fairywren.makeNavbar = function()
+{
+	var navbar = $("<div />");
+	navbar.addClass('navbar');
+	
+	var navbarInner = $("<div />");
+	navbarInner.addClass('navbar-inner');
+	
+	navbar.append(navbarInner);
+	
+	var nav = $("<ul />");
+	nav.addClass('nav');
+	
+	navbarInner.append(nav);
+	
+	var makeNavItem = function(name,href)
+	{
+		if(href === null || href === undefined)
+		{
+			href = '#';
+		}
+		
+		var li =$("<li />")
+		li.append($("<a />").attr('href',href).text(name));
+		
+		
+		if(href != '#' && window.location.href.indexOf(href) != -1)
+		{
+			li.addClass('active');
+		}
+		
+		return li;
+	};
+	
+	
+	nav.append(makeNavItem('Newest','torrents.html'));
+	nav.append(makeNavItem('Search','search.html'));
+	nav.append(makeNavItem('Upload','upload.html'));
+	nav.append(makeNavItem('Account','account.html'));
+	
+	return navbar;
+}
+
 Fairywren.serverErrorHandler = function(jqXhr,textStatus,errorThrown,element)
 {
 	var data = jqXhr.responseText;
@@ -38,10 +112,31 @@ Fairywren.serverErrorHandler = function(jqXhr,textStatus,errorThrown,element)
 	
 }
 
-Fairywren.makeErrorElement = function(msg)
+Fairywren.makeSuccessElement = function(msg)
 {
 	var r = $("<div />");
 	r.addClass('alert');
+	
+	r.addClass('alert-success');
+	
+	r.append($("<button />").attr('type','button').addClass('close').attr('data-dismiss','alert').text('\u2A2F'));
+	
+	r.append(msg);
+	
+	r.alert();
+	
+	return r;
+}
+
+Fairywren.makeErrorElement = function(msg,fatal)
+{
+	var r = $("<div />");
+	r.addClass('alert');
+	
+	if(fatal === true)
+	{
+		r.addClass('alert-error');
+	}
 	
 	r.append($("<button />").attr('type','button').addClass('close').attr('data-dismiss','alert').text('\u2A2F'));
 	
@@ -63,7 +158,7 @@ Fairywren.handleServerFailure = function(errorHolder)
 			var statusCode = jqXhr.statusCode().status;
 			if(statusCode > 499)
 			{
-				errorHolder.prepend(Fairywren.makeErrorElement("Server error"));
+				errorHolder.prepend(Fairywren.makeErrorElement("Server error",true));
 			}
 			
 			else
@@ -84,7 +179,7 @@ Fairywren.handleServerFailure = function(errorHolder)
 		}
 		else if ( textStatus === "timeout" )
 		{
-			errorHolder.prepend(Fairywren.makeErrorElement('Request to server timed out'));
+			errorHolder.prepend(Fairywren.makeErrorElement('Request to server timed out',true));
 		}
 	}
 	

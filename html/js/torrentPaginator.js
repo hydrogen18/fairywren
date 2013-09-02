@@ -7,14 +7,25 @@ function TorrentPaginator(divEle){
 	this.pageIndicator.addClass('badge');
 	this.pageIndicator.text('999/999');
 	
+	var self = this;
 	var newer = $("<li />").addClass('previous').append(
-			$("<a />").attr('href','#').text('\u2190Newer'));
+			$("<a />").attr('href','#').text('\u2190Newer').click(function()
+			{
+				self.flipPage(-1);
+				
+				}));
 			
 	var refresh = $("<li />").append(
-			$("<a />").attr('href','#').css('font-size','2em').append('\u0020\u21bb\u0020').append("<br />").append(this.pageIndicator ));
+			$("<a />").attr('href','#').css('font-size','2em').append('\u0020\u21bb\u0020').click(function(){
+				self.loadTorrentsForPage(true);
+				}).append("<br />").append(this.pageIndicator ));
 			
 	var older = $("<li />").addClass('next').append(
-			$("<a />").attr('href','#').text('Older\u2192'));
+			$("<a />").attr('href','#').text('Older\u2192').click(function()
+			{
+				self.flipPage(1);
+				
+				}));
 	
 	this.bar.append($("<ul />").addClass('pager').append(newer).append(refresh).append(older));
 
@@ -63,17 +74,15 @@ TorrentPaginator.prototype.show = function()
 		
 		var adjustedLength = Fairywren.bytesToPrettyPrint(lengthInBytes);
 		
-		var titleSpan = $("<span />");
-		var infoHref = pageset[i].info.href;
-		titleSpan.click(infoHref,function(event){
-			Fairywren.torrentTab.display(event.data);
-		});
-		titleSpan.attr('style','white-space:nowrap;');
-		titleSpan.text(title);
+		var titleAnchor = $("<a />");
+		var infoHref = 'torrent.html#' + pageset[i].info.href;
+		titleAnchor.attr('href',infoHref);
+		titleAnchor.attr('style','white-space:nowrap;');
+		titleAnchor.text(title);
 		
 		var row = $("<tr />");
 		var titleData = $("<td />");
-		titleData.append(titleSpan);
+		titleData.append(titleAnchor);
 		
 		var rightHandOfTitleData = $("<span />");
 		rightHandOfTitleData.css('float','right');
@@ -98,7 +107,19 @@ TorrentPaginator.prototype.show = function()
 
 TorrentPaginator.prototype.flipPage = function(movement)
 {
+	this.currentPage += movement;
 	
+	if(this.currentPage < 0 )
+	{
+		this.currentPage = 0;
+	}
+	
+	if(this.currentPage >= this.pages.length)
+	{
+		this.currentPage = this.pages.length - 1;
+	}
+	
+	this.loadTorrentsForPage(false);
 }
 
 TorrentPaginator.prototype.loadTorrentsForPage = function(clearCache)

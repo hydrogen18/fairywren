@@ -1,27 +1,44 @@
 
 
-Fairywren.uploadTorrent = function()
+$(document).ready(function(){
+	Fairywren.upload.alert = $("#uploadAlert");
+	Fairywren.upload.announceUrl = $("#announceUrl");
+	$("body").prepend(Fairywren.makeNavbar());
+	$("#torrentUpload").ajaxForm();
+	
+	jQuery.get("api/session").
+	done(
+		function(data)
+		{
+			if(! Fairywren.isError(data))
+			{				 
+				jQuery.get(data.my.href).
+				done(
+					function(data)
+					{
+						if( ! Fairywren.isError(data) )
+						{
+							Fairywren.upload.announceUrl.text(data.announce.href);
+						}
+					}
+				).fail(Fairywren.handleServerFailure($("#uploadInfo")));
+			}
+		}
+		).fail(Fairywren.handleServerFailure($("#uploadInfo")));
+});
+
+Fairywren.upload = function()
 {
-	
-	var showOnSuccess = $("#torrentUpload").find(".success");
-	var showOnFailure = $("#torrentUpload").find(".failure");
-	
-	showOnSuccess.hide();
-	showOnFailure.hide();
-	
+	Fairywren.upload.alert.find('div').remove();
 	var options ={
 		
 		success : function(responseText,statusText,xhr,$form)
 		{
-			showOnSuccess.show();
+			Fairywren.upload.alert.append(Fairywren.makeSuccessElement('Upload successful!'));
+			
 		},
 		
-		error : 
-		function(jqXhr,textStatus,errorThrown)
-		{
-			showOnFailure.show();
-			Fairywren.serverErrorHandler(jqXhr,textStatus,errorThrown,$("#upload").find("#msg"));
-		},
+		error : Fairywren.handleServerFailure(Fairywren.upload.alert),
 		clearForm : true,
 		
 	};
@@ -32,9 +49,3 @@ Fairywren.uploadTorrent = function()
 }
 
 
-
-Fairywren.loadUpload = function()
-{
-	
-	$("#announceUrl").text(Fairywren.account.announce.href);
-}
