@@ -21,7 +21,7 @@ Screenshots
 Browsing and creating torrents
 -------
 
-.. image :: screenshots/torrents.png
+.. image :: screenshots/newest.png
 
 .. image :: screenshots/upload.png
 
