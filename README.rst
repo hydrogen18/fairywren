@@ -30,7 +30,7 @@ Browsing and creating torrents
 Inviting new users
 -------
 
-.. image :: screenshots/invites.png
+.. image :: screenshots/account.png
 
 .. image :: screenshots/register.png
 
