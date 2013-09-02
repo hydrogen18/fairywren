@@ -38,6 +38,87 @@ Fairywren.serverErrorHandler = function(jqXhr,textStatus,errorThrown,element)
 	
 }
 
+Fairywren.makeErrorElement = function(msg)
+{
+	var r = $("<div />");
+	r.addClass('alert');
+	
+	r.append($("<button />").attr('type','button').addClass('close').attr('data-dismiss','alert').text('\u2A2F'));
+	
+	r.append(msg);
+	
+	r.alert();
+	
+	return r;
+}
+
+Fairywren.handleServerFailure = function(errorHolder)
+{
+	var f = function(jqXhr,textStatus,errorThrown)
+	{
+		var data = jqXhr.responseText;
+		
+		if(textStatus === "error")
+		{
+			var statusCode = jqXhr.statusCode().status;
+			if(statusCode > 499)
+			{
+				errorHolder.prepend(Fairywren.makeErrorElement("Server error"));
+			}
+			
+			else
+			{
+				data = jQuery.parseJSON(data);
+				if ( 'msg' in data )
+				{
+					if(data.msg === undefined || data.msg === null)
+					{
+						errorHolder.prepend(Fairywren.makeErrorElement(statusCode));
+					}
+					else
+					{
+						errorHolder.prepend(Fairywren.makeErrorElement(data.msg));
+					}
+				}
+			}
+		}
+		else if ( textStatus === "timeout" )
+		{
+			errorHolder.prepend(Fairywren.makeErrorElement('Request to server timed out'));
+		}
+	}
+	
+	return f;
+}
+	
+
+Fairywren.isError = function(data,errorHolder)
+{
+	if ( ! ('error' in data))
+	{
+		return false;
+	}
+	
+	if ( false === data.authenticated )
+	{
+		window.location = 'index.html';
+		return true;
+	}
+	
+	if ( false === data.authorized )
+	{
+		if(errorHolder !== undefined && errorHolder !== null )
+		{
+			errorHolder.prepend(Fairywren.makeErrorElement("Not authorized"));
+		}
+		else
+		{
+			alert('You are not authorized to perform this function');
+		}
+		return true;
+	}
+}
+
 Fairywren.errorHandler = function(data)
 {
 	if ( ! 'error' in data )

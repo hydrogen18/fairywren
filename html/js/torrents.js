@@ -6,6 +6,11 @@ Fairywren.torrents = {}
 
 $(document).ready(function(){
 	jQuery.ajaxSettings.traditional = true;
+	var p = new TorrentPaginator($("#newestTorrents"));
+	p.loadTorrentsForPage();
+	
+	
+	return;
 	
 	Fairywren.search.init();
 	Fairywren.torrents.init();
@@ -210,18 +215,14 @@ Fairywren.clearAndRenderTorrents = function(torrentTable,pageset)
 		<td>' + uploadTime + "</td>\
 		<td>" + uploader + "</td>");
 		
-		torrentTable.find("tr:last").after(row);
-		
-		
+		torrentTable.find("tbody").after(row);		
 	}
-	
-
 }
 
 Fairywren.showTorrents = function()
 {
 	
-	var torrentTable = $("#torrents").find("#torrentTable");
+	var torrentTable = $("#torrentTable");
 	
 	var page = Fairywren.torrents.page;
 	$("#pageNumbers").text((page +1 )+ ' / ' + Fairywren.torrents.numPages);

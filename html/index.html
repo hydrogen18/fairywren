@@ -1,55 +1,54 @@
+<!DOCTYPE html>
 <html>
 
-<head>
-<title>
-Login
-</title>
-</head>
+	<head>
+		<title>Login</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen" />
+		<link href="bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet" media="screen" />
+	</head>
 
 <body>
+	<script src="js/sha.js"></script>
+	<script src="js/jquery.js"></script>
 
-<script src="js/sha.js"></script>
-<script src="js/jquery.js"></script>
+	<script src="js/fairywren.js"></script>
+	<script src="js/index.js"></script>
 
-<script src="js/fairywren.js"></script>
-<script src="js/index.js"></script>
+	<div class="row">
+		
+		<div class="span4 offset4">
+				<form class="form-horizontal">
+					
+					<div class="control-group">
+						<label class="control-label" for="username">Username:</label> 
+						<div class="controls">
+							<input id="username" type="text"  size="24"/>
+						</div>
+					</div>
+					
+					<div class="control-group">
+						<label for="password" class="control-label">Password:</label>
+						<div class="controls">
+							<input id="password" type="password"  size="24"/>
+						</div>	
+					</div>
+					
+					<div class="controls">
+						<input type="submit" value="Login" onclick="Fairywren.login(); return false;"/>
+					</div>
+				</form>
+		</div>
+	</div>
 
 
-<link rel="stylesheet" type="text/css" href="torrents.css">
-
-<div id="main" align="center">
-
-<div id="message" style="color:red;">
-
-</div>
-
-<div id="loginform" class="contentBox" style="text-align:center; align:center;width:17.5em;min-width:16em;">
-	<div class="contentBoxHeader" style="align:center;">Login</div>
-	<form>
-		<table class="alignedform">
-			<tr >
-				<td >
-					<label for="username">Username:</label> 
-				</td>
-				<td >
-					<input id="username" type="text"  size="24"/>
-				</td>
-			</tr>
-			<tr >
-				<td >
-					<label for="password">Password:</label>
-				</td> 
-				<td >
-					<input id="password" type="password"  size="24"/>
-				</td>
-			</tr>
-			
-		</table>	
-		<input type="submit" value="Login" onclick="Fairywren.login(); return false;"/>
-	</form>
-</div>
-
-</div>
+	<div class="row">
+		<div class="span4 offset4">
+		
+		<span id="message" class="label label-important"></span>
+		
+		</div>
+	</div>
 
 </body>
 

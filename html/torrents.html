@@ -1,187 +1,40 @@
-
+<!DOCTYPE html>
 <html>
+	<head>
+		<title>Torrents</title>
 
-<head>
-<title>
-Torrents
-</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen" />
+		<link href="bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet" media="screen" />
 
-<link rel="stylesheet" type="text/css" href="js/jquery-ui/css/start/jquery-ui-1.10.3.custom.min.css">
-<link rel="stylesheet" type="text/css" href="torrents.css">
+		<script src="js/jquery.js"></script>
+		<script src="js/sha.js"></script>
+		<script src="js/fairywren.js"></script>
+		<script src="bootstrap/js/bootstrap.min.js"></script>
+		<script src="js/torrentPaginator.js"></script>
+		<script src="js/torrents.js"></script>
 
-
-<script src="js/jquery.js"></script>
-<script src="js/jquery-ui/js/jquery-ui-1.10.3.custom.min.js"></script>
-<script src="js/jquery.form.js"></script>
-<script src="js/sha.js"></script>
-
-<script src="js/fairywren.js"></script>
-<script src="js/torrents.js"></script>
-<script src="js/torrentTab.js"></script>
-<script src="js/torrentTabMediainfo.js"></script>
-<script src="js/account.js"></script>
-<script src="js/search.js"></script>
-<script src="js/upload.js"></script>
-
-</head>
+		
+	</head>
 
 <body>
 
-<div id="mai" align="center">
-
-<div class="message" id="message">
-
-</div>
-
-<div id="main">
-
-<ul id="tabs">
-<li><a href="#torrents">Torrents</a></li>
-<li><a href="#account" onclick="Fairywren.loadAccount()">Account</a></li>
-<li><a href="#upload" onclick="Fairywren.loadUpload()">Upload</a></li>
-<li><a href="#torrentSearch" >Search</a></li>
-</ul>
-
-<div id="upload">
-	<div class="contentBox ui-corner-all">
-		<div class="contentBoxHeader ui-corner-all">Announce URL</div>
-		<p>When creating a torrent, you'll need to supply the correct announce URL. Your announce URL is specific to you and is used by the tracker to identify you. Never share your announce URL or any .torrent files downloaded from this site. You can copy the announce URL from below.</p>
-		<div id="announceUrl" style="font-size:0.85em;margin-left:auto;margin-right:auto; max-width:90%; whitespace: pre; text-align: center; padding:3px;  border-style:dashed;border-width:1px;"></div>
-		
-		<p>Always select the option for 'Private torrent' when creating a torrent.</p>
-	</div>
-	
-	<div class="contentBox ui-corner-all">
-		<div class="contentBoxHeader ui-corner-all">Upload New Torrent</div>
-		<div id="msg" class="message"></div>
-		<form id="torrentUpload" action="api/torrents" method="POST" enctype="multipart/form-data" encoding="multipart/form-data">
-			<table class="alignedForm" >
-				<tr>
-					<td><label for="title">Title</label></td><td> <input type="text" name="title"></td>
-				</tr>
-				<tr>
-					<td><label for="file">Torrent File</label></td><td> <input type="file" name="torrent"></td>
-				</tr>
-		</table>
-<input type="submit" value="Upload"  onClick="Fairywren.uploadTorrent(); return false;"><span class="success">&#x2713;</span><span class="failure"> &#x2718;</span>
-			
-	</div>
-</div>
-
-<div id="account">
-<div width="5em" class="contentBox">
-	<div class="contentBoxHeader">Statistics</div>
-	<dl id="accountInfo"></dl>
-</div>
-
-<div width="5em" class="contentBox" id="invites">
-	<div class="contentBoxHeader">Invites</div>
-	<div class="message"></div>
-	<p>
-	You currently have <span id="numInvites">999</span> unclaimed invites. Email the link of an invite to a friend to allow them to claim invites. Each invite may only be claimed once.
-	</p>
-
-	<div style="margin-left:0.5em;">
-		<form>
-			<input type="submit" value="Create Invite" onclick="Fairywren.createInvite(); return false" />
-		</form>
-		<table style="min-width:5.5em;">
-			<tr>
-				<th>Created</td>
-				<th style="min-width:5.5em;">Link</td>
-			</tr>
-		</table>
-	</div>
-
-</div>
-
-<div width="5em" class="contentBox" id="changePassword" >
-	<div class="contentBoxHeader">Change Password</div>
-	<div class="warning"></div>
-	
-<form>
-	<table class="alignedForm">
-		<tr>
-		<td><label for="password0">Password</label></td>
-		<td><input type="password" name="password0"/></td>
-		</tr>
-		
-		<tr>
-		<td><label for="password1">Re-enter</label></td>
-		<td><input type="password" name="password1"/></td>
-		</tr>
-	</table>
-<input type="submit" value="Change Password" onclick="Fairywren.changePassword(); return false;"/>
-<span class="success">&#x2713;</span>
-</form>
-</div>
-</div>
-
-<div id="torrents">
-	<div class="message" id="msg"></div>
-	<div id="torrentBrowseBar">
-		<div id="browseButtons" style="margin:5px;white-space:nowrap;">
-			<span onclick="Fairywren.flipPage(-1)" class="clickable" style="text-align:center;font-size:2em;" >&larr;&nbsp;</span>
-			<span onclick="Fairywren.loadTorrentsForPage(true)" class="clickable" style="text-align:center;font-size:2em;" >&nbsp;&#x21bb;&nbsp;</span>
-			<span onclick="Fairywren.flipPage(1)" class="clickable" style="text-align:center;font-size:2em;" >&nbsp;&rarr;</span>
-		</div>
-		<div id="pageIndicator"> <span id="pageNumbers" >999/999</span></div>
-	</div>
-
-	<div>
-		<table id="torrentTable" style="margin-left:auto;margin-right:auto;min-width:95%;max-width:100%;">
-
-		<tr>
-		<th style="min-width:20em;" >Title</th>
-
-		<th >Size</th>
-
-		<th >Upload Time</th>
-
-		<th >Uploader</th>
-		</tr>
-		</table>
-	</div>
-
-
-
-</div>
-
-
-<div id="torrentSearch">
-	<div id="torrentSearchBar">
-		<div class="contentBox ui-corner-all">
-			<div class="contentBoxHeader ui-corner-all">Search</div>
-			<p>Search for torrents using terms separated by spaces.</p>
-			<div class="message" id="msg"></div>
-			<form onsubmit="Fairywren.search.search(); return false;">
-			<label for="searchTokens">Search Terms</label><input required type="text" id="searchTokens" name="searchTokens" size="64">
-			<span class="clickable" onclick="Fairywren.search.search()" >Search</span>
-			</form>
+	<div class="navbar">
+		<div class="navbar-inner">
+			<ul class="nav">
+				<li class="active"><a href="#">Newest</a></li>
+				<li><a href="#">Upload</a></li>
+				<li><a href="#">Search</a></li>
+				<li><a href="#">Account</a></li>
+			</ul>
 		</div>
 	</div>
+
+<div class="row">
+	<div id="newestTorrents" class="span12">
+</div>
 	
-	<div>
-		<table id="torrentTable" style="margin-left:auto;margin-right:auto;min-width:95%;max-width:100%">
-
-		<tr>
-		<th style="min-width:20em;" >Title</th>
-
-		<th >Size</th>
-
-		<th >Upload Time</th>
-
-		<th >Uploader</th>
-		</tr>
-		</table>
-	</div>
-
-</div>
-
-</div>
-
-</div>
-
+	
 </body>
 
 </html>
