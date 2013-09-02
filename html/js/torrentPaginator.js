@@ -64,7 +64,6 @@ TorrentPaginator.prototype.show = function()
 		var adjustedLength = Fairywren.bytesToPrettyPrint(lengthInBytes);
 		
 		var titleSpan = $("<span />");
-		titleSpan.attr('class','torrentLink');
 		var infoHref = pageset[i].info.href;
 		titleSpan.click(infoHref,function(event){
 			Fairywren.torrentTab.display(event.data);
@@ -76,8 +75,11 @@ TorrentPaginator.prototype.show = function()
 		var titleData = $("<td />");
 		titleData.append(titleSpan);
 		
-		titleData.append('<span style="float:right;">&nbsp;<span >'+ '&uarr;' + seeds  + '&nbsp;&darr;' + leeches + '</span><a class="downloadLink" href="' + downloadUrl + '">Download</a>\
-		</span>');
+		var rightHandOfTitleData = $("<span />");
+		rightHandOfTitleData.css('float','right');
+		rightHandOfTitleData.append($('<span >'+ '&uarr;' + seeds  + '&nbsp;&darr;' + leeches + '&nbsp;</span>'));
+		rightHandOfTitleData.append($('<a />').addClass('btn btn-primary').attr('href',downloadUrl).text('Download'));
+		titleData.append(rightHandOfTitleData);
 		
 		row.append(titleData);
 		
