@@ -87,6 +87,7 @@ def listFiles(filesPath):
 		if e.errno!=20:
 			raise e
 		files = [filesPath]
+	        return files
 	
 	files = [os.path.join(filesPath,f) for f in files]	
     
