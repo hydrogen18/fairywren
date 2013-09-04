@@ -133,10 +133,7 @@ if __name__ == "__main__":
 	
 	filesPath = sys.argv[2]
 
-	if len(sys.argv) == 4:
-		title = sys.argv[3]
-	else:
-		title = filesPath
+
     
 	#Create a new torrent
 	newTorrentPath = mktorrent(filesPath,announceUrl,pieceLength,True)
@@ -149,6 +146,11 @@ if __name__ == "__main__":
 		extendedInfo['mediainfo'] = minfo
 	except SystemError as e:
 		print 'No mediainfo on upload...'
+
+	if len(sys.argv) == 4:
+		title = sys.argv[3]
+	else:
+		title = os.path.split(filesPath)[-1]
 
 	
 	#Upload the torrent to fairywren
