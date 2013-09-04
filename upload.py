@@ -79,7 +79,7 @@ def mediainfo(*files):
 
 def listFiles(filesPath):
     
-    try:
+	try:
 		files = os.listdir(filesPath)
 	except OSError as e:
 		if e.errno!=20:
@@ -88,10 +88,10 @@ def listFiles(filesPath):
 	
 	files = [os.path.join(filesPath,f) for f in files]	
     
-    return files
+	return files
 	
 def buildOpener(url,username,password):
-    url = str(url)
+	url = str(url)
     
 	def hashPassword(pw):
 		h = hashlib.sha512()
@@ -118,11 +118,10 @@ if __name__ == "__main__":
 	with open(sys.argv[1],'r') as fin:
 		conf = json.load(fin)
 
-	infoHash = sys.argv[2]
-	
 	#Login to the fairywren instance
-	fairywren = buildOpener(**fconf['fairywren'])
-	
+	fairywren = buildOpener(**conf['fairywren'])
+
+	fwurl = conf['fairywren']['url']	
 	#Retrieve the announce url
 	account = json.loads(fairywren.open('%s/api/session' % fwurl ).read())
 	announceUrl = json.loads(fairywren.open('%s/%s' % ( fwurl, account['my']['href'] ) ).read())['announce']['href']
@@ -130,18 +129,23 @@ if __name__ == "__main__":
 	#Get the current piece size as a power of 2
 	pieceLength = 18
 	
-	filesPath = sys.argv[3]
+	filesPath = sys.argv[2]
+
+	if len(sys.argv) == 4:
+		title = sys.argv[3]
+	else:
+		title = filesPath
     
 	#Create a new torrent
 	newTorrentPath = mktorrent(filesPath,announceUrl,pieceLength,True)
 	
-    files = listFiles(filesPath)
+	files = listFiles(filesPath)
 	minfo = mediainfo(*files)
 	
 	#Upload the torrent to fairywren
-	fairywren.open('%s/api/torrents' % fwurl ,data={"extended": json.dumps({ "mediainfo" : minfo }) , "title":str(sourceTorrent['info']['name']),"torrent":open(newTorrentPath,'rb')})
+	fairywren.open('%s/api/torrents' % fwurl ,data={"extended": json.dumps({ "mediainfo" : minfo }) , "title":str(),"torrent":open(newTorrentPath,'rb')})
 	
-    os.unlink(newTorrentPath)
+	os.unlink(newTorrentPath)
     
 	
 	
