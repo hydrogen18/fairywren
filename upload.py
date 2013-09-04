@@ -37,11 +37,13 @@ def mediainfo(*files):
 	
 	proc = subprocess.Popen(cmd,stdout=subprocess.PIPE)
 	#Read all the output
-	stdout, _ = proc.communicate()
+	stdout, stderr = proc.communicate()
 	
 	#Check for failure
 	if 0!=proc.returncode:
-		raise EnvironmentError('mediainfo failed')
+		print stdout
+		print stderr
+		raise SystemError('mediainfo failed')
 	retval = {}
 	
 	#Parse the output
@@ -121,7 +123,7 @@ if __name__ == "__main__":
 	#Login to the fairywren instance
 	fairywren = buildOpener(**conf['fairywren'])
 
-	fwurl = conf['fairywren']['url']	
+	fwurl = str(conf['fairywren']['url'])
 	#Retrieve the announce url
 	account = json.loads(fairywren.open('%s/api/session' % fwurl ).read())
 	announceUrl = json.loads(fairywren.open('%s/%s' % ( fwurl, account['my']['href'] ) ).read())['announce']['href']
@@ -140,10 +142,17 @@ if __name__ == "__main__":
 	newTorrentPath = mktorrent(filesPath,announceUrl,pieceLength,True)
 	
 	files = listFiles(filesPath)
-	minfo = mediainfo(*files)
+
+	extendedInfo = {}
+	try:
+		minfo = mediainfo(*files)
+		extendedInfo['mediainfo'] = minfo
+	except SystemError as e:
+		print 'No mediainfo on upload...'
+
 	
 	#Upload the torrent to fairywren
-	fairywren.open('%s/api/torrents' % fwurl ,data={"extended": json.dumps({ "mediainfo" : minfo }) , "title":str(),"torrent":open(newTorrentPath,'rb')})
+	fairywren.open('%s/api/torrents' % fwurl ,data={"extended": json.dumps(extendedInfo) , "title":str(title),"torrent":open(newTorrentPath,'rb')})
 	
 	os.unlink(newTorrentPath)
     
