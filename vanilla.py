@@ -5,7 +5,8 @@ import datetime
 
 def sendJsonWsgiResponse(env,start_response,response,additionalHeaders=None):
 	headers = [('Content-Type','text/json')]
-	headers.append(('Cache-Control','no-cache'))
+	headers.append(('Cache-Control','no-store, no-cache, must-revalidate, max-age=0'))
+	headers.append(('Pragma','no-cache'))
 	
 	if additionalHeaders:
 		headers += additionalHeaders
