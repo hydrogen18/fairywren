@@ -54,7 +54,7 @@ if __name__ == "__main__":
 	#Create a new torrent
 	newTorrentPath = mktorrent(filesPath,announceUrl,pieceLength,True)
 	
-    files = listFiles(filesPath)
+	files = listFiles(filesPath)
 	minfo = mediainfo(*files)
 	
 	#Upload the torrent to fairywren
