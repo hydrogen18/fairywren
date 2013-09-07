@@ -167,8 +167,26 @@ class TorrentStore(object):
 			conn.commit()
 			
 		return
-			
 		
+	def updateTorrent(self,tuid,title,extended):
+		extendedB = psycopg2.Binary(pickle.dumps(extended,-1))
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			cur.execute('Update torrents set title = %s , extendedinfo = %s where id = %s returning id',
+			(title,extendedB,tuid,))
+		
+			r = cur.fetchone()
+			cur.close()
+			
+			if r == None:
+				conn.rollback()
+				raise ValueError('torrent does not exist')
+			
+			conn.commit()
+			
+		return
+			
+	
 	def addTorrent(self,torrent,title,creator,extended=None):
 		"""Add a torrent.
 		
@@ -181,7 +199,10 @@ class TorrentStore(object):
 		
 		if extended == None:
 			extended = {}
-			
+		
+		torrentB = psycopg2.Binary(pickle.dumps(torrent.dict,-1))
+		extendedB = psycopg2.Binary(pickle.dumps(extended,-1))
+		
 		with self.connPool.item() as conn:
 			cur = conn.cursor()
 			try:
@@ -193,8 +214,8 @@ class TorrentStore(object):
 				(title,creator,
 				base64.urlsafe_b64encode(torrent.getInfoHash().digest()).replace('=',''),
 				torrent.getTotalSizeInBytes(),
-				psycopg2.Binary(pickle.dumps(torrent.dict,-1)),
-				psycopg2.Binary(pickle.dumps(extended,-1)),)
+				torrentB,
+				extendedB,)
 				)
 				
 				result = cur.fetchone();

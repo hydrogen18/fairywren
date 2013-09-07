@@ -35,8 +35,17 @@ def validateUsername(username):
 			return None
 			
 	return username
-
+	
+def toJsonDict(someString):
+	try:
+		r = json.loads(someString)		
+	except ValueError:
+		return None
+	if not isinstance(r,dict):
+		return None
 		
+	return r
+
 def extractUserId(*pathComponents):
 	return int(pathComponents[1],16)
 
@@ -247,7 +256,20 @@ class Webapi(restInterface):
 
 		return vanilla.sendJsonWsgiResponse(env,start_response,
 		{'torrents' : listOfTorrents ,'numSubsets' : int(math.ceil(self.torrents.getNumTorrents() / float(resultSize)))} )
+	
+	@parameter('title')
+	@parameter('extended',toJsonDict)
+	@resource(True,'POST','torrents',fairywren.UID_RE + '.json')
+	def updateTorrent(self,env,start_response,session,uid,extended,title):
+		tuid = int(uid,16)
 		
+		try:
+			self.torrents.updateTorrent(uid,title,extended)
+		except ValueError as e:
+			return vanilla.http_error(404,env,start_response,msg=e.message)			
+			
+		return vanilla.sendJsonWsgiResponse(env,start_response,{})
+	
 	@resource(True,'POST','torrents')
 	def createTorrent(self,env,start_response,session):
 		

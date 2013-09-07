@@ -94,6 +94,9 @@ class MockTorrents(object):
 		self._searchTorrents  = []
 		self._getInfo = None
 		self._getExtendedInfo = None
+	
+	def updateTorrent(self,tuid,title,extended):
+		return None
 		
 	def getInfo(self,uid):
 		return self._getInfo
@@ -397,6 +400,56 @@ class TestDownloadTorrent(AuthenticatedWebApiTest):
 			return
 		self.assertTrue(False)
 		
+
+class TestUpdateTorrent(AuthenticatedWebApiTest):
+	def setUp(self):
+		AuthenticatedWebApiTest.setUp(self)
+		
+		self.auth._isUserMemberOfRole = True
+		
+		def mock(tuid,title,extended):
+			if tuid == 1:
+				return None
+				
+			raise ValueError('torrent does not exist')
+		
+		self.torrents.updateTorrent = mock
+	
+	def test_noextended(self):
+		try:
+			self.urlopen('http://webapi/torrents/00000002.json',data=urllib.urlencode({'title': 'meow' }))
+		except urllib2.HTTPError as e:
+			self.assertEqual(400,e.code)
+			self.assertIn('issing parameter extended',e.read())
+			return 
+		self.assertTrue(False)
+
+	def test_notitle(self):
+		try:
+			self.urlopen('http://webapi/torrents/00000002.json',data=urllib.urlencode({'extended':'{}'}))
+		except urllib2.HTTPError as e:
+			self.assertEqual(400,e.code)
+			self.assertIn('issing parameter title',e.read())
+			return 
+		self.assertTrue(False)
+
+	def test_badExtended(self):
+		try:
+			self.urlopen('http://webapi/torrents/00000002.json',data=urllib.urlencode({'title':'purr','extended':'{a}'}))
+		except urllib2.HTTPError as e:
+			self.assertEqual(400,e.code)
+			self.assertIn('for parameter extended',e.read())
+			return 
+		self.assertTrue(False)
+		
+	
+	def test_noexist(self):
+		try:
+			self.urlopen('http://webapi/torrents/00000002.json',data=urllib.urlencode({'title':'meow','extended':'{}'}))
+		except urllib2.HTTPError as e:
+			self.assertEqual(404,e.code)
+			return 
+		self.assertTrue(False)
 
 class TestDeleteTorrent(AuthenticatedWebApiTest):
 	def setUp(self):

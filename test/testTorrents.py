@@ -54,6 +54,38 @@ class TestDelete(TestTorrent):
 		with self.assertRaisesRegexp(ValueError,'.*xist.*') as cm:
 			self.torrents.getTorrentForDownload(tuid,self.validuid)	
 
+class TestUpdateTorrent(TestTorrent):
+
+		def test_noexist(self):
+			with self.assertRaisesRegexp(ValueError,'.*xist.*') as cm:
+				self.torrents.updateTorrent(0xff,'bar',{'qux':'purr'})
+
+		def test_update(self):
+			t = torrents.Torrent.fromDict(TestTorrent.TORRENT)
+			sourceT = t
+			
+			torrentTitle = 'foo'
+			
+			self.torrents.addTorrent(t, torrentTitle, self.validuid)
+			
+			torrentList = list(self.torrents.getTorrents(100,0))
+			self.assertEqual(1,len(torrentList))
+			
+			t = torrentList[0]
+			
+			tid= t['id']
+			
+			self.torrents.updateTorrent(tid,'bar',{'qux':'purr'})
+			
+			ext = self.torrents.getExtendedInfo(tid)
+			self.assertIn(ext,'qux')
+			self.assertEqual(ext['qux'],'purr')
+			
+			info = self.torrents.getInfo(tid)
+			self.assertIn(info,'title')
+			self.assertEqual(info['title'],'bar')
+			
+
 class TestWithTorrents(TestTorrent):
 		
 	def test_add(self):
@@ -102,6 +134,8 @@ class TestWithTorrents(TestTorrent):
 		self.assertIn('creationDate',t)
 		self.assertIn('lengthInBytes',t)
 		self.assertIn('creator',t)
+		
+		
 
 class TestEmptyDatabase(TestTorrent):
 	def test_getNumTorrents(self):
