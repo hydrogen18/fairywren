@@ -143,6 +143,32 @@ class TorrentStore(object):
 	def setConnectionPool(self,pool):
 		self.connPool = pool
 		
+	def deleteTorrent(self,tuid):
+		'''Delete a torrent
+		tuid -- uid of the torrent to delete
+		'''
+		
+		with self.connPool.item() as conn:
+			cur = conn.cursor()
+			try:
+				cur.execute('Delete from torrents where id=%s returning id',(tuid,))
+			except psycopg2.DatabaseError as e:
+				self.log.exception('Error deleting torrent',exc_info=True)
+				cur.close()
+				conn.rollback()
+				raise e
+			
+			r = cur.fetchone()
+			cur.close()
+			
+			if r == None:
+				conn.rollback()
+				raise ValueError('torrent does not exist')
+			conn.commit()
+			
+		return
+			
+		
 	def addTorrent(self,torrent,title,creator,extended=None):
 		"""Add a torrent.
 		
@@ -310,7 +336,7 @@ class TorrentStore(object):
 			
 			result = cur.fetchone()
 			cur.close()
-			conn.rollback()
+			
 		if result == None:
 			self.log.debug('Request for metainfo on non existent torrent %.8x',torrentId)
 			raise ValueError('Torrent does not exist')

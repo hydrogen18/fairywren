@@ -204,6 +204,8 @@ class Webapi(restInterface):
 			
 		return vanilla.sendJsonWsgiResponse(env,start_response,
 		{'torrents': listOfTorrents})
+	
+	
 		
 	@resource(True,'GET','torrents')
 	def listTorrents(self,env,start_response,session):
@@ -290,6 +292,17 @@ class Webapi(restInterface):
 			
 		return vanilla.sendJsonWsgiResponse(env,start_response,response)
 
+	@requireAuthorization()
+	@resource(True,'DELETE','torrents',fairywren.UID_RE + '.torrent')
+	def deleteTorrent(self,env,start_response,session,uid):
+		uid = int(uid,16)
+		
+		try:
+			torrent = self.torrents.deleteTorrent(uid)
+		except ValueError as e:
+			return vanilla.http_error(404,env,start_response,msg=e.message)
+			
+		return vanilla.sendJsonWsgiResponse(env,start_response,{})
 	
 	@resource(True,'GET','torrents',fairywren.UID_RE + '.torrent')
 	def downloadTorrent(self,env,start_response,session,uid):

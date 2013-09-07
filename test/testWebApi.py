@@ -119,6 +119,9 @@ class MockTorrents(object):
 
 	def getAnnounceUrlForUser(self,id):
 		return self._getAnnounceUrlForUser
+		
+	def deleteTorrent(self,uid):
+		return 
 class WebApiTest(unittest.TestCase):
 	def getWebapi(self):
 		if self.webapi == None:
@@ -395,6 +398,38 @@ class TestDownloadTorrent(AuthenticatedWebApiTest):
 		self.assertTrue(False)
 		
 
+class TestDeleteTorrent(AuthenticatedWebApiTest):
+	def setUp(self):
+		AuthenticatedWebApiTest.setUp(self)
+		
+		self.auth._isUserMemberOfRole = True
+	
+	def test_noexist(self):
+		def throw(x):
+			raise ValueError('torrent does not exist')
+			
+		self.torrents.deleteTorrent = throw
+
+		r = urllib2.Request('http://webapi/torrents/00000001.torrent')
+		r.get_method = lambda:'DELETE'
+		
+		try:
+			self.urlopen(r)
+		except urllib2.HTTPError as e:
+			self.assertEqual(404,e.code)
+			return
+		self.assertTrue(False)
+	
+	
+	def test_ok(self):
+		self.torrents.deleteTorrent = lambda y : None
+		r = urllib2.Request('http://webapi/torrents/00000001.torrent')
+		r.get_method = lambda:'DELETE'
+		
+		r = self.urlopen(r)
+		
+		self.assertEqual(200,r.code)
+	
 class TestCreateTorrent(AuthenticatedWebApiTest):
 	def test_wrongPostContentType(self):
 		try:
