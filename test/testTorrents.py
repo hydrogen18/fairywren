@@ -78,11 +78,11 @@ class TestUpdateTorrent(TestTorrent):
 			self.torrents.updateTorrent(tid,'bar',{'qux':'purr'})
 			
 			ext = self.torrents.getExtendedInfo(tid)
-			self.assertIn(ext,'qux')
+			self.assertIn('qux',ext)
 			self.assertEqual(ext['qux'],'purr')
 			
 			info = self.torrents.getInfo(tid)
-			self.assertIn(info,'title')
+			self.assertIn('title',info)
 			self.assertEqual(info['title'],'bar')
 			
 
