@@ -414,6 +414,12 @@ class TestUpdateTorrent(AuthenticatedWebApiTest):
 			raise ValueError('torrent does not exist')
 		
 		self.torrents.updateTorrent = mock
+
+	def test_ok(self):
+		
+		r = self.urlopen('http://webapi/torrents/00000001.json',data=urllib.urlencode({'title': 'meow' ,'extended':'{}'}))
+		
+		self.assertEqual(200,r.code)
 	
 	def test_noextended(self):
 		try:
