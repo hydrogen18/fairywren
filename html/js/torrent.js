@@ -5,6 +5,7 @@ $(document).ready(function(){
 	Fairywren.torrent.alert = $("#torrent").find("#alert");
 	Fairywren.torrent.title = $("#torrent").find("a#title");
 	Fairywren.torrent.info = $("#torrent").find("#info");
+	Fairywren.torrent.edit = $("#torrent").find("#edit");
 	
 	if(hash.length === 0)
 	{
@@ -33,6 +34,7 @@ $(document).ready(function(){
 Fairywren.torrent = function()
 {
 	Fairywren.torrent.title.attr('href',Fairywren.torrent.data.metainfo.href);
+	Fairywren.torrent.edit.attr('href','edit.html#' + Fairywren.torrent.href);
 	Fairywren.torrent.title.text(Fairywren.torrent.data.title);
 	
 	Fairywren.torrent.info.append($("<dt />").text("Uploaded"));

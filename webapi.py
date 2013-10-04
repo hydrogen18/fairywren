@@ -261,7 +261,7 @@ class Webapi(restInterface):
 	@parameter('extended',toJsonDict)
 	@resource(True,'POST','torrents',fairywren.UID_RE + '.json')
 	def updateTorrent(self,env,start_response,session,uid,extended,title):
-		tuid = int(uid,16)
+		uid = int(uid,16)
 		
 		try:
 			self.torrents.updateTorrent(uid,title,extended)
