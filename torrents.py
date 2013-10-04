@@ -149,41 +149,38 @@ class TorrentStore(object):
 		'''
 		
 		with self.connPool.item() as conn:
-			cur = conn.cursor()
-			try:
-				cur.execute('Delete from torrents where id=%s returning id',(tuid,))
-			except psycopg2.DatabaseError as e:
-				self.log.exception('Error deleting torrent',exc_info=True)
-				cur.close()
-				conn.rollback()
-				raise e
-			
-			r = cur.fetchone()
-			cur.close()
-			
-			if r == None:
-				conn.rollback()
-				raise ValueError('torrent does not exist')
-			conn.commit()
+			with conn.cursor() as cur:			
+				try:
+					cur.execute('Delete from torrents where id=%s returning id',(tuid,))
+				except psycopg2.DatabaseError as e:
+					self.log.exception('Error deleting torrent',exc_info=True)
+					conn.rollback()
+					raise e
+				
+				r = cur.fetchone()
+				
+				if r == None:
+					conn.rollback()
+					raise ValueError('torrent does not exist')
+				conn.commit()
 			
 		return
 		
 	def updateTorrent(self,tuid,title,extended):
 		extendedB = psycopg2.Binary(pickle.dumps(extended,-1))
 		with self.connPool.item() as conn:
-			cur = conn.cursor()
-			cur.execute('Update torrents set title = %s , extendedinfo = %s where id = %s returning id',
-			(title,extendedB,tuid,))
-		
-			r = cur.fetchone()
-			cur.close()
+			with conn.cursor() as cur:			
+				cur.execute('Update torrents set title = %s , extendedinfo = %s where id = %s returning id',
+				(title,extendedB,tuid,))
 			
-			if r == None:
-				conn.rollback()
-				raise ValueError('torrent does not exist')
-			
-			conn.commit()
-			
+				r = cur.fetchone()
+				
+				if r == None:
+					conn.rollback()
+					raise ValueError('torrent does not exist')
+				
+				conn.commit()
+				
 		return
 			
 	
@@ -204,42 +201,40 @@ class TorrentStore(object):
 		extendedB = psycopg2.Binary(pickle.dumps(extended,-1))
 		
 		with self.connPool.item() as conn:
-			cur = conn.cursor()
-			try:
-				cur.execute(
-				"Insert into torrents (title,creationdate, \
-				creator, infohash,lengthInBytes,metainfo,extendedinfo) VALUES \
-				(%s,timezone('UTC',CURRENT_TIMESTAMP),%s,%s,%s,%s,%s) \
-				returning torrents.id;",
-				(title,creator,
-				base64.urlsafe_b64encode(torrent.getInfoHash().digest()).replace('=',''),
-				torrent.getTotalSizeInBytes(),
-				torrentB,
-				extendedB,)
-				)
-				
-				result = cur.fetchone();
+			with conn.cursor() as cur:
+				try:
+					cur.execute(
+					"Insert into torrents (title,creationdate, \
+					creator, infohash,lengthInBytes,metainfo,extendedinfo) VALUES \
+					(%s,timezone('UTC',CURRENT_TIMESTAMP),%s,%s,%s,%s,%s) \
+					returning torrents.id;",
+					(title,creator,
+					base64.urlsafe_b64encode(torrent.getInfoHash().digest()).replace('=',''),
+					torrent.getTotalSizeInBytes(),
+					torrentB,
+					extendedB,)
+					)
+				except psycopg2.IntegrityError as e:
+					conn.rollback()
+					#This string is specified in the postgre documentation appendix
+					# 'PostgreSQL Error Codes' as 'unique_violation' and corresponds
+					#to primary key violations
+					if e.pgcode == '23505':
+						raise ValueError('Torrent already exists with that infohash')
+					# 'foreign_key_violation' - violation of 'creator' foreign key
+					# i.e. user with uid doesn't exist
+					elif e.pgcode == '23503':
+						raise ValueError('User does not exist with that uid')
+					raise e
+				except psycopg2.DatabaseError as e:
+					self.log.exception('Error adding torrent',exc_info=True)
+					conn.rollback()
+					raise e
+					
+				result = cur.fetchone()
 				result, = result
-				conn.commit();
-			except psycopg2.IntegrityError as e:
-				conn.rollback()
-				#This string is specified in the postgre documentation appendix
-				# 'PostgreSQL Error Codes' as 'unique_violation' and corresponds
-				#to primary key violations
-				if e.pgcode == '23505':
-					raise ValueError('Torrent already exists with that infohash')
-				# 'foreign_key_violation' - violation of 'creator' foreign key
-				# i.e. user with uid doesn't exist
-				elif e.pgcode == '23503':
-					raise ValueError('User does not exist with that uid')
-				raise e
-			except psycopg2.DatabaseError as e:
-				self.log.exception('Error adding torrent',exc_info=True)
-				conn.rollback()
-				raise e
-			finally:
-				cur.close()
-			
+				conn.commit()
+				
 		return self.getResourceForTorrent(result),self.getInfoResourceForTorrent(result)
 
 
@@ -253,21 +248,22 @@ class TorrentStore(object):
 	
 	def getInfo(self,uid):
 		with self.connPool.item() as conn:
-			cur = conn.cursor();
-			try:
-				cur.execute("Select torrents.infoHash,torrents.id,torrents.title, torrents.creationdate,\
-				users.id, users.name, torrents.lengthInBytes \
-				from torrents \
-				left join users on torrents.creator = users.id \
-				where torrents.id = %s",(uid,));
-			except psycopg2.DatabaseError as e:
-				self.log.exception('Error retrieving info for torrent',exc_info=True)
-				conn.rollback()
-				raise e
-			
-			result = cur.fetchone()
-			cur.close()
-			conn.rollback()
+			with conn.cursor() as cur:			
+				try:
+					cur.execute("Select torrents.infoHash,torrents.id,torrents.title, torrents.creationdate,\
+					users.id, users.name, torrents.lengthInBytes \
+					from torrents \
+					left join users on torrents.creator = users.id \
+					where torrents.id = %s",(uid,));
+				except psycopg2.DatabaseError as e:
+					self.log.exception('Error retrieving info for torrent',exc_info=True)
+					raise 
+				else:
+					result = cur.fetchone()
+				finally:
+					conn.rollback()
+				
+				
 			
 		if result == None:
 			raise ValueError('Torrent does not exist for specified uid')
@@ -287,18 +283,16 @@ class TorrentStore(object):
 	def getExtendedInfo(self,torrentId):
 
 		with self.connPool.item() as conn:
-			cur = conn.cursor()
-			try:
-				cur.execute('Select extendedinfo from torrents where id=%s',(torrentId,))
-			except psycopg2.DatabaseError as e:
-				self.log.exception('Error retrieving extendedinfo for torrent %.8x', torrentId,exc_info=True)
-				cur.close()
-				conn.rollback()
-				raise e
-			
-			result = cur.fetchone()
-			cur.close()
-			conn.rollback()
+			with conn.cursor() as cur:
+				try:
+					cur.execute('Select extendedinfo from torrents where id=%s',(torrentId,))
+				except psycopg2.DatabaseError as e:
+					self.log.exception('Error retrieving extendedinfo for torrent %.8x', torrentId,exc_info=True)
+					raise
+				else:
+					result = cur.fetchone()
+				finally:
+					conn.rollback()
 		if result == None:
 			self.log.debug('Request for extended info on non existent torrent %.8x',torrentId)
 			raise ValueError('Specified torrent does not exist')
@@ -317,19 +311,19 @@ class TorrentStore(object):
 		
 		"""
 		with self.connPool.item() as conn:
-			cur = conn.cursor()
-			try:
-				cur.execute(
-				"Select secretkey from users where id=%s;",
-				(user,))
-			except psycopg2.DatabaseError as e:
-				self.log.exception('Error retrieving announce url for user',exc_info=True)
-				conn.rollback()
-				raise e
-			
-			result = cur.fetchone()
-			conn.rollback()
-			cur.close()
+			with conn.cursor() as cur:
+				try:
+					cur.execute(
+					"Select secretkey from users where id=%s;",
+					(user,))
+				except psycopg2.DatabaseError as e:
+					self.log.exception('Error retrieving announce url for user',exc_info=True)
+					raise 
+				else:
+					result = cur.fetchone()	
+				finally:
+					conn.rollback()
+				
 			
 		if None == result:
 			raise ValueError('Specified user id does not exist')
@@ -346,17 +340,17 @@ class TorrentStore(object):
 		"""
 
 		with self.connPool.item() as conn:
-			cur = conn.cursor()
-			try:
-				cur.execute('Select metainfo from torrents where id=%s',(torrentId,))
-			except psycopg2.DatabaseError as e:
-				self.log.exception('Error retrieving metainfo for torrent %.8x', torrentId,exc_info=True)
-				cur.close()
-				conn.rollback()
-				raise e
-			
-			result = cur.fetchone()
-			cur.close()
+			with conn.cursor() as cur:
+				try:
+					cur.execute('Select metainfo from torrents where id=%s',(torrentId,))
+				except psycopg2.DatabaseError as e:
+					self.log.exception('Error retrieving metainfo for torrent %.8x', torrentId,exc_info=True)
+					raise 
+				else:
+					result = cur.fetchone()
+				finally:
+					conn.rollback()
+
 			
 		if result == None:
 			self.log.debug('Request for metainfo on non existent torrent %.8x',torrentId)
@@ -415,33 +409,32 @@ class TorrentStore(object):
 		sql+= ';'
 		
 		with self.connPool.item() as conn:
-			cur = conn.cursor()
+			with conn.cursor() as cur:
 			
-			try:
-				cur.execute(sql,tokens)
-			except psycopg2.DatabaseError as e:
-				self.log.exception('Error searching for torrents',exc_info=True)
-				conn.rollback()
-				raise e
-			
-			for record in cur:
-				infoHash,torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes = record
-				infoHash = base64.urlsafe_b64decode(infoHash + '==')
-				yield {
-					'id' : torrentId,
-					'metainfo' : { 'href' : self.getResourceForTorrent(torrentId) },
-					'info' : {'href' : self.getInfoResourceForTorrent(torrentId) },
-					'title' : torrentTitle,
-					'creationDate' : torrentsCreationDate,
-					'lengthInBytes' : lengthInBytes,
-					'creator': {
-						'href' : fairywren.USER_FMT % userId,
-						'name' : userName
-						}
-					}
-			cur.close()
-			conn.rollback()
-	
+				try:
+					cur.execute(sql,tokens)
+				except psycopg2.DatabaseError as e:
+					self.log.exception('Error searching for torrents',exc_info=True)
+					raise 
+				else:
+					for record in cur:
+						infoHash,torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes = record
+						infoHash = base64.urlsafe_b64decode(infoHash + '==')
+						yield {
+							'id' : torrentId,
+							'metainfo' : { 'href' : self.getResourceForTorrent(torrentId) },
+							'info' : {'href' : self.getInfoResourceForTorrent(torrentId) },
+							'title' : torrentTitle,
+							'creationDate' : torrentsCreationDate,
+							'lengthInBytes' : lengthInBytes,
+							'creator': {
+								'href' : fairywren.USER_FMT % userId,
+								'name' : userName
+								}
+							}
+				finally:
+					conn.rollback()
+		
 	def getTorrents(self,limit,subset):
 		"""
 		Return a list of information about torrents
@@ -452,41 +445,34 @@ class TorrentStore(object):
 		
 		"""
 		with self.connPool.item() as conn:
-			cur = conn.cursor()
-			try:
-				cur.execute(
-				"Select torrents.infoHash,torrents.id,torrents.title,torrents.creationdate, \
-				users.id,users.name,torrents.lengthInBytes \
-				from torrents \
-				left join users on torrents.creator = users.id \
-				order by creationdate desc limit %s offset %s;",
-				(limit,subset*limit, ))
-			except psycopg2.DatabaseError as e:
-				self.log.exception('Error retrieving torrent listing',exc_info=True)
-				conn.rollback()
-				raise e	
-			
-			while True:
-				r = cur.fetchone()
-				if r!=None:
-					infoHash,torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes = r
-					infoHash = base64.urlsafe_b64decode(infoHash + '==')
-					yield {
-					'id' : torrentId ,
-					'metainfo' : { 'href' : self.getResourceForTorrent(torrentId) },
-					'info' : {'href' : self.getInfoResourceForTorrent(torrentId) },
-					'title' : torrentTitle,
-					'creationDate' : torrentsCreationDate,
-					'lengthInBytes' : lengthInBytes,
-					'creator': {
-						'href' : fairywren.USER_FMT % userId,
-						'name' : userName
-						}
-					}
+			with conn.cursor() as cur:
+				try:
+					cur.execute(
+					"Select torrents.infoHash,torrents.id,torrents.title,torrents.creationdate, \
+					users.id,users.name,torrents.lengthInBytes \
+					from torrents \
+					left join users on torrents.creator = users.id \
+					order by creationdate desc limit %s offset %s;",
+					(limit,subset*limit, ))
+				except psycopg2.DatabaseError as e:
+					self.log.exception('Error retrieving torrent listing',exc_info=True)
+					raise 
 				else:
+					for r in cur:
+						infoHash,torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes = r
+						infoHash = base64.urlsafe_b64decode(infoHash + '==')
+						yield {
+						'id' : torrentId ,
+						'metainfo' : { 'href' : self.getResourceForTorrent(torrentId) },
+						'info' : {'href' : self.getInfoResourceForTorrent(torrentId) },
+						'title' : torrentTitle,
+						'creationDate' : torrentsCreationDate,
+						'lengthInBytes' : lengthInBytes,
+						'creator': {
+							'href' : fairywren.USER_FMT % userId,
+							'name' : userName
+							}
+						}
+				finally:
 					conn.rollback()
-					cur.close()
-					break
-			
-			
-				
+					
