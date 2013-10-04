@@ -99,7 +99,10 @@ class Resource(object):
 					if converter:
 						result = converter(retval[parameter])
 						if result == None:
-							raise ValueError('Bad value "%s" for parameter %s' % (retval[parameter], parameter,))
+							if len(retval[parameter]) < 64:
+								raise ValueError('Bad value "%s" for parameter %s' % (retval[parameter], parameter,))
+							else:
+								raise ValueError('Bad value for parameter %s' %(parameter,))
 							
 						retval[parameter] = result
 					
