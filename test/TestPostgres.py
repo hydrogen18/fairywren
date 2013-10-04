@@ -28,8 +28,8 @@ def pg_ctl(directory,action,options=None):
 	
 	if action == 'start':
 		cmd.insert(2,'-w')
-		cmd.insert(2,'-l')
 		cmd.insert(2,os.devnull)
+		cmd.insert(2,'-l')
 	elif action == 'stop':
 		cmd.insert(2,'fast')
 		cmd.insert(2,'-m')
