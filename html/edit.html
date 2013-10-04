@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Edit Torrent</title>
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen" />
+		<link href="bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet" media="screen" />
+
+		<script src="js/jquery.js"></script>
+		<script src="js/sha.js"></script>
+		<script src="js/fairywren.js"></script>
+		<script src="bootstrap/js/bootstrap.min.js"></script>
+		<script src="js/edit.js"></script>
+
+	</head>
+<body>
+
+
+<div class="row"  >
+	<div class="span12" id="torrent">
+		<p id="alert"></p>
+		<form class="form-horizontal">
+			<div class="control-group">
+				<div class="controls">
+					<input id="save" type="submit" class="btn btn-primary" 
+					 onclick="Fairywren.edit.save(); return false;"/>
+				</div>
+			</div>
+			<div class="control-group">
+				<label class="control-label" for="title">Title:</label> 
+				<div class="controls">
+					<input id="title" type="text"  size="96"/>
+				</div>
+			</div>
+			<div class="control-group">
+				<label class="control-label" for="extended">Extended Info:</label> 
+				<div class="controls">
+					<textarea id="extended" size="96"> </textarea>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+
+</body>
+
+</html>
+
