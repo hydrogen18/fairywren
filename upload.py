@@ -108,7 +108,7 @@ def buildOpener(url,username,password):
 	body = json.load(response)
 	
 	if 'error' in body:
-		raise Error(body['error'])
+		raise Exception(body['error'])
 	
 	cookies = cookielib.CookieJar()
 	
