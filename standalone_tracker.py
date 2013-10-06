@@ -35,8 +35,9 @@ if __name__ == '__main__':
 	peerList = Peers(60*60*6)
 	tracker = Tracker(authmgr,peerList,httpPathDepth)
 	
-	trackerStats = TrackerStatsPublisher(tracker.getStatsQueue())
+	trackerStats = TrackerStatsPublisher(tracker.getStatsQueue(),tracker.getPeerCountQueue())
 	
-	eventlet.spawn_n(trackerStats)
+	for t in trackerStats.getThreads():
+		eventlet.spawn_n(t)
 	eventlet.spawn_n(peerList)
 	wsgi.server(eventlet.listen((httpListenIp, httpListenPort)), tracker)

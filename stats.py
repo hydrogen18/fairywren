@@ -27,6 +27,7 @@ class TrackerStatsPublisher(object):
 		return [self.statsThread,self.peerCountThread]
 		
 	def peerCountThread(self):
+		self.log.info('Started peer count thread')
 		while True:
 			msg = self.peerCountQueue.get()
 			
@@ -36,7 +37,7 @@ class TrackerStatsPublisher(object):
 			self.log.debug('Sent %s msg for user %i', 'increment' if increment else 'decrement' , userId)
 		
 	def statsThread(self):
-		self.log.info('Started')
+		self.log.info('Started stats thread')
 		while True:
 			#Tuples consisting of 
 			#
@@ -66,13 +67,16 @@ class TrackerStatsSubscriber(object):
 		#by the tracker whenever the peer count changes for a torrent
 		self.sub.setsockopt(zmq.SUBSCRIBE,fairywren.MSG_SCRAPE)
 		
+		self.peerCountSub = self.zmq.socket(zmq.SUB)
+		self.peerCountSub.connect(fairywren.IPC_PATH)
+		self.peerCountSub.setsockopt(zmq.SUBSCRIBE,fairywren.MSG_PEERCOUNTDELTA)
+		
 		self.counts = {}
 		
 		self.log = logging.getLogger('fairywren.stats.sub')
 		self.log.info('Created')
 		
 		self.userIps = {}
-		
 		
 	def getUserCounts(self):
 		return self.userIps
@@ -105,7 +109,7 @@ class TrackerStatsSubscriber(object):
 				toPop.append(entry)
 				
 		for entry in toPop:
-			self.log.debug('User #i loses %x:%i',userId,ip,port)
+			self.log.debug('User #%i loses %x:%i',userId,ip,port)
 			userCounter.pop(entry)
 		
 		#If the user counter has no entries at all now
@@ -113,6 +117,8 @@ class TrackerStatsSubscriber(object):
 		if len(userCounter) == 0:
 			self.userIps.pop(userId)
 			self.log.info('User #%i leaves swarm',userId)
+			
+		return userId
 			
 	
 	def consumeMessage(self,message):
@@ -126,8 +132,21 @@ class TrackerStatsSubscriber(object):
 		
 		return  tid	
 		
-	def __call__(self):		
-		self.log.info('Started')
+	def getThreads(self):
+		return [self.statsThread,self.peerCountThread]	
+		
+	def peerCountThread(self):
+		self.log.info('Started peer count thread')
+		
+		while True:
+			recvdmsg = self.peerCountSub.recv_multipart()
+			userId = self.consumePeerCountMessage(recvdmsg)
+			
+			self.log.debug('Received counts message for user #%i',userId)
+			
+		
+	def statsThread(self):		
+		self.log.info('Started stats thread')
 		#Receive messages forever
 		while True:
 			recvdmsg = self.sub.recv_multipart()

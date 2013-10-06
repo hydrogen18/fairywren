@@ -42,7 +42,8 @@ if __name__ == '__main__':
 	users.setConnectionPool(connPool)
 	
 	tssub = TrackerStatsSubscriber()
-	eventlet.spawn_n(tssub)
+	for t in tssub.getThreads():
+		eventlet.spawn_n(t)
 	webapi = Webapi(tssub,users,authmgr,torrents,httpPathDepth,conf['webapi']['secure'])
 	
 	users.createRoles(webapi.getRoles())
