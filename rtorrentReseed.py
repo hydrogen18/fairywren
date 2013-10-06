@@ -24,8 +24,8 @@ if __name__ == "__main__":
 	infoHash = sys.argv[2]
 	
 	#Login to the fairywren instance
-	fairywren = buildOpener(**fconf['fairywren'])
-	
+	fairywren = buildOpener(**conf['fairywren'])
+	fwurl = str(conf['fairywren']['url'])
 	#Retrieve the announce url
 	account = json.loads(fairywren.open('%s/api/session' % fwurl ).read())
 	announceUrl = json.loads(fairywren.open('%s/%s' % ( fwurl, account['my']['href'] ) ).read())['announce']['href']
