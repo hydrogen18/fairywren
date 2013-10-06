@@ -1,5 +1,6 @@
 import base64
-MSG_SCRAPE = 'x01'
+MSG_SCRAPE = '\x01'
+MSG_PEERCOUNTDELTA = '\x02'
 IPC_PATH = 'ipc:///tmp/fairywrenStats'
 
 API_PATH = 'api'

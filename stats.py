@@ -2,13 +2,15 @@ from eventlet.green import zmq
 import fairywren
 import cPickle as pickle
 import logging
+import collections
 
 class TrackerStatsPublisher(object):
-	def __init__(self,localQueue):
+	def __init__(self,localQueue,peerCountQueue):
 		self.zmq = zmq.Context(1)
 		self.pub = self.zmq.socket(zmq.PUB)
 		self.pub.bind(fairywren.IPC_PATH)
 		self.localQueue = localQueue
+		self.peerCountQueue = peerCountQueue
 		self.log = logging.getLogger('fairywren.stats.pub')
 		self.log.info('Created')
 		
@@ -17,7 +19,23 @@ class TrackerStatsPublisher(object):
 		#identifier
 		return [fairywren.MSG_SCRAPE,pickle.dumps(msg,-1)]
 		
-	def __call__(self):
+	
+	def producePeerCountMessage(self,msg):
+		return [fairywren.MSG_PEERCOUNTDELTA,pickle.dumps(msg,-1)]
+	
+	def getThreads(self):
+		return [self.statsThread,self.peerCountThread]
+		
+	def peerCountThread(self):
+		while True:
+			msg = self.peerCountQueue.get()
+			
+			self.pub.send_multipart(self.producePeerCountMessage(msg))
+			increment, userId, _ , _ = msg
+			
+			self.log.debug('Sent %s msg for user %i', 'increment' if increment else 'decrement' , userId)
+		
+	def statsThread(self):
 		self.log.info('Started')
 		while True:
 			#Tuples consisting of 
@@ -53,6 +71,50 @@ class TrackerStatsSubscriber(object):
 		self.log = logging.getLogger('fairywren.stats.sub')
 		self.log.info('Created')
 		
+		self.userIps = {}
+		
+		
+	def getUserCounts(self):
+		return self.userIps
+		
+	def consumePeerCountMessage(self,message):
+		msg = pickle.loads(message[1])
+		increment, userId, ip, port = msg
+		
+		userCounter = self.userIps.get(userId)
+		
+		if userCounter == None:
+			userCounter = collections.Counter()
+			self.log.info('User #%i enters swarm',userId)
+			self.userIps[userId] = userCounter
+		
+		if increment:
+			action = userCounter.update
+			self.log.debug('User #%i adds to %x:%i',userId,ip,port)
+		else:
+			action = userCounter.subtract
+			self.log.debug('User #%i subtracts %x:%i',userId,ip,port)
+			
+		action(((ip,port,),))
+		
+		#Remove any entries in this users counter that 
+		#have a count of zero
+		toPop = []
+		for entry, quantity in userCounter.iteritems():
+			if quantity <= 0:
+				toPop.append(entry)
+				
+		for entry in toPop:
+			self.log.debug('User #i loses %x:%i',userId,ip,port)
+			userCounter.pop(entry)
+		
+		#If the user counter has no entries at all now
+		#remove it from the dictionary		
+		if len(userCounter) == 0:
+			self.userIps.pop(userId)
+			self.log.info('User #%i leaves swarm',userId)
+			
+	
 	def consumeMessage(self,message):
 		#The second item in the message is a dictionary conforming
 		#to the structure defined by the tracker 'scrape'
