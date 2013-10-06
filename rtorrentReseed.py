@@ -60,8 +60,14 @@ if __name__ == "__main__":
 	#Upload the torrent to fairywren
 	fairywren.open('%s/api/torrents' % fwurl ,data={"extended": json.dumps({ "mediainfo" : minfo }) , "title":str(sourceTorrent['info']['name']),"torrent":open(newTorrentPath,'rb')})
 	
+	#Disable torrent checking
+	rtorrentLocal.set_check_hash(0)
+	
 	#Add the new torrent to the local rtorrent instance
 	rtorrentLocal.load.start('',newTorrentPath)
+	
+	#Enable torrent checking
+	rtorrentLocal.set_check_hash(1)
 	
 	
 	
