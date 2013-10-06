@@ -90,16 +90,19 @@ class Peers(object):
 		
 	def removePeer(self,info_hash,peer):
 		if info_hash not in self.torrents:
-			return 
+			#No change in peer count
+			return False
 		
 		try:
 			indexOfPeer = self.torrents[info_hash].index(peer)
 		except ValueError:
-			#Peer was not in torrent, no problem
-			return
+			#Peer was not in torrent, no problem, no change in peer count
+			return False
 		
 		#Remove the peer
 		self.torrents[info_hash].pop(indexOfPeer)
+		#Peer count changed
+		return True
 		
 	def updatePeer(self,info_hash,peer):
 		if info_hash not in self.torrents:

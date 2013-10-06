@@ -60,8 +60,29 @@ class PeersTest(unittest.TestCase):
 		p = peers.Peer(ip,1025,0,0,0,'a')
 		self.assertTrue(peerTracker.updatePeer(info_hash,p))
 		
-	def test_addingPeers(self):
+	def test_removePeerNoSuchInfoHash(self):
+		peerTracker = peers.Peers(0)
+		ip = socket.inet_aton('192.168.0.1')
+		p = peers.Peer(ip,1025,3,0,0,'a')
+		info_hash = '0'*20
+		self.assertFalse(peerTracker.removePeer(info_hash,p))
 		
+	def test_removePeerNotExistInInfoHash(self):
+		peerTracker = peers.Peers(0)
+		ip = socket.inet_aton('192.168.0.1')
+		p0 = peers.Peer(ip,1025,3,0,0,'a')
+		info_hash = '0'*20
+		self.assertTrue(peerTracker.updatePeer(info_hash,p0))
+		
+		p1 = peers.Peer(ip,1026,3,0,0,'a')
+		
+		self.assertFalse(peerTracker.removePeer(info_hash,p1))
+		
+		self.assertTrue(peerTracker.removePeer(info_hash,p0))
+		
+		self.assertFalse(peerTracker.removePeer(info_hash,p0))
+		
+	def test_addingPeers(self):
 		peerList = []
 		for peerIp in range(1,255):
 			ip = socket.inet_aton('192.168.0.' + str(peerIp))
@@ -100,7 +121,7 @@ class PeersTest(unittest.TestCase):
 				self.assertTrue(peer in peerList)
 				
 			for peer in peerList:
-				peerTracker.removePeer(info_hash,peer)
+				self.assertTrue(peerTracker.removePeer(info_hash,peer))
 				self.assertTrue(not peer in peerTracker.getPeers(info_hash))
 			
 			

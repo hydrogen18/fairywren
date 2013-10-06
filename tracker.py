@@ -232,6 +232,9 @@ class Tracker(object):
 		#changes in the course of processing this result
 		change = False
 		
+		#This value is set to true if the peer is added, false if removed
+		addPeer = False
+		
 		#For all 3 cases here just return peers
 		if p['event'] in ['started','completed','update']:
 			response['complete'] = self.peers.getNumberOfLeeches(p['info_hash'])
@@ -239,8 +242,10 @@ class Tracker(object):
 			
 			change = self.peers.updatePeer(p['info_hash'],peer)
 			
-			peersForResponse = self.peers.getPeers(p['info_hash'])
+			if change:
+				addPeer = True
 			
+			peersForResponse = self.peers.getPeers(p['info_hash'])
 			
 			#Return a compact response or a traditional response
 			#based on what is requested
@@ -260,10 +265,11 @@ class Tracker(object):
 					response['peers'].append({'peer id':peer.peerId,'ip':socket.inet_ntoa(struct.pack('!I',peer.ip)),'port':peer.port})
 		#For stop event, just remove the peer. Don't return anything	
 		elif p['event'] == 'stopped':
-			self.peers.removePeer(p['info_hash'],peer)
+			addPeer = not self.peers.removePeer(p['info_hash'],peer)
 			#Assume that the count of seeders or leechers is always 
 			#decreased by one
 			change = True
+			
 			
 		#If the number of seeders or leechers has changed then
 		#dispatch an update message
