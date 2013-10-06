@@ -28,7 +28,7 @@ class MockAuth(object):
 	def __init__(self):
 		self._authorizeInfoHash = 1
 	def authenticateSecretKey(self,key):
-		return True
+		return 1
 		
 	def authorizeInfoHash(self,info_hash):
 		return self._authorizeInfoHash
@@ -66,13 +66,12 @@ class PathLopping(unittest.TestCase):
 		
 class Unauthorized(WSGITrackerTest):
 	def authenticateSecretKey(self,key):
-		return key in self.keys
+		return 1 if key in self.keys else None
 	
 	def authorizeInfoHash(self,info_hash):
 		return 1 if info_hash in self.info_hashes else None
 	
 	def createTracker(self):
-
 		return tracker.Tracker(self,peers.Peers(0),0)
 		
 	def test_UnauthSecretKey(self):

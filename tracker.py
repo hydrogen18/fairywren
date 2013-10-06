@@ -203,7 +203,8 @@ class Tracker(object):
 				
 				
 		#Make sure the secret key is valid
-		if not self.auth.authenticateSecretKey(secretKey):
+		userId = self.auth.authenticateSecretKey(secretKey)
+		if userId == None:
 			response = {}
 			response['failure reason'] = 'failed to authenticate secret key'
 			return sendBencodedWsgiResponse(env,start_response,response)

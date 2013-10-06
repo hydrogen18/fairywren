@@ -65,15 +65,18 @@ class Auth(object):
 		with self.connPool.item() as conn:
 			cur = conn.cursor()
 		
-			cur.execute("Select 1 from users where secretKey=%s and password is not null;",
+			cur.execute("Select id from users where secretKey=%s and password is not null;",
 			(base64.urlsafe_b64encode(key).replace('=','') ,))
 		
-			allowed = cur.fetchone() != None
-		
+			r = cur.fetchone()
+			
+			if r != None:
+				r, = r
+			
 			cur.close()
 			conn.rollback()
 			
-			return allowed
+			return r
 		
 	def authorizeInfoHash(self,info_hash):
 		with self.connPool.item() as conn:
