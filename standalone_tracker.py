@@ -30,7 +30,9 @@ if __name__ == '__main__':
 	httpListenIp = conf['tracker'].get('ip',DEFAULT_LISTEN_IP)
 	httpListenPort = conf['tracker'].get('port',DEFAULT_LISTEN_PORT)
 	httpPathDepth = conf.get('pathDepth',DEFAULT_PATH_DEPTH)
-	peerList = Peers(60*60)
+	
+	#Use a six hour period for flushing expired peers
+	peerList = Peers(60*60*6)
 	tracker = Tracker(authmgr,peerList,httpPathDepth)
 	
 	trackerStats = TrackerStatsPublisher(tracker.getStatsQueue())

@@ -8,6 +8,9 @@ import logging
 import logging.handlers
 import base64
 
+import eventlet
+import eventlet.queue
+
 from wsgi_intercept.urllib2_intercept import install_opener
 import wsgi_intercept
 
@@ -313,6 +316,84 @@ class BadAnnounce(WSGITrackerTest):
 				continue
 			self.assertTrue(False)				
 		
+class TrackerPeerCountTest(WSGITrackerTest):
+	def test_stopNotAPeer(self):
+		global remoteAddr
+		remoteAddr = '1.2.3.9'
+		info_hash = '0'*20
+		peerPort = 22001
+		query = {}
+		query['info_hash'] = info_hash
+		query['peer_id'] = '0'*20
+		query['port'] = peerPort
+		query['uploaded'] = 0
+		query['downloaded'] = 0 
+		query['left'] = 128
+		query['compact'] = 0
+		query['event'] = 'started'
+		
+		#Send a stopped request, should not generate an event in the queue
+		query['event'] = 'stopped'
+		r = self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+		self.assertEqual(200,r.code)
+		
+		with self.assertRaises(eventlet.queue.Empty) as cm:
+			self.tracker.getPeerCountQueue().get_nowait()
+	
+	def test_addPeer(self):
+		global remoteAddr
+		remoteAddr = '1.2.3.4'
+		info_hash = '0'*20
+		peerPort = 22000
+		query = {}
+		query['info_hash'] = info_hash
+		query['peer_id'] = '0'*20
+		query['port'] = peerPort
+		query['uploaded'] = 0
+		query['downloaded'] = 0 
+		query['left'] = 128
+		query['compact'] = 0
+		query['event'] = 'started'
+		r = self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+		self.assertEqual(200,r.code)
+		
+		peerCount = self.tracker.getPeerCountQueue().get_nowait()
+		increment, userId, peerIp, _peerPort = peerCount
+		self.assertTrue(increment)
+		self.assertEqual(peerPort, _peerPort)
+		
+		#Send the same request, should not generate an event in the queue
+		r = self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+		self.assertEqual(200,r.code)
+		with self.assertRaises(eventlet.queue.Empty) as cm:
+			self.tracker.getPeerCountQueue().get_nowait()
+			
+		#Send an update request, should not generate an event in the queue
+		query.pop('event')
+		r = self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+		self.assertEqual(200,r.code)
+		with self.assertRaises(eventlet.queue.Empty) as cm:
+			self.tracker.getPeerCountQueue().get_nowait()
+
+			
+		#Send a completed request, should not generate an event in the queue
+		query['event'] = 'completed'
+		r = self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+		self.assertEqual(200,r.code)
+		with self.assertRaises(eventlet.queue.Empty) as cm:
+			self.tracker.getPeerCountQueue().get_nowait()
+			
+		#Send a stopped request, should generate an event in the queue
+		query['event'] = 'stopped'
+		r = self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+		self.assertEqual(200,r.code)
+		
+		peerCount = self.tracker.getPeerCountQueue().get_nowait()
+		increment, userId, peerIp, _peerPort = peerCount
+		self.assertFalse(increment)
+		self.assertEqual(peerPort, _peerPort)
+	
+	
 
 class TrackerTest(WSGITrackerTest):
 	def test_addingPeers(self):
@@ -343,6 +424,8 @@ class TrackerTest(WSGITrackerTest):
 				response = bencode.bdecode(r.read())
 				self.assertIn('peers',response)
 				self.assertEqual(len(response['peers']),cnt+1)
+				
+				
 				
 	def test_compactResponse(self):
 		global remoteAddr

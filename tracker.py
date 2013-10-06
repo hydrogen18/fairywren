@@ -35,6 +35,7 @@ class Tracker(object):
 		self.peers = peers
 		self.pathDepth = pathDepth
 		self.statsQueue = eventlet.queue.LightQueue()
+		self.peerCountQueue = eventlet.queue.LightQueue()
 		
 		self.announceLog = logging.getLogger('fairywren.announce')
 		self.trackerLog = logging.getLogger('fairywren.tracker')
@@ -45,6 +46,13 @@ class Tracker(object):
 		"""Return the queue that this object uses to push
 		events to other worker threads"""
 		return self.statsQueue
+		
+		
+	def getPeerCountQueue(self):
+		"""Returns the queue that his object uses to push 
+		peer count changes to other threads"""
+		return self.peerCountQueue
+		
 		
 	def getScrape(self,info_hashes):
 		"""Return a dictionary object that contains a tracker scrape. 
@@ -265,10 +273,8 @@ class Tracker(object):
 					response['peers'].append({'peer id':peer.peerId,'ip':socket.inet_ntoa(struct.pack('!I',peer.ip)),'port':peer.port})
 		#For stop event, just remove the peer. Don't return anything	
 		elif p['event'] == 'stopped':
-			addPeer = not self.peers.removePeer(p['info_hash'],peer)
-			#Assume that the count of seeders or leechers is always 
-			#decreased by one
-			change = True
+			change = self.peers.removePeer(p['info_hash'],peer)
+			addPeer = False
 			
 			
 		#If the number of seeders or leechers has changed then
@@ -276,6 +282,13 @@ class Tracker(object):
 		if change:
 			self.trackerLog.debug('Dispatching stats update for: %s',p['info_hash'].encode('hex').upper())
 			self.statsQueue.put( (torrentId, self.peers.getNumberOfSeeds(p['info_hash']), self.peers.getNumberOfLeeches(p['info_hash']) ))
+
+			# Tuple has the structure:
+			# Boolean - Increment(True) or decrement(False)
+			# UserId
+			# Peer IP 
+			# Peer Port
+			self.peerCountQueue.put((addPeer,userId,peerIp,peer.port))
 			
 		#Log the successful announce
 		self.announceLog.info('%s:%d %s,%s,%d',peerIpAsString,p['port'],p['info_hash'].encode('hex').upper(),p['event'],p['left'])
