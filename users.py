@@ -411,4 +411,21 @@ class Users(object):
 		return retval
 			
 
-
+	def getUsername(self,idNumber):
+		with self.connPool.item() as conn:
+			with conn.cursor() as cur:
+				try:
+					cur.execute("Select name from users where users.id = %s;",(idNumber,))
+				except psycopg2.DatabaseError as e:
+					self.log.exception('Failed getting name of user',exc_info=True)
+					raise 
+				else:
+					result = cur.fetchone()
+				finally:
+					conn.rollback()
+					
+				if result == None:
+					return None
+					
+				username, = result
+				return username

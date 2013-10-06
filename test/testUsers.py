@@ -48,6 +48,9 @@ class TestUsersEmptyDatabase(TestPostgres):
 	def test_listInvitesByUser(self):
 		self.assertEqual(0,len(list(self.users.listInvitesByUser(0))))
 		
+	def test_getUsername(self):
+		self.assertEqual(None,self.users.getUsername(0))
+		
 class TestBootstrapRoles(TestPostgres):
 	def setUp(self):
 		TestPostgres.setUp(self)
@@ -160,6 +163,9 @@ class TestUserRoles(TestWithValidUser):
 		
 				
 class TestUsers(TestWithValidUser):
+
+	def test_getUsername(self):
+		self.assertEqual(self.validusername,self.users.getUsername(self.validuid))
 
 	def test_addUserThatExists(self):	
 		with self.assertRaises(users.UserAlreadyExists) as cm:
