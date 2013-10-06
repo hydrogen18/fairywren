@@ -14,6 +14,9 @@ import fairywren
 import math
 import users
 
+import struct
+import socket
+
 def decodePassword(password):
 	#Password comes across as 64 bytes of base64 encoded data
 	#with trailing ='s lopped off. 
@@ -89,6 +92,31 @@ class Webapi(restInterface):
 	def getRoles(self):
 		return [ res.getName() for res in self.getResources() if res.requiresAuthorization()]
 		
+	@requireAuthorization()
+	@resource(True,'GET','swarm')
+	def getSwarm(self,env,start_response,session):
+		userIps = self.torrentStats.getUserCounts()
+				
+		response = {}
+		
+		for userId,ipCounts in userIps.iteritems():
+			username = self.users.getUsername(userId)
+		
+			#Shouldn't ever happen
+			if username == None:
+				self.log.info('Non existent user id #%i encountered',userId)
+				continue
+			response[username] = {}
+			response[username]['href'] = fairywren.USER_FMT % userId
+			peers = []
+			
+			for a, quantity in ipCounts.iteritems():
+				ip,port = a
+				ip = socket.inet_ntoa(struct.pack('!I',ip))
+				peers.append({'ip':ip,'port':port,'quantity':quantity})
+			response[username]['peers'] = peers
+				
+		return vanilla.sendJsonWsgiResponse(env,start_response,response)
 
 	@resource(True,'GET','roles')
 	def listRoles(self,env,start_response,session):

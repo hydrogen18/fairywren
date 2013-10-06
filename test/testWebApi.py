@@ -21,10 +21,14 @@ import collections
 class MockStats(object):
 	def __init__(self):
 		self._getCount = (0,0)
+		self._getUserCounts = {}
 	def getCount(self,torrentId):
 		if not isinstance(torrentId, int):
 			raise ValueError('torrent Id must be integer')
 		return self._getCount
+		
+	def getUserCounts(self):
+		return self._getUserCounts
 		
 class MockUsers(unittest.TestCase):
 	def __init__(self):
@@ -36,6 +40,10 @@ class MockUsers(unittest.TestCase):
 		self._claimInvite = None
 		self._getUserRoles = []
 		self._setUserRoles = (0,0)
+		self._getUsername = None
+		
+	def getUsername(self,uid):
+		return self._getUsername
 	
 	def setUserRoles(self,roles,uid):
 		self.assertIsInstance(roles,collections.Iterable)
@@ -156,6 +164,37 @@ class AuthenticatedWebApiTest(WebApiTest):
 	
 		self.urlopen = urllib2.build_opener(wsgi_intercept.urllib2_intercept.wsgi_urllib2.WSGI_HTTPHandler(),urllib2.HTTPCookieProcessor(cookies),MultipartPostHandler.MultipartPostHandler).open		
 
+class TestGetSwarm(AuthenticatedWebApiTest):
+	def setUp(self):
+		AuthenticatedWebApiTest.setUp(self)
+		self.auth._isUserMemberOfRole = True
+		
+	def test_ok(self):
+		r = self.urlopen('http://webapi/swarm')
+		
+		self.assertEqual(200,r.code)
+		
+		r = json.loads(r.read())
+		self.assertNotIn('error',r)
+		
+	def test_withUsers(self):
+		self.stats._getUserCounts = {}
+		self.stats._getUserCounts[1] = collections.Counter()
+		self.stats._getUserCounts[1].update(((0x01020304,55000,),))
+		username = 'foobarmeow'
+		self.users._getUsername = username
+		
+		r = self.urlopen('http://webapi/swarm')
+		self.assertEqual(200,r.code)
+		
+		r = json.loads(r.read())
+		self.assertNotIn('error',r)
+		
+		self.assertIn(username,r)
+		self.assertIn('href',r[username])
+		self.assertIn('peers',r[username])
+		self.assertEqual(1,len(r[username]['peers']))
+		
 class TestGetNonExistentInvite(WebApiTest):
 	def test_getNonExistentInvite(self):
 		def failure(secret):
@@ -400,7 +439,6 @@ class TestDownloadTorrent(AuthenticatedWebApiTest):
 			return
 		self.assertTrue(False)
 		
-
 class TestUpdateTorrent(AuthenticatedWebApiTest):
 	def setUp(self):
 		AuthenticatedWebApiTest.setUp(self)
