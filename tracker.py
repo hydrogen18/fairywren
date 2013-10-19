@@ -29,6 +29,21 @@ def getClientAddress(environ):
     except KeyError:
         return environ['REMOTE_ADDR']
 
+def dottedQuadToInt(dq):
+	#Change the peer IP into an integer
+	try:
+		peerIp = socket.inet_aton(dq)
+	except socket.error:
+		raise ValueError('Not a valid IP address:%s' % peerIp)
+		
+	#Convert from network byte order to integer
+	try:
+		peerIp, = struct.unpack('!I',peerIp)
+	except struct.error:
+		raise ValueError('Serious wtf, how did this fail')
+		
+	return peerIp
+
 class Tracker(object):
 	def __init__(self,auth,peers,pathDepth):
 		self.auth = auth
@@ -101,16 +116,9 @@ class Tracker(object):
 		#Extract the IP of the peer
 		peerIp = getClientAddress(env)
 		peerIpAsString = peerIp
-		#Chance the peer IP into an integer
 		try:
-			peerIp = socket.inet_aton(peerIp)
-		except socket.error:
-			return vanilla.http_error(500,env,start_response)
-	
-		#Convert from network byte order to integer
-		try:
-			peerIp, = struct.unpack('!I',peerIp)
-		except struct.error:
+			peerIp = dottedQuadToInt(peerIp)
+		except ValueError:
 			return vanilla.http_error(500,env,start_response)
 						
 		#Parse the query string. Absence indicates error
@@ -227,7 +235,7 @@ class Tracker(object):
 		
 		
 		#Construct the peers entry
-		peer = peers.Peer(peerIp,p['port'],p['left'],p['downloaded'],p['uploaded'],p['peer_id'])
+		peer = peers.Peer(peerIp,p['port'],p['left'])
 		
 		#This is the basic response format
 		response = {}

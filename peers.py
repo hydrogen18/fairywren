@@ -1,18 +1,18 @@
 from monotonic import monotonic_time
 import logging
 import eventlet
+import redis
+import struct
+
+PEER_STRUCT = "=IH"
 
 class Peer(object):
-	__slots__ = ['ip','port','left','downloaded','uploaded','peerId','created']
+	__slots__ = ['ip','port','left']
 	
-	def __init__(self,ip,port,left,downloaded,uploaded,peerId):
+	def __init__(self,ip,port,left):
 		self.ip = ip
 		self.port = port
 		self.left = left
-		self.downloaded = downloaded
-		self.uploaded = uploaded
-		self.peerId = peerId
-		self.created = monotonic_time()
 		
 	def ipAsDottedQuad(self):
 		result = []
@@ -25,115 +25,83 @@ class Peer(object):
 	def __eq__(self,other):
 		if isinstance(other,Peer):
 			return self.port == other.port and self.ip == other.ip
-			
 		return NotImplemented
+		
 
 class Peers(object):
+	PEERS_HSET = "peers"
+	PEERS_ID = PEERS_HSET + ".id"
+	PEER = "peer"
 	
-	def __init__(self,peerGracePeriod):
-		self.peerGracePeriod = peerGracePeriod
-		self.torrents = {}
+	def __init__(self,redisSocketPath):
+		self.redisPool = redis.StrictRedis(unix_socket_path=redisSocketPath).connection_pool
 		self.log = logging.getLogger('fairywren.peers')
 		self.log.info('Created')
 		
-	def __call__(self):
-		self.log.info('Started')
-		if self.peerGracePeriod == 0:
-			self.log.warn('Peer grace period is zero, assuming no expiration is to be done')
-			return
-		while True:
-			eventlet.sleep(self.peerGracePeriod)
-			self.removeExpiredPeers()
+		conn = self._getRedisConn()
+		if conn.ping():
+			self.log.info('Redis server is alive')
+		else:
+			self.log.info('Redis server did not respond to ping')
 			
-	def removeExpiredPeers(self):
-		currentTime = monotonic_time()
-		
-		self.log.info('Cleaning up expired peers')
-		
-		for infoHash,peerList in self.torrents.iteritems():
-			self.log.debug('Checking for expired peers in: %s', infoHash.encode('hex').upper())
-			expirations = []
-			#Iterate over the peer list, saving the indices
-			#of expired peers
-			for i, peer in enumerate(peerList):
-				if currentTime - peer.created >= self.peerGracePeriod:
-					self.log.info('%s,peer expired: %s,%d',infoHash.encode('hex').upper(),peer.ipAsDottedQuad(),peer.port)
-					expirations.append(i)
-			
-			#Reverse the list of indices, so the 
-			#positions aren't modified as peers are removed
-			expirations.reverse()
-			
-			#Remove each expired peer
-			for expiration in expirations:
-				peer = peerList.pop(expiration)
-				self.log.debug('%s,peer popped: %s,%d',infoHash.encode('hex').upper(),peer.ipAsDottedQuad(),peer.port)
-			
+	def _getRedisConn(self):
+		return redis.StrictRedis(connection_pool=self.redisPool)
 		
 	def getNumberOfSeeds(self,info_hash):
-		if info_hash not in self.torrents:
-			return 0
-			
-		return sum( 1 for peer in self.torrents[info_hash] if peer.left == 0)
+		conn = self._getRedisConn()
+		r = conn.hvals(info_hash)
+		return sum( 1 for peer in r if peer == '1')
 		
 	def getNumberOfLeeches(self,info_hash):
-		if info_hash not in self.torrents:
-			return 0
-			
-		return sum( 1 for peer in self.torrents[info_hash] if peer.left != 0)
+		conn = self._getRedisConn()
+		r = conn.hvals(info_hash)
+		return sum( 1 for peer in r if peer == '0')
 		
 	def getPeers(self,info_hash):
-		if info_hash not in self.torrents:
-			return []
-			
-		return self.torrents[info_hash]
+		conn = self._getRedisConn()
+		
+		peers = conn.hkeys(info_hash)
+		for val in peers:
+			peerIp,peerPort = struct.unpack(PEER_STRUCT,val)
+			yield Peer(peerIp,peerPort,0) #Use 0 here because the caller doesn't care
 		
 	def removePeer(self,info_hash,peer):
-		if info_hash not in self.torrents:
-			#No change in peer count
-			return False
+		conn = self._getRedisConn()
+		peerNumber = self.getPeerNumber(peer)
 		
-		try:
-			indexOfPeer = self.torrents[info_hash].index(peer)
-		except ValueError:
-			#Peer was not in torrent, no problem, no change in peer count
+		if peerNumber == None:
 			return False
+			
+		isRemove = 1 == conn.hdel(info_hash,peerNumber)
 		
-		#Remove the peer
-		self.torrents[info_hash].pop(indexOfPeer)
-		#Peer count changed
-		return True
+		return isRemove
+		
+	def getPeerNumber(self,peer):
+		#Pack the peer
+		packedPeer = struct.pack(PEER_STRUCT,peer.ip,peer.port)
+		return packedPeer
 		
 	def updatePeer(self,info_hash,peer):
-		if info_hash not in self.torrents:
-			self.torrents[info_hash] = []
-			
-		exists = True
-		try:
-			indexOfPeer = self.torrents[info_hash].index(peer)
-		except ValueError:
-			exists = False
 		
-		#While updating the peers, determine if the number of seeders
-		#or leechers has changed
-		change = False
-		if exists:
-			extantPeer = self.torrents[info_hash][indexOfPeer]
-			
-			#If the peer changes from seed to leech, or from leech
-			#to seed then the count has changed
-			wasSeed = extantPeer.left == 0
-			isSeed = peer.left == 0
-
-			change = wasSeed!=isSeed
-			
-			
-			self.torrents[info_hash][indexOfPeer] = peer
-			
+		peerNumber = self.getPeerNumber(peer)
+		
+		conn = self._getRedisConn()
+		
+		wasSeed = conn.hget(info_hash, peerNumber)
+						
+		if wasSeed == None:	
+			wasSeed = False
 		else:
-			#New peers mean the count has always changed
-			change = True
-			self.torrents[info_hash].append(peer)
+			wasSeed = wasSeed == '1'
+			
+		isSeed = peer.left == 0
+		
+		isAdd = 1 == conn.hset(info_hash, peerNumber,'1' if isSeed else '0')
+		
+		#If the peer was added or
+		#If the peer changed from seed to leech, or from leech
+		#to seed then the count has changed
+		change = isAdd or (wasSeed!=isSeed)
 			
 		return change
 		
