@@ -45,7 +45,7 @@ if __name__ == '__main__':
 	#Pass in zero and do not spawn the thread associated with the Peers
 	#object. It is not needed in this process as it runs in the tracker
 	#process.
-	peerList = Peers(redisConnPool,0)
+	peerList = peers.Peers(redisConnPool,0)
 	
 	webapi = Webapi(peerList,users,authmgr,torrents,httpPathDepth,conf['webapi']['secure'])
 	
