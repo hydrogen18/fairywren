@@ -122,7 +122,10 @@ class Peers(object):
 				
 				if currentTime - float(lastSeenTime) >= self.peerExpirationPeriod:
 					conn.hdel(info_hash,peerNumber)
-					
+					#if removing the peer causes the hash set to no longer
+					#exist, then remove it from the set of observed torrents
+					if not conn.exists(info_hash):
+						conn.srem(Peers.SEEN_TORRENTS, info_hash)
 					self.log.info('Expired peer')
 		
 	def updatePeer(self,info_hash,peer):
