@@ -375,11 +375,14 @@ class Webapi(restInterface):
 	def torrentInfo(self,env,start_response,session,uid):
 		uid = int(uid,16)
 		response = self.torrents.getInfo(uid)
-		
 		if response == None:
 			return vanilla.http_error(404,env,start_response,msg='no such torrent')
-		
+
+		torrentInfoHash = response.pop('infoHash')
+		numSeeds,numLeeches = self.peers.getNumberOfPeers(torrentInfoHash)
 		response['extended'] = self.torrents.getExtendedInfo(uid)
+		response['seeds'] = numSeeds
+		response['leeches'] = numLeeches
 		return vanilla.sendJsonWsgiResponse(env,start_response,response)
 		
 

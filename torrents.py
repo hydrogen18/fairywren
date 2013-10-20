@@ -270,6 +270,7 @@ class TorrentStore(object):
 		infoHash,torrentId,torrentTitle,torrentsCreationDate,userId,userName,lengthInBytes = result
 		infoHash = base64.urlsafe_b64decode(infoHash + '==')
 		return {
+			'infoHash' : infoHash,
 			'metainfo' : { 'href' : self.getResourceForTorrent(torrentId) },
 			'title' : torrentTitle,
 			'creationDate' : torrentsCreationDate,

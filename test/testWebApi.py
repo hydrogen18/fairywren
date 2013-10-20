@@ -332,8 +332,7 @@ class TestTorrentInfo(AuthenticatedWebApiTest):
 		self.assertTrue(False)
 		
 	def test_ok(self):
-		
-		self.torrents._getInfo = {'test':'foo'}
+		self.torrents._getInfo = {'test':'foo','infoHash' : '\x255'*20}
 		self.torrents._getExtendedInfo = {'test': 'bar'}
 		r = self.urlopen('http://webapi/torrents/00000000.json')
 		self.assertEqual(r.code,200)
@@ -343,6 +342,8 @@ class TestTorrentInfo(AuthenticatedWebApiTest):
 		
 		self.assertIn('extended',r)
 		self.assertEqual(self.torrents._getExtendedInfo,r['extended'])
+		self.assertIn('seeds',r)
+		self.assertIn('leeches',r)
 
 class TestTorrentSearch(AuthenticatedWebApiTest):
 	def test_noTokens(self):
