@@ -61,7 +61,13 @@ Fairywren.torrent.extensions.mediainfo =  function(data)
 			}
 			
 			var fileItem = $("<li />");
-			fileItem.append($("<span />").text(filename));
+			var span = $("<span />").text(filename)
+			span.data('trackListing',trackList);
+			span.addClass('btn btn-link');
+			span.click(Fairywren.torrent.extensions.mediainfo.toggleTrackListingVisibility);
+			fileItem.append(span);
+			$(trackList).hide();
+			hidden.push(trackList);
 			fileItem.append(trackList);
 			files.append(fileItem);
 		}
@@ -76,6 +82,7 @@ Fairywren.torrent.extensions.mediainfo =  function(data)
 				hidden[i].show();
 			}
 			$(this).remove();
+			hidden = null;
 		})
 		retval.append($("<p />").append($("<h3 />").text('Media Info')));
 		retval.append($("<p />").append(showAllButton));
@@ -83,6 +90,10 @@ Fairywren.torrent.extensions.mediainfo =  function(data)
 		
 		return retval;
 	};
+	
+Fairywren.torrent.extensions.mediainfo.toggleTrackListingVisibility = 	function(){
+				$(this).data('trackListing').toggle();
+			};
 
 Fairywren.torrent.extensions.mediainfo.allowedTracks = {
 	'General' : {
