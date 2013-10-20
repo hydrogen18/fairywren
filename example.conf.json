@@ -1,4 +1,8 @@
 {
+"redis" : {
+	"unix_socket_path" : "/tmp/redis.sock"
+},
+
 "tracker" : {
 "postgresql" : {
         "dbname" : "fairywrenTracker",
@@ -11,7 +15,6 @@
         "dbname" : "fairywrenTracker",
         "user" : "webapi"
         },
-"torrentPath" : "/var/fairywren/torrents",
 "secure" : false
 },
 
