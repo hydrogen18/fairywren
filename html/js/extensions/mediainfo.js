@@ -6,8 +6,11 @@ Fairywren.torrent.extensions.mediainfo =  function(data)
 		retval.addClass('span12');
 		var files = $("<ul />");
 		var hidden = [];
-		for(filename in data.files)
-		{
+		var filenames = Object.keys(data.files);
+		filenames.sort();
+		for(var fnIndex = 0; fnIndex != filenames.length; ++fnIndex){
+			var filename = filenames[fnIndex];
+		
 			var trackList = $("<ul />");
 			var file = data.files[filename];
 			var tracks = file.tracks;
