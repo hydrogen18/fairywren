@@ -2,6 +2,7 @@ import json
 import eventlet
 import eventlet.db_pool
 import datetime
+import redis
 
 def sendJsonWsgiResponse(env,start_response,response,additionalHeaders=None):
 	headers = [('Content-Type','text/json')]
@@ -55,6 +56,10 @@ def getContentLength(env):
 		return None
 		
 	return cl
+
+def buildRedisConnectionPool(**redisKwArgs):
+	conn = redis.StrictRedis(**redisKwArgs)
+	return conn.connection_pool
 
 def buildConnectionPool(dbModule,**dbKwArgs):
 	dbKwArgs['max_idle'] = 10

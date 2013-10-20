@@ -6,7 +6,7 @@ import tracker
 import subprocess
 import tempfile
 import os
-
+import vanilla
 		
 
 class PeersTest(unittest.TestCase):
@@ -32,7 +32,7 @@ class PeersTest(unittest.TestCase):
 			else:
 				raise RuntimeError('redis-server did not start')
 		
-		self.peers = peers.Peers(testSocket,0)
+		self.peers = peers.Peers(vanilla.buildRedisConnectionPool(unix_socket_path=testSocket),0)
 		
 	def tearDown(self):
 		if self.redisInstance != None:

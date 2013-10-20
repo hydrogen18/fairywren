@@ -31,9 +31,9 @@ class Peer(object):
 class Peers(object):
 	LAST_SEEN_SUFFIX = '.lastSeen'
 	SEEN_TORRENTS = 'seenTorrents'
-	def __init__(self,redisSocketPath,peerExpirationPeriod):
+	def __init__(self,redisConnectionPool,peerExpirationPeriod):
 		self.peerExpirationPeriod = peerExpirationPeriod
-		self.redisPool = redis.StrictRedis(unix_socket_path=redisSocketPath).connection_pool
+		self.redisPool = redisConnectionPool
 		self.log = logging.getLogger('fairywren.peers')
 		self.log.info('Created')
 		
