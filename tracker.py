@@ -271,14 +271,17 @@ class Tracker(object):
 				peersBuffer = ctypes.create_string_buffer(maxSize)
 				
 				actualSize = 0
-				for peer in peersForResponse[:p['numwant']]:
+				for peer in itertools.islice(peersForResponse,0,p['numwant']):
 					peerStruct.pack_into(peersBuffer,actualSize,peer.ip,peer.port)
 					actualSize += peerStruct.size
 					
 				response['peers'] = peersBuffer.raw[:actualSize]
 			else:
-				for peer in peersForResponse[:p['numwant']]:
-					response['peers'].append({'peer id':peer.peerId,'ip':socket.inet_ntoa(struct.pack('!I',peer.ip)),'port':peer.port})
+				for peer in itertools.islice(peersForResponse,0,p['numwant']):
+					#For non-compact responses, use a bogus peerId. Hardly any client
+					#uses this type of response anyways. There is no real meaning to the
+					#peer ID except informal agreements.
+					response['peers'].append({'peer id':'0'*20,'ip':socket.inet_ntoa(struct.pack('!I',peer.ip)),'port':peer.port})
 		#For stop event, just remove the peer. Don't return anything	
 		elif p['event'] == 'stopped':
 			change = self.peers.removePeer(p['info_hash'],peer)

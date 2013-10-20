@@ -7,7 +7,7 @@ import bencode
 import logging
 import logging.handlers
 import base64
-
+import testPeers
 import eventlet
 import eventlet.queue
 
@@ -36,28 +36,34 @@ class MockAuth(object):
 	def authorizeInfoHash(self,info_hash):
 		return self._authorizeInfoHash
 
-class WSGITrackerTest(unittest.TestCase):
+class WSGITrackerTest(testPeers.PeersTest):
 	def createTracker(self):
 		if self.tracker == None:
-			self.tracker = tracker.Tracker(MockAuth(),peers.Peers(0),0)
+			self.tracker = tracker.Tracker(MockAuth(),self.peers,0)
 		return self.tracker 
-
 		
 	def setUp(self):
 		self.tracker = None
+		super(WSGITrackerTest,self).setUp()
 		install_opener()
 		
 		wsgi_intercept.add_wsgi_intercept('tracker',80,self.createTracker)
 		self.urlopen = urllib2.urlopen
 		
-class PathLopping(unittest.TestCase):
+class PathLopping(WSGITrackerTest):
 	def test_lopping(self):
-		
+		#Issue a request here to cause 'createTracker' to be called
+		while True:
+			try:
+				urllib2.urlopen('http://tracker/')
+			except urllib2.HTTPError as e:
+				self.assertEqual(404,e.code)
+				break
+			self.assertTrue(False)
+			
 		for i in range(0,2**7):
-			def mkTracker():
-				return tracker.Tracker(MockAuth(),peers.Peers(0),i)
-				
-			wsgi_intercept.add_wsgi_intercept('tracker',80,mkTracker)
+			#Manipulate the tracker object directly before each request
+			self.tracker.pathDepth = i
 			query = {'peer_id':'A'*20,'port':1025,'uploaded':0,'downloaded':0,'left':0,'info_hash':'C'*20}
 			
 			r = urllib2.urlopen('http://tracker/' + 'a/'*i + 86*'0' + '/announce?' + urllib.urlencode(query))
@@ -75,7 +81,10 @@ class Unauthorized(WSGITrackerTest):
 		return 1 if info_hash in self.info_hashes else None
 	
 	def createTracker(self):
-		return tracker.Tracker(self,peers.Peers(0),0)
+		if self.tracker == None:
+			#Use 'self' as the auth object
+			self.tracker = tracker.Tracker(self,self.peers,0)
+		return self.tracker 
 		
 	def test_UnauthSecretKey(self):
 		self.keys = ['0'*64]
@@ -112,7 +121,7 @@ class BadAnnounce(WSGITrackerTest):
 		for i in range(1,86):
 			self.assertRaisesRegexp(urllib2.HTTPError, '.*404.*', self.urlopen,'http://tracker/' + i*'0' + '/announce')
 		
-	def test_misingInfoHash(self):
+	def test_missingInfoHash(self):
 		query = {'peer_id':'A'*20,'port':1025,'uploaded':0,'downloaded':0,'left':0}
 		
 		try:
@@ -125,7 +134,7 @@ class BadAnnounce(WSGITrackerTest):
 			return
 		self.assertTrue(False)		
 
-	def test_misingPeerId(self):
+	def test_missingPeerId(self):
 		query = {'info_hash':'A'*20,'port':1025,'uploaded':0,'downloaded':0,'left':0}
 		
 		try:
@@ -138,7 +147,7 @@ class BadAnnounce(WSGITrackerTest):
 			return
 		self.assertTrue(False)		
 
-	def test_misingPort(self):
+	def test_missingPort(self):
 		query = {'info_hash':'A'*20,'peer_id':'B'*20,'uploaded':0,'downloaded':0,'left':0}
 		
 		try:
@@ -151,7 +160,7 @@ class BadAnnounce(WSGITrackerTest):
 			return
 		self.assertTrue(False)		
 		
-	def test_misingUploaded(self):
+	def test_missingUploaded(self):
 		query = {'info_hash':'A'*20,'peer_id':'B'*20,'port':1025,'downloaded':0,'left':0}
 		
 		try:
@@ -177,7 +186,7 @@ class BadAnnounce(WSGITrackerTest):
 			return
 		self.assertTrue(False)					
 
-	def test_misingLeft(self):
+	def test_missingLeft(self):
 		query = {'info_hash':'A'*20,'peer_id':'B'*20,'port':1025,'uploaded':0,'downloaded':0}
 		
 		try:
