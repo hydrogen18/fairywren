@@ -46,6 +46,9 @@ Fairywren.torrent = function()
 	Fairywren.torrent.info.append($("<dt />").text("Size"));
 	Fairywren.torrent.info.append($("<dd />").text(Fairywren.bytesToPrettyPrint(Fairywren.torrent.data.lengthInBytes)));
 	
+	Fairywren.torrent.info.append($("<dt />").text("Peers"));
+	Fairywren.torrent.info.append($("<dd />").text(Fairywren.torrent.data.seeds + ' seeds, ' + Fairywren.torrent.data.leeches + ' leeches'));
+	
 	if(('extended' in Fairywren.torrent.data) && Fairywren.torrent.data.extended !== null)
 	{
 		for(extension in Fairywren.torrent.data.extended)
