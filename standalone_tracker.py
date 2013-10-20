@@ -3,7 +3,6 @@ eventlet.monkey_patch()
 import eventlet.backdoor
 from eventlet import wsgi
 from tracker import Tracker
-from stats import TrackerStatsPublisher
 from auth import *
 from peers import *
 
@@ -36,9 +35,5 @@ if __name__ == '__main__':
 	peerList = Peers(redisConnPool,60*60*6)
 	tracker = Tracker(authmgr,peerList,httpPathDepth)
 	
-	trackerStats = TrackerStatsPublisher(tracker.getStatsQueue(),tracker.getPeerCountQueue())
-	
-	for t in trackerStats.getThreads():
-		eventlet.spawn_n(t)
 	eventlet.spawn_n(peerList)
 	wsgi.server(eventlet.listen((httpListenIp, httpListenPort)), tracker)

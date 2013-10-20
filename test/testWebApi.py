@@ -17,6 +17,7 @@ import itertools
 import wsgi_intercept
 import users
 import collections
+import fairywrenMocks
 
 class MockStats(object):
 	def __init__(self):
@@ -136,14 +137,14 @@ class MockTorrents(object):
 class WebApiTest(unittest.TestCase):
 	def getWebapi(self):
 		if self.webapi == None:
-			self.webapi = webapi.Webapi(self.stats,self.users,self.auth,self.torrents,0,False)
+			self.webapi = webapi.Webapi(self.peers,self.users,self.auth,self.torrents,0,False)
 		return self.webapi
 
 		
 	def setUp(self):
 		self.webapi = None
 		self.auth = MockAuth()
-		self.stats = MockStats() 
+		self.peers = fairywrenMocks.Peers()
 		self.users = MockUsers()
 		self.torrents = MockTorrents()
 		
@@ -805,7 +806,7 @@ class TestGetTorrents(AuthenticatedWebApiTest):
 		NUM_TORRENTS = 5
 		self.torrents._getNumTorrents = NUM_TORRENTS
 		self.torrents._getTorrents = [  {'id':i + 1} for i in range(0,NUM_TORRENTS) ]
-		self.stats._getCount = (2,3)
+		self.peers._getNumberOfPeers = (2,3)
 		r = self.urlopen('http://webapi/torrents')
 		self.assertEqual(200,r.code)
 		r = json.loads(r.read())
@@ -823,7 +824,7 @@ class TestGetTorrents(AuthenticatedWebApiTest):
 		RESULT_SIZE = 20
 		self.torrents._getNumTorrents = NUM_TORRENTS
 		self.torrents._getTorrents = [  {'id':i + 1} for i in range(0,NUM_TORRENTS) ]
-		self.stats._getCount = (2,3)
+		self.peers._getNumberOfPeers = (2,3)
 		r = self.urlopen('http://webapi/torrents?' + urllib.urlencode({'resultSize':RESULT_SIZE}))
 		self.assertEqual(200,r.code)
 		r = json.loads(r.read())
@@ -842,9 +843,6 @@ class TestGetTorrents(AuthenticatedWebApiTest):
 			self.assertEqual(2,torrent['seeds'])
 			self.assertEqual(3,torrent['leeches'])
 			
-			
-			
-		
 	def test_badResultSize(self):
 		try:
 			self.urlopen('http://webapi/torrents?' + urllib.urlencode({'resultSize': 'meow','subset':1}))

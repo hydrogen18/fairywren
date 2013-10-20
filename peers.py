@@ -58,6 +58,20 @@ class Peers(object):
 		r = conn.hvals(info_hash)
 		return sum( 1 for peer in r if peer == '0')
 		
+	def getNumberOfPeers(self,info_hash):
+		conn = self._getRedisConn()
+		r = conn.hvals(info_hash)
+		numSeeds = 0
+		numLeeches = 0
+		
+		for peer in r:
+			if peer == '1':
+				numSeeds+=1
+			else:
+				numLeeches+=1
+		
+		return numSeeds,numLeeches
+		
 	def getPeers(self,info_hash):
 		conn = self._getRedisConn()
 		

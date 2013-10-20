@@ -150,6 +150,11 @@ class TestAddingPeers(PeersTest):
 		
 		for info_hash in info_hashes:		
 			self.assertEqual(peerTracker.getNumberOfLeeches(info_hash)+peerTracker.getNumberOfSeeds(info_hash),len(peerList))
+			
+			numSeeds,numLeeches = peerTracker.getNumberOfPeers(info_hash)
+			
+			self.assertEqual(numSeeds+numLeeches, len(peerList))
+			
 			l = list(peerTracker.getPeers(info_hash))
 			self.assertEqual(len(l),len(peerList))
 			

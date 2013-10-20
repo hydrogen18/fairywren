@@ -2,12 +2,11 @@ import eventlet
 eventlet.monkey_patch()
 import eventlet.backdoor
 from eventlet import wsgi
-
 from webapi import Webapi
 from auth import *
 from torrents import TorrentStore
 from users import Users
-from stats import TrackerStatsSubscriber
+import peers
 import vanilla
 import psycopg2
 import sys
@@ -41,10 +40,14 @@ if __name__ == '__main__':
 	users = Users(conf['salt'])
 	users.setConnectionPool(connPool)
 	
-	tssub = TrackerStatsSubscriber()
-	for t in tssub.getThreads():
-		eventlet.spawn_n(t)
-	webapi = Webapi(tssub,users,authmgr,torrents,httpPathDepth,conf['webapi']['secure'])
+	redisConnPool = vanilla.buildRedisConnectionPool(**conf['redis'])
+	
+	#Pass in zero and do not spawn the thread associated with the Peers
+	#object. It is not needed in this process as it runs in the tracker
+	#process.
+	peerList = Peers(redisConnPool,0)
+	
+	webapi = Webapi(peerList,users,authmgr,torrents,httpPathDepth,conf['webapi']['secure'])
 	
 	users.createRoles(webapi.getRoles())
 	

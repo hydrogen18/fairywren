@@ -10,3 +10,11 @@ class Tracker(object):
 
 	def getScrape(self,info_hashes):
 		return self._getScrape
+		
+class Peers(object):
+	def __init__(self):
+		self._getNumberOfPeers = (0,0)
+		
+	def getNumberOfPeers(self,info_hash):
+		return self._getNumberOfPeers
+		

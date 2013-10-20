@@ -55,8 +55,8 @@ def extractUserId(*pathComponents):
 class Webapi(restInterface):
 	
 	MAX_TORRENTS_PER_RESULT = 50
-	def __init__(self,torrentStats,users,authmgr,torrents,httpPathDepth,secure):
-		self.torrentStats = torrentStats
+	def __init__(self,peers,users,authmgr,torrents,httpPathDepth,secure):
+		self.peers = peers
 		def authenticateUser(username,password):	
 			#Password comes across as 64 bytes of base64 encoded data
 			#with trailing ='s lopped off. 
@@ -91,7 +91,7 @@ class Webapi(restInterface):
 
 	def getRoles(self):
 		return [ res.getName() for res in self.getResources() if res.requiresAuthorization()]
-		
+	'''
 	@requireAuthorization()
 	@resource(True,'GET','swarm')
 	def getSwarm(self,env,start_response,session):
@@ -117,7 +117,7 @@ class Webapi(restInterface):
 			response[username]['peers'] = peers
 				
 		return vanilla.sendJsonWsgiResponse(env,start_response,response)
-
+	'''
 	@resource(True,'GET','roles')
 	def listRoles(self,env,start_response,session):
 		return vanilla.sendJsonWsgiResponse(env,start_response,{'roles':self.getRoles()})
@@ -234,15 +234,13 @@ class Webapi(restInterface):
 		listOfTorrents = []
 		for torrent in self.torrents.searchTorrents(tokens):
 			torrentId = torrent.pop('id')
-			seeds, leeches = self.torrentStats.getCount(torrentId)
+			seeds, leeches = self.peers.getNumberOfPeers(torrentId)
 			torrent['seeds'] = seeds
 			torrent['leeches'] = leeches
 			listOfTorrents.append(torrent)
 			
 		return vanilla.sendJsonWsgiResponse(env,start_response,
 		{'torrents': listOfTorrents})
-	
-	
 		
 	@resource(True,'GET','torrents')
 	def listTorrents(self,env,start_response,session):
@@ -277,7 +275,7 @@ class Webapi(restInterface):
 		
 		for torrent in self.torrents.getTorrents(resultSize,subset):
 			torrentId = torrent.pop('id')
-			seeds, leeches = self.torrentStats.getCount(torrentId)
+			seeds, leeches = self.peers.getNumberOfPeers(torrentId)
 			torrent['seeds'] = seeds
 			torrent['leeches'] = leeches
 			listOfTorrents.append(torrent)
