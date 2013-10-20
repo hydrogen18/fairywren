@@ -10,6 +10,7 @@ import base64
 import testPeers
 import eventlet
 import eventlet.queue
+import struct
 
 from wsgi_intercept.urllib2_intercept import install_opener
 import wsgi_intercept
@@ -355,6 +356,15 @@ class TrackerTest(WSGITrackerTest):
 				self.assertIn('peers',response)
 				self.assertEqual(len(response['peers']),cnt+1)
 				
+				for i in xrange(0,cnt):
+					p = response['peers'][i]
+					self.assertIn('ip',p)
+					self.assertIn('port',p)
+					peerIp,peerPort = peerList[i]
+					self.assertEqual(p['ip'], peerIp)
+					self.assertEqual(p['port'],peerPort)
+					self.assertIn('peer id',p)
+				
 				
 				
 	def test_compactResponse(self):
@@ -390,6 +400,15 @@ class TrackerTest(WSGITrackerTest):
 				response = bencode.bdecode(r.read())
 				self.assertIn('peers',response)
 				self.assertEqual(len(response['peers']),(cnt+1)*6)
+				
+				for i in xrange(0,cnt):
+					packedPeer = response['peers'][i*6:i*6+6]
+					a,b,c,d,port = struct.unpack('!BBBBH',packedPeer)
+					self.assertEqual(a,192)
+					self.assertEqual(b,168)
+					self.assertEqual(c,0)
+					self.assertEqual(d,i+1)
+					self.assertEqual(port,(i+1)%4 + 1025)
 		
 		#Test Update events
 		for info_hash in info_hashes:
