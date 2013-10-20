@@ -6,45 +6,7 @@ import tracker
 import subprocess
 import tempfile
 import os
-'''
-class TestExpiration(unittest.TestCase):
-	def test_expireFunc(self):
-		peerTracker = peers.Peers(1)
-		peerTracker.removeExpiredPeers()
-		
-		
-		info_hashes = [ i*20 for i in 'abcdefghijk']
-		for info_hash in info_hashes:
-			for ip in xrange(0,2**9):
-				p = peers.Peer(ip,1025,3,0,0,'a')
-				self.assertTrue(peerTracker.updatePeer(info_hash,p))
-				
-		time.sleep(2)
-		peerTracker.removeExpiredPeers()
-		
-		for info_hash in info_hashes:
-			self.assertEqual(0,len(peerTracker.getPeers(info_hash)))
-			
-	def test_expireFuncPartial(self):
-		gracePeriod = 60*60
-		peerTracker = peers.Peers(gracePeriod)
-		
-		info_hashes = [ i*20 for i in 'abcdefghijk']
-		for info_hash in info_hashes:
-			for ip in xrange(0,2**9):
-				p = peers.Peer(ip,1025,3,0,0,'a')
-				if ip%2 == 0:
-					p.created = p.created - gracePeriod - 1 
-				self.assertTrue(peerTracker.updatePeer(info_hash,p))
-				
-		peerTracker.removeExpiredPeers()
-		
-		for info_hash in info_hashes:
-			pList = peerTracker.getPeers(info_hash)
-			self.assertEqual(len(pList),2**8)
-			for peer in pList:
-				self.assertTrue(peer.created%2!=0)
-'''		
+
 		
 
 class PeersTest(unittest.TestCase):
@@ -70,13 +32,53 @@ class PeersTest(unittest.TestCase):
 			else:
 				raise RuntimeError('redis-server did not start')
 		
-		self.peers = peers.Peers(testSocket)
+		self.peers = peers.Peers(testSocket,0)
 		
 	def tearDown(self):
 		if self.redisInstance != None:
 			self.redisInstance.terminate()
 			self.redisInstance.wait()
-	
+
+class TestExpiration(PeersTest):
+	def test_expireFunc(self):
+		peerTracker = self.peers
+		peerTracker.removeExpiredPeers()
+		
+		
+		info_hashes = [ i*20 for i in 'abcdefghijk']
+		for info_hash in info_hashes:
+			for ip in xrange(0,2**9):
+				p = peers.Peer(ip,1025,3)
+				self.assertTrue(peerTracker.updatePeer(info_hash,p))
+				
+		time.sleep(2)
+		peerTracker.peerExpirationPeriod = 1
+		peerTracker.removeExpiredPeers()
+		
+		for info_hash in info_hashes:
+			pList = list(peerTracker.getPeers(info_hash))
+			self.assertEqual(0,len(pList))
+
+
+class TestExpireNone(PeersTest):
+	def test_expireFuncPartial(self):
+		
+		peerTracker = self.peers
+		
+		info_hashes = [ i*20 for i in 'abcdefghijk']
+		for info_hash in info_hashes:
+			for ip in xrange(0,2**9):
+				p = peers.Peer(ip,1025,3)
+				
+				self.assertTrue(peerTracker.updatePeer(info_hash,p))
+				
+		peerTracker.peerExpirationPeriod = 60*60
+		peerTracker.removeExpiredPeers()
+		
+		for info_hash in info_hashes:
+			pList = list(peerTracker.getPeers(info_hash))
+			self.assertEqual(len(pList),2**9)
+			
 class TestChange(PeersTest):		
 	def test_change(self):
 		peerTracker = self.peers

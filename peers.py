@@ -29,11 +29,10 @@ class Peer(object):
 		
 
 class Peers(object):
-	PEERS_HSET = "peers"
-	PEERS_ID = PEERS_HSET + ".id"
-	PEER = "peer"
-	
-	def __init__(self,redisSocketPath):
+	LAST_SEEN_SUFFIX = '.lastSeen'
+	SEEN_TORRENTS = 'seenTorrents'
+	def __init__(self,redisSocketPath,peerExpirationPeriod):
+		self.peerExpirationPeriod = peerExpirationPeriod
 		self.redisPool = redis.StrictRedis(unix_socket_path=redisSocketPath).connection_pool
 		self.log = logging.getLogger('fairywren.peers')
 		self.log.info('Created')
@@ -43,6 +42,8 @@ class Peers(object):
 			self.log.info('Redis server is alive')
 		else:
 			self.log.info('Redis server did not respond to ping')
+
+	
 			
 	def _getRedisConn(self):
 		return redis.StrictRedis(connection_pool=self.redisPool)
@@ -74,12 +75,41 @@ class Peers(object):
 			
 		isRemove = 1 == conn.hdel(info_hash,peerNumber)
 		
+		#if removing the peer causes the hash set to no longer
+		#exist, then remove it from the set of observed torrents
+		if isRemove and not conn.exists(info_hash):
+			conn.srem(Peers.SEEN_TORRENTS, info_hash)
+		
 		return isRemove
 		
 	def getPeerNumber(self,peer):
 		#Pack the peer
 		packedPeer = struct.pack(PEER_STRUCT,peer.ip,peer.port)
 		return packedPeer
+		
+	def __call__(self):
+		self.log.info('Started')
+		
+		if self.peerExpirationPeriod == 0:
+			self.log.info('Peer expiration period is zero, peers never expire')
+			return
+			
+		while True:
+			eventlet.sleep(self.peerExpirationPeriod)
+			self.removeExpiredPeers()
+		
+	def removeExpiredPeers(self):
+		conn = self._getRedisConn()
+		for info_hash in conn.sunion(Peers.SEEN_TORRENTS):
+			self.log.info('Checking for expiry of peers @ %s',info_hash.encode('hex'))
+			
+			for peerNumber,lastSeenTime in conn.hgetall(info_hash + Peers.LAST_SEEN_SUFFIX).iteritems():
+				currentTime = monotonic_time()
+				
+				if currentTime - float(lastSeenTime) >= self.peerExpirationPeriod:
+					conn.hdel(info_hash,peerNumber)
+					
+					self.log.info('Expired peer')
 		
 	def updatePeer(self,info_hash,peer):
 		
@@ -97,6 +127,9 @@ class Peers(object):
 		isSeed = peer.left == 0
 		
 		isAdd = 1 == conn.hset(info_hash, peerNumber,'1' if isSeed else '0')
+		
+		conn.hset(info_hash + Peers.LAST_SEEN_SUFFIX,peerNumber,monotonic_time())
+		conn.sadd(Peers.SEEN_TORRENTS,info_hash)
 		
 		#If the peer was added or
 		#If the peer changed from seed to leech, or from leech
