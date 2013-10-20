@@ -32,7 +32,8 @@ if __name__ == '__main__':
 	httpPathDepth = conf.get('pathDepth',DEFAULT_PATH_DEPTH)
 	
 	#Use a six hour period for flushing expired peers
-	peerList = Peers(60*60*6)
+	redisConnPool = vanilla.buildRedisConnectionPool(**conf['redis'])
+	peerList = Peers(redisConnPool,60*60*6)
 	tracker = Tracker(authmgr,peerList,httpPathDepth)
 	
 	trackerStats = TrackerStatsPublisher(tracker.getStatsQueue(),tracker.getPeerCountQueue())
