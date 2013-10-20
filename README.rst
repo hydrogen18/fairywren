@@ -177,8 +177,8 @@ with global permissions could be substituted.
 
 Redis
 ----
-The Redis instance is used by both servres. The tracker uses it store
-lists of peers. The webapi uses it to retrieve peer counts on torrents.
+The Redis instance is used by both servers. The tracker uses it store and retrieve
+lists of peers for each torrent. The webapi uses it to retrieve peer counts on torrents.
 
     
 
