@@ -373,7 +373,7 @@ class TestTorrentSearch(AuthenticatedWebApiTest):
 		NUM_TORRENTS = 100
 			
 		for numTokens in range(1,5):
-			self.torrents._searchTorrents = [  {'infoHash': chr(i+1)*20 } for i in range(0,NUM_TORRENTS) ]
+			self.torrents._searchTorrents = [  {'id': 0, 'infoHash': chr(i+1)*20 } for i in range(0,NUM_TORRENTS) ]
 			r  = self.urlopen('http://webapi/torrents?' + urllib.urlencode({"search": 1 , "token":range(0,numTokens)},doseq=True))
 			self.assertEqual(r.code,200)
 			r = json.loads(r.read())
@@ -805,7 +805,7 @@ class TestGetTorrents(AuthenticatedWebApiTest):
 	def test_noparams(self):
 		NUM_TORRENTS = 5
 		self.torrents._getNumTorrents = NUM_TORRENTS
-		self.torrents._getTorrents = [  {'infoHash':chr(i + 1)*20} for i in range(0,NUM_TORRENTS) ]
+		self.torrents._getTorrents = [  {'id': 0 ,'infoHash':chr(i + 1)*20} for i in range(0,NUM_TORRENTS) ]
 		self.peers._getNumberOfPeers = (2,3)
 		r = self.urlopen('http://webapi/torrents')
 		self.assertEqual(200,r.code)
@@ -823,7 +823,7 @@ class TestGetTorrents(AuthenticatedWebApiTest):
 		NUM_TORRENTS = 100
 		RESULT_SIZE = 20
 		self.torrents._getNumTorrents = NUM_TORRENTS
-		self.torrents._getTorrents = [  {'infoHash':chr(i + 1)*20} for i in range(0,NUM_TORRENTS) ]
+		self.torrents._getTorrents = [  {'id': 0 ,'infoHash':chr(i + 1)*20} for i in range(0,NUM_TORRENTS) ]
 		self.peers._getNumberOfPeers = (2,3)
 		r = self.urlopen('http://webapi/torrents?' + urllib.urlencode({'resultSize':RESULT_SIZE}))
 		self.assertEqual(200,r.code)

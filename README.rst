@@ -43,15 +43,15 @@ To run fairywren you'll need the following
 .. _Eventlet: http://eventlet.net
 .. _Psycopg2: https://pypi.python.org/pypi/psycopg2 
 .. _Multipart: https://github.com/hydrogen18/multipart
-.. _ZeroMq: http://www.zeromq.org/area%3Adownload
-.. _pyzmq: http://www.zeromq.org/bindings%3Apython
+.. _redis-py: https://pypi.python.org/pypi/redis
+.. _Redis: http://redis.io/download
 - Stackless_
 - Eventlet_
 - Psycopg2_
 - Multipart_
-- ZeroMq_
-- pyzmq_ 
 - Postgresql
+- Redis_
+- redis-py_
 - A web server that supports proxying. I use lighttpd.
 
 
@@ -92,7 +92,10 @@ webapi
 .. _tracker:
 tracker
     Configuration values specific to the tracker. See the tracker_.
-    
+
+redis
+------
+All keyword arguments to pass to the construct for Redis connections    
     
 tracker
 ------
@@ -141,17 +144,6 @@ web interface is best served by a traditional web server.
 Each instance is ran behind a HTTPS server(lighttpd in my case) which
 proxies requests to them. 
 
-IPC
----
-
-In order to display the seeders and leechers count on each torrent, the 
-web interface needs to get those counts from the tracker. This is done
-by having the tracker listen on a ZeroMQ PubSub connection. The web interface
-connects to this as a subscriber. Each time the peer count changes on 
-a torrent, the tracker publishes an update to the web interface. The web
-interface maintains a list of counts in memory in order to serve them
-with each request for torrent listings.
-
 SQL
 ----
 The PostgreSQL server is used by both server instances. 
@@ -183,7 +175,10 @@ and a read-write user for the webapi. The example roles and permissions
 are shown in roles.sql and permissions.sql. Obviously, a single user
 with global permissions could be substituted.
 
-
+Redis
+----
+The Redis instance is used by both servres. The tracker uses it store
+lists of peers. The webapi uses it to retrieve peer counts on torrents.
 
     
 
