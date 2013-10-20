@@ -84,6 +84,9 @@ class TestUpdateTorrent(TestTorrent):
 			info = self.torrents.getInfo(tid)
 			self.assertIn('title',info)
 			self.assertEqual(info['title'],'bar')
+			self.assertIn('infoHash',info)
+			self.assertEqual(20,len(info['infoHash']))
+		
 			
 
 class TestWithTorrents(TestTorrent):
@@ -109,6 +112,8 @@ class TestWithTorrents(TestTorrent):
 		self.assertIn('creationDate',t)
 		self.assertIn('lengthInBytes',t)
 		self.assertIn('creator',t)
+		self.assertIn('infoHash',t)
+		self.assertEqual(20,len(t['infoHash']))
 		
 		tid= t['id']
 		
@@ -134,7 +139,8 @@ class TestWithTorrents(TestTorrent):
 		self.assertIn('creationDate',t)
 		self.assertIn('lengthInBytes',t)
 		self.assertIn('creator',t)
-		
+		self.assertIn('infoHash',t)
+		self.assertEqual(20,len(t['infoHash']))
 		
 
 class TestEmptyDatabase(TestTorrent):
