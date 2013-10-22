@@ -256,7 +256,7 @@ class Tracker(object):
 				peersBuffer = array.array('c')
 				
 				for peer in itertools.islice(peersForResponse,0,p['numwant']):
-                    peersBuffer.fromstring(peerStruct.pack(peer.ip,peer.port))
+					peersBuffer.fromstring(peerStruct.pack(peer.ip,peer.port))
                     
 				response['peers'] = peersBuffer.tostring()
 			else:
