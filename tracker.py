@@ -6,7 +6,6 @@ import bencode
 import struct
 import socket
 import peers
-import ctypes
 import posixpath
 from eventlet.green import zmq
 import cPickle as pickle
@@ -14,6 +13,7 @@ import eventlet.queue
 import fairywren
 import itertools
 import logging
+import array
 
 def sendBencodedWsgiResponse(env,start_response,responseDict):
 	headers = [('Content-Type','text/plain')]
@@ -253,14 +253,12 @@ class Tracker(object):
 			if p['compact'] != 0:
 				peerStruct = struct.Struct('!IH')
 				maxSize = p['numwant'] * peerStruct.size
-				peersBuffer = ctypes.create_string_buffer(maxSize)
+				peersBuffer = array.array('c')
 				
-				actualSize = 0
 				for peer in itertools.islice(peersForResponse,0,p['numwant']):
-					peerStruct.pack_into(peersBuffer,actualSize,peer.ip,peer.port)
-					actualSize += peerStruct.size
-					
-				response['peers'] = peersBuffer.raw[:actualSize]
+                    peersBuffer.fromstring(peerStruct.pack(peer.ip,peer.port))
+                    
+				response['peers'] = peersBuffer.tostring()
 			else:
 				for peer in itertools.islice(peersForResponse,0,p['numwant']):
 					#For non-compact responses, use a bogus peerId. Hardly any client
