@@ -18,3 +18,11 @@ class Peers(object):
 	def getNumberOfPeers(self,info_hash):
 		return self._getNumberOfPeers
 		
+		
+class Swarm(object):
+	def __init__(self):
+		self._getPeers = {}
+		
+	def getPeers(self):
+		return self._getPeers
+		

@@ -12,7 +12,7 @@ import psycopg2
 import sys
 import json
 import logging.config
-
+import swarm
 
 DEFAULT_LISTEN_IP ='127.0.0.1'
 DEFAULT_LISTEN_PORT = 8081
@@ -47,7 +47,11 @@ if __name__ == '__main__':
 	#process.
 	peerList = peers.Peers(redisConnPool,0)
 	
-	webapi = Webapi(peerList,users,authmgr,torrents,httpPathDepth,conf['webapi']['secure'])
+	swarmConnPool = vanilla.buildSwarmConnectionPool(**conf['webapi']['postgresql'])
+	swarm = swarm.Swarm()
+	swarm.setConnectionPool(swarmConnPool)
+	
+	webapi = Webapi(swarm,peerList,users,authmgr,torrents,httpPathDepth,conf['webapi']['secure'])
 	
 	users.createRoles(webapi.getRoles())
 	

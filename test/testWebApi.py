@@ -137,7 +137,7 @@ class MockTorrents(object):
 class WebApiTest(unittest.TestCase):
 	def getWebapi(self):
 		if self.webapi == None:
-			self.webapi = webapi.Webapi(self.peers,self.users,self.auth,self.torrents,0,False)
+			self.webapi = webapi.Webapi(self.swarm,self.peers,self.users,self.auth,self.torrents,0,False)
 		return self.webapi
 
 		
@@ -147,6 +147,7 @@ class WebApiTest(unittest.TestCase):
 		self.peers = fairywrenMocks.Peers()
 		self.users = MockUsers()
 		self.torrents = MockTorrents()
+		self.swarm = fairywrenMocks.Swarm()
 		
 		install_opener()
 		
@@ -176,14 +177,15 @@ class TestGetSwarm(AuthenticatedWebApiTest):
 		self.assertEqual(200,r.code)
 		
 		r = json.loads(r.read())
+		self.assertEqual(0,len(r))
 		self.assertNotIn('error',r)
 		
 	def test_withUsers(self):
-		self.stats._getUserCounts = {}
-		self.stats._getUserCounts[1] = collections.Counter()
-		self.stats._getUserCounts[1].update(((0x01020304,55000,),))
+		self.swarm._getPeers = {}
 		username = 'foobarmeow'
-		self.users._getUsername = username
+		self.swarm._getPeers[username] = [{
+			'peerId' : '\x00'*20
+		}]
 		
 		r = self.urlopen('http://webapi/swarm')
 		self.assertEqual(200,r.code)
@@ -192,9 +194,6 @@ class TestGetSwarm(AuthenticatedWebApiTest):
 		self.assertNotIn('error',r)
 		
 		self.assertIn(username,r)
-		self.assertIn('href',r[username])
-		self.assertIn('peers',r[username])
-		self.assertEqual(1,len(r[username]['peers']))
 		
 class TestGetNonExistentInvite(WebApiTest):
 	def test_getNonExistentInvite(self):
