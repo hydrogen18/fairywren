@@ -52,7 +52,12 @@ class Tracker(object):
 		self.announceLog = logging.getLogger('fairywren.announce')
 		self.trackerLog = logging.getLogger('fairywren.tracker')
 		
+		self.afterAnnounce = []
+		
 		self.trackerLog.info('Created')
+		
+	def addAfterAnnounce(self,callback):
+		self.afterAnnounce.append(callback)
 		
 	def getScrape(self,info_hashes):
 		"""Return a dictionary object that contains a tracker scrape. 
@@ -272,6 +277,9 @@ class Tracker(object):
 			
 		#Log the successful announce
 		self.announceLog.info('%s:%d %s,%s,%d',peerIpAsString,p['port'],p['info_hash'].encode('hex').upper(),p['event'],p['left'])
+		
+		for callback in self.afterAnnounce:
+			callback(userId,p['info_hash'],peerIpAsString,p['port'],p['peer_id'])
 			
 		return sendBencodedWsgiResponse(env,start_response,response)
 

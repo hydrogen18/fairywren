@@ -31,8 +31,9 @@ import urllib2
 class MockAuth(object):
 	def __init__(self):
 		self._authorizeInfoHash = 1
+		self._authenticateSecretKey = 1
 	def authenticateSecretKey(self,key):
-		return 1
+		return self._authenticateSecretKey
 		
 	def authorizeInfoHash(self,info_hash):
 		return self._authorizeInfoHash
@@ -40,19 +41,18 @@ class MockAuth(object):
 class WSGITrackerTest(testPeers.PeersTest):
 	def createTracker(self):
 		if self.tracker == None:
-			self.tracker = tracker.Tracker(MockAuth(),self.peers,0)
+			self.auth = MockAuth()
+			self.tracker = tracker.Tracker(self.auth,self.peers,0)
 		return self.tracker 
 		
 	def setUp(self):
 		self.tracker = None
+		self.auth = None
 		super(WSGITrackerTest,self).setUp()
 		install_opener()
 		
 		wsgi_intercept.add_wsgi_intercept('tracker',80,self.createTracker)
 		self.urlopen = urllib2.urlopen
-		
-class PathLopping(WSGITrackerTest):
-	def test_lopping(self):
 		#Issue a request here to cause 'createTracker' to be called
 		while True:
 			try:
@@ -61,6 +61,9 @@ class PathLopping(WSGITrackerTest):
 				self.assertEqual(404,e.code)
 				break
 			self.assertTrue(False)
+		
+class PathLopping(WSGITrackerTest):
+	def test_lopping(self):
 			
 		for i in range(0,2**7):
 			#Manipulate the tracker object directly before each request
@@ -326,6 +329,43 @@ class BadAnnounce(WSGITrackerTest):
 				continue
 			self.assertTrue(False)				
 
+class TestAfterAnnounce(WSGITrackerTest):
+	def test_ok(self):
+		calls = []
+		def callback(*args):
+			calls.append(args)
+		
+		global remoteAddr
+		remoteAddr = '1.2.3.4'
+		
+		query = {}
+		query['info_hash'] = 'a'*20
+		query['peer_id'] = '0'*20
+		query['port'] = 42000
+		query['uploaded'] = 0
+		query['downloaded'] = 0 
+		query['left'] = 128
+		query['compact'] = 0
+		query['event'] = 'started'
+		self.tracker.addAfterAnnounce(callback)
+		r = self.urlopen('http://tracker/' + 86*'0' + '/announce?' + urllib.urlencode(query))
+		self.assertEqual(200,r.code)
+		
+		response = bencode.bdecode(r.read())
+		self.assertIn('peers',response)
+		self.assertEqual(len(response['peers']),1)
+		
+		self.assertEqual(1,len(calls))
+
+		userId,infoHash,peerIp,port,peerId = calls[0]
+		
+		self.assertEqual(infoHash,query['info_hash'])
+		self.assertEqual(port,query['port'])
+		self.assertEqual(peerIp,remoteAddr)
+		self.assertEqual(peerId,query['peer_id'])
+		self.assertEqual(self.auth._authenticateSecretKey,userId)
+		
+		
 class TrackerTest(WSGITrackerTest):
 	def test_addingPeers(self):
 		peerList = []
