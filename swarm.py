@@ -20,6 +20,27 @@ class Swarm(object):
 		
 	def pushPeer(self,*args):
 		self.queue.put(args)
+	
+	def getPeers(self):
+		result = {}
+		with self.connPool.item() as conn:
+			with conn.cursor() as cur:
+				cur.execute("Select users.name,peers.peerId,peers.ip,peers.port,peers.firstseen,peers.lastseen from peers left join users on peers.userId = users.id");
+				
+				for row in cur:
+					username,peerId,ip,port,firstSeen,lastSeen = row
+					if username not in result:
+						result[username] = []
+					result[username].append({
+						'peerId': str(peerId),
+						'ip': str(ip),
+						'port': port,
+						'firstSeen':firstSeen,
+						'lastSeen':lastSeen
+					})
+					
+			conn.rollback()
+		return result
 		
 	def recordPeer(self,userId,infoHash,peerIp,port,peerId):
 		peerIp = psycopg2.extras.Inet(peerIp)
