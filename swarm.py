@@ -10,10 +10,13 @@ class Swarm(object):
 		self.log = logging.getLogger('fairywren.Swarm')
 		psycopg2.extras.register_inet()
 		
+		self.log.info('Created')
+		
 	def setConnectionPool(self,pool):
 		self.connPool = pool		
 		
 	def __call__(self):
+		self.log.info('Started')
 		while True:
 			args = self.queue.get()
 			self.recordPeer(*args)
