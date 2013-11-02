@@ -47,7 +47,7 @@ if __name__ == '__main__':
 	#process.
 	peerList = peers.Peers(redisConnPool,0)
 	
-	swarmConnPool = vanilla.buildSwarmConnectionPool(**conf['webapi']['postgresql'])
+	swarmConnPool = vanilla.buildConnectionPool(psycopg2,**conf['webapi']['postgresql'])
 	swarm = swarm.Swarm()
 	swarm.setConnectionPool(swarmConnPool)
 	

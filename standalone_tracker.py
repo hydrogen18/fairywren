@@ -6,6 +6,7 @@ from tracker import Tracker
 from auth import *
 from peers import *
 
+import swarm
 import vanilla
 import psycopg2
 import sys
@@ -34,6 +35,13 @@ if __name__ == '__main__':
 	redisConnPool = vanilla.buildRedisConnectionPool(**conf['redis'])
 	peerList = Peers(redisConnPool,60*60*6)
 	tracker = Tracker(authmgr,peerList,httpPathDepth)
+	
+	swarmConnPool = vanilla.buildConnectionPool(psycopg2,**conf['tracker']['postgresql'])
+	swarm = swarm.Swarm()
+	swarm.setConnectionPool(swarmConnPool)
+	eventlet.spawn_n(swarm)
+	
+	tracker.addAfterAnnounce(swarm.pushPeer)
 	
 	eventlet.spawn_n(peerList)
 	wsgi.server(eventlet.listen((httpListenIp, httpListenPort)), tracker)
