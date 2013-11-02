@@ -39,3 +39,13 @@ CREATE TABLE roleMember(
 	userId INTEGER REFERENCES users(id) NOT NULL,
 	PRIMARY KEY(roleId,userId)
 );
+
+CREATE TABLE peers(
+	userId INTEGER REFERENCES users(id) NOT NULL,
+	ip inet NOT NULL,
+	port INTEGER NOT NULL,
+	peerId bytea NOT NULL,
+	lastSeen TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+	firstSeen TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+	PRIMARY KEY(userId,ip,port)
+);

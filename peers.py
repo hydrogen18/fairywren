@@ -129,11 +129,8 @@ class Peers(object):
 					self.log.info('Expired peer')
 		
 	def updatePeer(self,info_hash,peer):
-		
 		peerNumber = self.getPeerNumber(peer)
-		
 		conn = self._getRedisConn()
-		
 		wasSeed = conn.hget(info_hash, peerNumber)
 						
 		if wasSeed == None:	
@@ -142,7 +139,6 @@ class Peers(object):
 			wasSeed = wasSeed == '1'
 			
 		isSeed = peer.left == 0
-		
 		isAdd = 1 == conn.hset(info_hash, peerNumber,'1' if isSeed else '0')
 		
 		conn.hset(info_hash + Peers.LAST_SEEN_SUFFIX,peerNumber,monotonic_time())
