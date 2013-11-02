@@ -194,6 +194,7 @@ class TestGetSwarm(AuthenticatedWebApiTest):
 		self.assertNotIn('error',r)
 		
 		self.assertIn(username,r)
+		self.assertNotIn('peerId',r[username][0])
 		
 class TestGetNonExistentInvite(WebApiTest):
 	def test_getNonExistentInvite(self):
