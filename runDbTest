@@ -5,4 +5,5 @@ set +e
 
 python test/testTorrents.py
 python test/testUsers.py
+python test/testSwarm.py
 killall postgres

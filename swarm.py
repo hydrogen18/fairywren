@@ -19,7 +19,7 @@ class Swarm(object):
 			self.recordPeer(*args)
 		
 	def pushPeer(self,*args):
-		self.queue.put(args):
+		self.queue.put(args)
 		
 	def recordPeer(self,userId,infoHash,peerIp,port,peerId):
 		peerIp = psycopg2.extras.Inet(peerIp)
@@ -48,14 +48,14 @@ class Swarm(object):
 							#the record was created after the update and before this insert 
 							#and can be ignored
 							if e.pgcode == '23505':
-								pass
+								return
 							# 'foreign_key_violation' - violation of 'creator' foreign key
 							# i.e. user with uid doesn't exist. This should never happen
 							elif e.pgcode == '23503':
 								self.log.exception('Tried to insert peer with non existent user id %x',userId,exc_info=True)
+								raise e
 							else:
 								raise e
-							return
 						except psycopg2.DatabaseError as e:
 							self.log.exception('Error inserting peer',exc_info=True)
 							conn.rollback()
