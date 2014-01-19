@@ -8,6 +8,7 @@ import math
 import subprocess
 import urllib
 import urllib2
+import urlparse
 import MultipartPostHandler
 import cookielib
 import hashlib
@@ -40,26 +41,32 @@ if __name__ == "__main__":
 	#Check to see if this torrent is from the fairywren tracker already
 	if announceUrl == sourceTorrent['announce'] or ('announce-list' in sourceTorrent and announceUrl in sourceTorrent['announce-list']):
 		sys.exit(0)
-		
-	#Get the current piece size as a power of 2
-	pieceLength = int( math.log(sourceTorrent['info']['piece length'],2) )
 	
-	#Change the piece size to change the infoHash
-	if pieceLength > 19:
-		pieceLength -= 1
-	else:
-		pieceLength += 1
-
-	filesPath = rtorrentLocal.d.get_base_path(infoHash)
-	#Create a new torrent
-	newTorrentPath = mktorrent(filesPath,announceUrl,pieceLength,True)
+	oldAnnounce = urlparse.urlparse(sourceTorrent['announce'])
+	h = hashlib.sha1()
+	h.update(oldAnnounce.scheme)
+	h.update(oldAnnounce.netloc)
+	sourceTorrent['info']['x_cross_seed'] = h.digest()
+	sourceTorrent['announce'] = announceUrl
+	sourceTorrent.pop('announce-list',None)
+	sourceTorrent.pop('creation date',None)
+	sourceTorrent.pop('comment',None)
+	sourceTorrent.pop('created by',None)
+	sourceTorrent.pop('encoding',None)
 	
 	files = listFiles(filesPath)
 	minfo = mediainfo(*files)
 	
-	#Upload the torrent to fairywren
-	fairywren.open('%s/api/torrents' % fwurl ,data={"extended": json.dumps({ "mediainfo" : minfo }) , "title":str(sourceTorrent['info']['name']),"torrent":open(newTorrentPath,'rb')})
+	#Create a new torrent
+	with tempfile.NamedTemporaryFile() as fout:
+		fout.write(bencode.bencode(sourceTorrent))
+		fout.flush()
+		fout.seek(0)
+		
+		#Upload the torrent to fairywren
+		fairywren.open('%s/api/torrents' % fwurl ,data={"extended": json.dumps({ "mediainfo" : minfo }) , "title":str(sourceTorrent['info']['name']),"torrent":fout})	            
 	
+	#newTorrentPath = mktorrent(filesPath,announceUrl,pieceLength,True)
 	
 	#Add the new torrent to the local rtorrent instance
 	rtorrentLocal.load.start('',newTorrentPath)
