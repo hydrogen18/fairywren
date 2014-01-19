@@ -15,6 +15,7 @@ import hashlib
 import base64
 import types
 import xml.dom.minidom
+import tempfile
 
 from upload import *
 	
@@ -47,29 +48,28 @@ if __name__ == "__main__":
 	h.update(oldAnnounce.scheme)
 	h.update(oldAnnounce.netloc)
 	sourceTorrent['info']['x_cross_seed'] = h.digest()
-	sourceTorrent['announce'] = announceUrl
+	sourceTorrent['announce'] = str(announceUrl)
 	sourceTorrent.pop('announce-list',None)
 	sourceTorrent.pop('creation date',None)
 	sourceTorrent.pop('comment',None)
 	sourceTorrent.pop('created by',None)
 	sourceTorrent.pop('encoding',None)
-	
+
+	filesPath = rtorrentLocal.d.get_base_path(infoHash)	
 	files = listFiles(filesPath)
 	minfo = mediainfo(*files)
 	
 	#Create a new torrent
-	with tempfile.NamedTemporaryFile() as fout:
+	with tempfile.NamedTemporaryFile(suffix='.torrent') as fout:
 		fout.write(bencode.bencode(sourceTorrent))
 		fout.flush()
-		fout.seek(0)
-		
-		#Upload the torrent to fairywren
-		fairywren.open('%s/api/torrents' % fwurl ,data={"extended": json.dumps({ "mediainfo" : minfo }) , "title":str(sourceTorrent['info']['name']),"torrent":fout})	            
-	
-	#newTorrentPath = mktorrent(filesPath,announceUrl,pieceLength,True)
-	
-	#Add the new torrent to the local rtorrent instance
-	rtorrentLocal.load.start('',newTorrentPath)
+
+		with open(fout.name,'rb') as fin:
+			#Upload the torrent to fairywren
+			fairywren.open('%s/api/torrents' % fwurl ,data={"extended": json.dumps({ "mediainfo" : minfo }) , "title":str(sourceTorrent['info']['name']),"torrent":fin})	            
+		os.chmod(fout.name,0444)
+		#Add the new torrent to the local rtorrent instance
+		rtorrentLocal.load.start('',fout.name)
 	
 	
 	
