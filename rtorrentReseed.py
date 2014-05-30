@@ -16,9 +16,12 @@ import base64
 import types
 import xml.dom.minidom
 import tempfile
+import StringIO
 
 from upload import *
 	
+RTORRENT_PACKET_LIMIT = 1572864
+
 if __name__ == "__main__":
 	with open(sys.argv[1],'r') as fin:
 		conf = json.load(fin)
@@ -68,8 +71,16 @@ if __name__ == "__main__":
 			#Upload the torrent to fairywren
 			fairywren.open('%s/api/torrents' % fwurl ,data={"extended": json.dumps({ "mediainfo" : minfo }) , "title":str(sourceTorrent['info']['name']),"torrent":fin})	            
 		os.chmod(fout.name,0444)
-		#Add the new torrent to the local rtorrent instance
-		rtorrentLocal.load.start('',fout.name)
+		fout.seek(0,0)
+		torrentb64 = StringIO()
+		base64.encode(fout,torrentb64)
+		torrentb64 = torrentb64.getvalue()
+		if len(torrentb64) < RTORRENT_PACKET_LIMIT:
+			#Add the new torrent to the local rtorrent instance
+			rtorrentLocal.load.raw_start(torrentb64,'base64')
+		else:
+			#Add the new torrent to the local rtorrent instance
+			rtorrentLocal.load.start('',fout.name)
 	
 	
 	
