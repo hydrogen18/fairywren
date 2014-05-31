@@ -72,17 +72,13 @@ if __name__ == "__main__":
 			fairywren.open('%s/api/torrents' % fwurl ,data={"extended": json.dumps({ "mediainfo" : minfo }) , "title":str(sourceTorrent['info']['name']),"torrent":fin})	            
 		os.chmod(fout.name,0444)
 		fout.seek(0,0)
-		torrentb64 = StringIO.StringIO()
-		base64.encode(fout,torrentb64)
-		torrentb64 = torrentb64.getvalue()
-		if len(torrentb64) < RTORRENT_PACKET_LIMIT:
-			print 'load.raw_start'
-			#Add the new torrent to the local rtorrent instance
-			rtorrentLocal.load.raw_start('',torrentb64,'base64')
-		else:
-			print 'load.start'
-			#Add the new torrent to the local rtorrent instance
-			rtorrentLocal.load.start('',fout.name)
+		t = fout.read()
+		prev = len(r.download_list())
+		rtorrentLocal.load_raw_start(xmlrpclib.Binary(t),'d.set_custom=x-filename,reseed.torrent')
+		after = len(r.download_list())
+
+		if prev < after:
+			print 'something went wrong'
 	
 	
 	
