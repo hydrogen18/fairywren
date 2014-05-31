@@ -73,11 +73,11 @@ if __name__ == "__main__":
 		os.chmod(fout.name,0444)
 		fout.seek(0,0)
 		t = fout.read()
-		prev = len(r.download_list())
+		prev = len(rtorrentLocal.download_list())
 		rtorrentLocal.load_raw_start(xmlrpclib.Binary(t),'d.set_custom=x-filename,reseed.torrent')
-		after = len(r.download_list())
+		after = len(rtorrentLocal.download_list())
 
-		if prev < after:
+		if prev == after:
 			print 'something went wrong'
 	
 	
