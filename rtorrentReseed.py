@@ -3,6 +3,7 @@ import sys
 import json
 import xmlrpclib
 import os
+import os.path
 import bencode
 import math
 import subprocess
@@ -47,10 +48,7 @@ if __name__ == "__main__":
 		sys.exit(0)
 	
 	oldAnnounce = urlparse.urlparse(sourceTorrent['announce'])
-	h = hashlib.sha1()
-	h.update(oldAnnounce.scheme)
-	h.update(oldAnnounce.netloc)
-	sourceTorrent['info']['x_cross_seed'] = h.digest()
+	sourceTorrent['info']['x_cross_seed'] = os.path.basename(__file__)
 	sourceTorrent['announce'] = str(announceUrl)
 	sourceTorrent.pop('announce-list',None)
 	sourceTorrent.pop('creation date',None)
