@@ -43,14 +43,15 @@ if __name__ == "__main__":
 	with open(os.path.join(rtorrentLocal.get_session(),'%s.torrent' % infoHash),'rb') as fin:
 		sourceTorrent = bencode.bdecode(fin.read())
 	
+	oldAnnounce = urlparse.urlparse(sourceTorrent['announce'])
+	announceList = sourceTorrent.pop('announce-list',[])
 	#Check to see if this torrent is from the fairywren tracker already
-	if announceUrl == sourceTorrent['announce'] or ('announce-list' in sourceTorrent and announceUrl in sourceTorrent['announce-list']):
+	if urlparse.urlparse(announceUrl).netloc.lower() == oldAnnounce.netloc.lower():
 		sys.exit(0)
 	
-	oldAnnounce = urlparse.urlparse(sourceTorrent['announce'])
 	sourceTorrent['info']['x_cross_seed'] = os.path.basename(__file__)
+	sourceTorrent['info']['private'] = 1
 	sourceTorrent['announce'] = str(announceUrl)
-	sourceTorrent.pop('announce-list',None)
 	sourceTorrent.pop('creation date',None)
 	sourceTorrent.pop('comment',None)
 	sourceTorrent.pop('created by',None)
